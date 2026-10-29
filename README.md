@@ -66,7 +66,8 @@ python -m http.server 8642
 | 🎒 返學路線 | 每個屋邨預載最近 3 間小學（含座標），一鍵規劃「屋邨 → 小學」3D 無障礙接送路線，支援小學距離排序 |
 | ⛰ 垂直高程剖面圖 | 路線結果附 SVG 剖面圖（海拔 vs 距離），標示地面線與地底段——2D 地圖睇唔到嘅第三維差異化功能 |
 | ⚡ 多模式同屏對比 | 一鍵同時請求最短／無障礙／避雨 3 條路線，地圖同屏渲染（灰虛線 vs 實色線），自動生成量化結論（距離差、時間差、垂直爬升差） |
-| 👥 評分視角切換 | 4 個 Persona 權重矩陣（育兒 35/30/20/15、長者 25/0/0/75、通勤 70/0/0/30、均衡 40/20/15/25）——基於 v3 標準化 sub_scores 前端即時重算評分、排序、地圖著色，AI 顧問偵測長者／輪椅自動切換 |
+| 👥 評分視角切換 | 4 個 Persona 權重矩陣（育兒 35/30/20/15、長者 25/0/0/75、通勤 70/0/0/30、均衡 40/20/15/25）——基於 v3 標準化 sub_scores 前端即時重算評分、排序、地圖著色 |
+| 🏢 座別明細（深入到座） | 每個屋邨可展開**逐座樓**數據：座名、單位數、有𨋢單位比例、樓層範圍、平均面積——直接回應「揀樓前知呢座有冇𨋢直達」核心痛點；有座級座標嘅座（OSM 建築物匹配）可按「🚶 由呢座出發」規劃 3D 路線，並在地圖釘出各座位置（全幢有𨋢＝綠釘／部分＝橙釘） |
 | 📊 比較籃＋列印報告 | 最多 3 個屋邨並排 PK（單位數／升降機覆蓋率／評分分項／三類可達性），一鍵列印 A4 社工／家庭揀樓評估報告（@media print 排版，前線社工可印紙本畀唔識用手機嘅長者） |
 | 🔗 URL Hash 深連結 | 每條規劃好的路線自動寫入 `#estate=葵涌邨&mode=2&dest=mtr`，評審由 PDF 建議書超連結一鍵跳入場景、自動畫好 3D 路線 |
 | 🤖 AI 選樓顧問（廣東話） | 【預設隱藏——設 `SHOW_AI_ADVISOR = true` 重啟】自然語言輸入家庭需要，規則引擎解析後自動套用篩選＋切換出行模式；正式版採用 LLM 函數調用 |
@@ -114,6 +115,7 @@ python -m http.server 8642
         ├── lph_projects_summary.csv ← 10 個簡約公屋項目聚合
         ├── prh_estates.csv          ← 245 個公共屋邨
         ├── edb_schools.json         ← 697 間資助小學（含座標，build 快取）
+        ├── osm_block_coords.json    ← 座級座標快取（OSM 建築物匹配）
         ├── swd_care_points.json     ← 311 個在校課後託管服務點（管線快取）
         ├── lph_projects_enriched.json
         └── all_estates_enriched.json ← ★ 258 屋邨 + v3 評分（sub_scores/density_800m，餵前端）
@@ -136,7 +138,8 @@ python -m http.server 8642
 5. 合併 LPH(10) + PRH(~248)，每個屋邨計算最近港鐵／小學／託管點（haversine 直線距離）+ 生活圈評分 → `all_estates_enriched.json`
 
 ### Build — `build_app.py`
-- 讀取 `all_estates_enriched.json`，為每個有座標屋邨**計算最近 3 個港鐵站候選**（`mtr_candidates`，規劃路線 fallback 用）
+- 讀取 `all_estates_enriched.json`，為每個有座標屋邨**計算最近 3 個港鐵站候選**（`mtr_candidates`，雙錨點：邊界最近點＋站體中心）
+- **座級定位**：以 OSM Overpass 查詢屋邨 400m 內 named buildings，與管線座名（耀康樓等專名）精確匹配，為座塊補座標；快取於 `osm_block_coords.json`（「第N座」通用名跳過避免誤配）
 - 注入 `estate_matcher_template.html` 的 `__DATA__` 佔位符 → `index.html`
 - 內建安全檢查：payload 不得含 `__DATA__` 或 `</script`
 
@@ -170,6 +173,7 @@ python -m http.server 8642
 | 4 | 港鐵場地多邊形（mtr_venue_polygon） | 地政總署 | CSDI WFS（GeoJSON, WGS84, 98 個場地） |
 | 5 | 學校位置及資料（SCH_LOC_EDB） | 教育局 | `http://www.edb.gov.hk/attachment/en/student-parents/sch-info/sch-search/sch-location-info/SCH_LOC_EDB.json` |
 | 6 | 在校課後託管服務計劃（SBA） | 社會福利署 | CSDI WFS `typename=csdi:SWDSBAEPS&outputFormat=GEOJSON` |
+| 7 | 建築物輪廓與名稱（座級定位輔助） | OpenStreetMap 貢獻者 | Overpass API（屋邨 400m 內 named buildings）|
 
 全部經 [DATA.GOV.HK](https://data.gov.hk) / [CSDI Portal](https://portal.csdi.gov.hk) 公開發布；三維路線 API 已實測 CORS 開放（有反映 `Access-Control-Allow-Origin`），前端可直連、無需後端代理。
 
@@ -249,6 +253,7 @@ python -m http.server 8642
 1. **必須以 http(s) 開啟**：3D 路線 API 由 `file://` 調用會被瀏覽器 CORS 擋。請 `python -m http.server` 後經 `http://127.0.0.1:8642/` 開啟（或直接用 GitHub Pages 線上版）。
 2. **3 個屋邨暫無座標**：古雋邨（北區）、華富北邨（南區）、曉茵邨（觀塘）係新屋邨，房委會單位檔冇 `estate_map_latitude`、ES Locator 名單亦未收錄。已嘗試 Nominatim（無此新屋邨資料）與 geodata.gov.hk 地點搜尋（開發環境網絡受限）均失敗；原型標示「暫無座標」不上圖、不可規劃路線。待修：在正常網絡環境用 CSDI GeoAddress／數字政策辦公室「地址搜尋服務」補座標。
 3. **6 個離島／無鐵路覆蓋屋邨無法規劃港鐵路線**：長貴邨（長洲）、金坪邨（坪洲）、銀灣邨（梅窩）、馬坑邨（赤柱）、龍田邨、雅寧苑 —— **地理事實，非 bug**。原型會如實說明。可考慮日後加「渡輪碼頭」作為替代錨點。
+3.5. **座級定位依賴 OSM 匹配**：座級座標來自 OpenStreetMap 建築物名稱匹配（© OSM 貢獻者，ODbL 授權），覆蓋率不保證——未匹配座（常見於「第N座」通用名或 OSM 未收錄新邨）僅顯示數據無地圖釘位；座級路線起點為建築物中心，非單位門口。
 4. **距離為直線（haversine）近似**：評分卡距離非實測步行距離；實測路線以 3D API 為準。**錨點設計**：港鐵錨點取「場地多邊形邊界最近點」（點到線段投影）＋「站體中心」**雙錨點 fallback**，前端逐錨點嘗試——bbox 中心可能跌入站體範圍令網絡 snap 唔到（實例：天耀一邨→天水圍站直線 73m，邊界點實測 193m ✅，bbox 中心 ✗），邊界點亦可能面向路軌（葵涌邨→大窩口站直線 150m，中心實測 696m ✅，邊界點 ✗）。
 5. **API 紀錄上限**：CSDI 服務單次查詢上限 5,000 條紀錄；管線以 18 區分檔下載、前端按場地逐個調用，已避開。
 6. **舊座標系歷史數據**：個別數據集含 HK1980（EPSG:2326）EASTING/NORTHING 欄位，已於管線層處理；3D API 統一 `outSR=4326` 直出 WGS84。

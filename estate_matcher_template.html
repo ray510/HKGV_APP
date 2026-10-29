@@ -72,6 +72,12 @@
   #cmpBox b{color:var(--accent)}
   .addCmp{margin-top:6px;width:100%;padding:5px;font-size:11.5px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;color:#374151}
   .addCmp.on{border-color:#7c3aed;color:#7c3aed;background:#f5f3ff;font-weight:700}
+  .blkBtn{margin-top:6px;width:100%;padding:5px;font-size:11.5px;border:1px dashed var(--line);background:#fafbfc;border-radius:6px;cursor:pointer;color:#374151}
+  .blkBox{display:none;margin-top:6px;overflow-x:auto}
+  .blkT{width:100%;border-collapse:collapse;font-size:11.5px}
+  .blkT th,.blkT td{border:1px solid var(--line);padding:3px 6px;text-align:left;white-space:nowrap}
+  .blkT th{background:var(--soft);font-weight:600}
+  .blkGo{border:0;background:var(--accent);color:#fff;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer}
   #cmpTray{position:sticky;bottom:0;z-index:10;background:#fff;border:1.5px solid #7c3aed;border-radius:10px;padding:8px 10px;display:none;gap:6px;align-items:center;font-size:12px;margin-top:10px;box-shadow:0 -2px 10px rgba(124,58,237,.12)}
   #cmpTray b{color:#7c3aed}
   #cmpTray button{border:0;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer}
@@ -260,6 +266,7 @@ const scoreColor = s => s>=80 ? "#0f9d8a" : s>=60 ? "#0b6e99" : "#b45309";
 // ---- 生活圈評分 v3：平滑衰減＋800m 選擇密度＋升降機覆蓋（sub_scores 由管線輸出；JS 有同構 fallback）----
 let profile = "family";
 const compareSet = [];        // 比較籃（最多 3 個屋邨 key）
+const blkLayers = {};         // 座別釘圖層（key = 屋邨 key）
 const dist2 = (e,k) => k==="mtr" ? (e.nearest_mtr?.distance_m ?? null)
                     : k==="sch" ? (e.nearest_school?.distance_m ?? null)
                     : (e.nearest_care?.distance_m ?? null);
@@ -378,6 +385,8 @@ function filtered(){
 }
 
 function render(){
+  Object.values(blkLayers).forEach(l => map.removeLayer(l));
+  Object.keys(blkLayers).forEach(k => delete blkLayers[k]);
   const list = filtered();
   document.getElementById("count").textContent = `符合條件：${list.length} / ${DATA.length} 個屋邨／項目` +
     (aiAreaMin ? `｜AI 面積門檻：平均 ≥ ${aiAreaMin}㎡` : "") +
@@ -390,6 +399,8 @@ function render(){
     const brk = pr.parts.map(p =>
       `<div>${p.label} ${p.sub} 分 × ${(p.w*100).toFixed(0)}%</div><div class="bar"><i style="width:${Math.round(p.sub)}%;background:${DIM_COLOR[p.k]}"></i></div>`).join("");
     const addCmpBtn = `<button class="addCmp ${compareSet.includes(e._key)?"on":""}" data-c="${e._key}">${compareSet.includes(e._key)?"✓ 已加入比較":"＋ 加入比較"}</button>`;
+    const nBlk = (e.blocks||[]).length;
+    const blkBtn = nBlk ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
     const el = document.createElement("div"); el.className = "card";
     const canMtr = e.lat != null && (e.mtr_candidates||[]).length;
     const canSch = e.lat != null && (e.school_candidates||[]).length;
@@ -418,7 +429,7 @@ function render(){
              : `<span class="pill bad">✗ ${e.non_elevator_units} 個單位冇升降機</span>`}
         ${e.lat == null ? '<span class="pill noc">暫無座標，未能規劃路線</span>' : ""}
       </div>
-      ${routeBtns}${addCmpBtn}`;
+      ${routeBtns}${addCmpBtn}${blkBtn}`;
     box.appendChild(el);
   });
   box.querySelectorAll(".go").forEach(btn => btn.onclick = () => planRoute(btn.dataset.p, btn.dataset.d));
@@ -428,6 +439,7 @@ function render(){
     else { if (compareSet.length >= 3) return; compareSet.push(k); }
     render();
   });
+  box.querySelectorAll(".blkBtn").forEach(btn => btn.onclick = () => toggleBlocks(btn.dataset.b, btn));
 
   // 地圖圓點同步篩選＋視角評分著色：符合條件正常顯示，唔符合淡化（唔會消失，保留全港概覽）
   const matched = new Set(list.map(e => e._key));
@@ -453,6 +465,48 @@ function render(){
   if (currentRoute && !matched.has(currentRoute.key)) clearRoute();
 }
 
+// ---- 座別明細：逐座樓數據＋座級定位（OSM 匹配）＋「由呢座出發」3D 路線 ----
+function toggleBlocks(key, btn){
+  const e = DATA.find(x => x._key === key);
+  const boxEl = document.getElementById("blk-" + key);
+  if (!boxEl) return;
+  const open = boxEl.style.display === "block";
+  if (open){
+    boxEl.style.display = "none";
+    if (blkLayers[key]) { map.removeLayer(blkLayers[key]); delete blkLayers[key]; }
+    btn.textContent = `▼ 座別明細（${(e.blocks||[]).length} 座）`;
+    return;
+  }
+  const rows = (e.blocks||[]).map(b => {
+    const pct = b.u ? Math.round(b.e / b.u * 100) : 0;
+    const cls = pct >= 100 ? "good" : (pct > 0 ? "" : "bad");
+    const coord = b.lat != null;
+    return `<tr><td>${b.n}</td><td>${b.u}</td><td><span class="pill ${cls}">${pct}%</span></td>` +
+      `<td>${b.f1 ?? "?"}–${b.f2 ?? "?"}</td><td>${b.a ?? "?"} ㎡</td>` +
+      (coord ? `<td><button class="blkGo" data-n="${b.n}">🚶 由呢座出發</button></td>` : "<td></td>") + `</tr>`;
+  }).join("");
+  boxEl.innerHTML = `<table class="blkT"><tr><th>座</th><th>單位</th><th>有𨋢</th><th>樓層</th><th>均面</th><th>路線</th></tr>${rows}</table>` +
+    `<div class="hint">有𨋢 %＝該座有升降機服務嘅單位比例。座級位置由 OSM 建築物匹配，只標示可配對座名。</div>`;
+  boxEl.style.display = "block";
+  btn.textContent = "▲ 收起座別明細";
+  boxEl.querySelectorAll(".blkGo").forEach(g => g.onclick = () => {
+    const b = (e.blocks||[]).find(x => x.n === g.dataset.n);
+    if (b && b.lat != null) planRoute(key, "mtr", {lat: b.lat, lng: b.lng, label: b.n});
+  });
+  if (blkLayers[key]) map.removeLayer(blkLayers[key]);
+  const pts = (e.blocks||[]).filter(b => b.lat != null);
+  if (pts.length){
+    blkLayers[key] = L.layerGroup(pts.map(b => {
+      const full = b.u && b.e >= b.u;
+      return L.circleMarker([b.lat, b.lng], {radius: 6, color: full ? "#0f9d8a" : "#b45309",
+        fillOpacity: .85, weight: 2})
+        .bindPopup(`<b>${e.name_tc} ${b.n}</b><br>${b.u} 個單位｜有𨋢 ${b.e}/${b.u}（${Math.round(b.e/b.u*100)}%）<br>樓層 ${b.f1 ?? "?"}–${b.f2 ?? "?"}`);
+    })).addTo(map);
+    map.fitBounds(L.featureGroup(pts.map(b => [b.lat, b.lng])).getBounds().pad(.3), {maxZoom: 17});
+  }
+  boxEl.scrollIntoView({behavior: "smooth", block: "nearest"});
+}
+
 ["q","etype","district","walk","minscore","sortby"].forEach(id =>
   document.getElementById(id).addEventListener(id==="q"?"input":"change", render));
 document.getElementById("needLift").onchange = render;
@@ -476,8 +530,8 @@ document.querySelectorAll("#modes button").forEach(b => b.onclick = () => {
   mode = +b.dataset.m;
   document.querySelectorAll("#modes button").forEach(x => x.classList.remove("on"));
   b.classList.add("on");
-  // 轉換模式後即刻用新模式重新規劃當前路線
-  if (changed && currentRoute) planRoute(currentRoute.key, currentRoute.dest);
+  // 轉換模式後即刻用新模式重新規劃當前路線（保留座級起點）
+  if (changed && currentRoute) planRoute(currentRoute.key, currentRoute.dest, currentRoute.o);
 });
 
 // ---- 3D 路線（CSDI Enhanced Pedestrian Route）----
@@ -564,7 +618,7 @@ function elevationSVG(path){
 
 const DEST_LABEL = {mtr: "🚶 去港鐵站", sch: "🎒 去小學"};
 
-async function planRoute(key, dest = "mtr"){
+async function planRoute(key, dest = "mtr", origin = null){
   const seq = ++planSeq;
   const e = DATA.find(x => x._key === key);
   const kind = dest === "sch" ? "小學" : "港鐵站";
@@ -593,7 +647,7 @@ async function planRoute(key, dest = "mtr"){
       const {c, a, vi} = tries[i];
       if (btn) btn.textContent = `嘗試第 ${vi+1} 近${kind} ${c.zh}…`;
       try {
-        done = { j: await solveOnce(e, a, mode), c, a };
+        done = { j: await solveOnce(origin || e, a, mode), c, a };
         if (vi > 0) note = `最近${kind}冇行人路直達，已自動改用第 ${vi+1} 近${kind}`;
       } catch (err) {
         const tag = (dest === "mtr" && c.anchors?.length > 1)
@@ -606,7 +660,7 @@ async function planRoute(key, dest = "mtr"){
       if (btn) btn.textContent = "改用最短路徑最後嘗試…";
       const lastPt = (dest === "mtr" && cands[0].anchors?.length) ? cands[0].anchors[0] : cands[0];
       try {
-        done = { j: await solveOnce(e, lastPt, 1), c: cands[0], a: lastPt };
+        done = { j: await solveOnce(origin || e, lastPt, 1), c: cands[0], a: lastPt };
         usedMode = 1;
         note = `${MODE_LABELS[mode]}網絡未能覆蓋此路線，已自動改用最短路徑（僅供參考）`;
       } catch (err) {
@@ -630,11 +684,12 @@ async function planRoute(key, dest = "mtr"){
     const line = L.polyline(ll, {color: usedMode===2 ? "#0f9d8a" : "#0b6e99", weight: 5, opacity: .85});
     routeLayer = L.layerGroup([
       line,
-      L.circleMarker([e.lat, e.lng], {radius: 7, color: "#c2410c", fillOpacity: 1}).bindPopup(`<b>起點</b> ${e.name_tc}`),
+      L.circleMarker([origin ? origin.lat : e.lat, origin ? origin.lng : e.lng],
+        {radius: 7, color: "#c2410c", fillOpacity: 1}).bindPopup(`<b>起點</b> ${origin ? origin.label : e.name_tc}`),
       L.circleMarker([done.a.lat, done.a.lng], {radius: 7, color: "#1d4ed8", fillOpacity: 1}).bindPopup(`<b>終點</b> ${done.c.zh}`)
     ]).addTo(map);
     map.fitBounds(line.getBounds().pad(.2));
-    currentRoute = {key, dest, c: done.c, a: done.a};
+    currentRoute = {key, dest, c: done.c, a: done.a, o: origin};
     // URL Hash 深連結：評審可由 PDF/分享連結一鍵跳入此場景
     try { history.replaceState(null, "", `#estate=${encodeURIComponent(e.name_tc)}&mode=${usedMode}&dest=${dest}`); } catch(_){}
     document.getElementById("elevWrap").style.display = "block";
@@ -653,7 +708,7 @@ async function planRoute(key, dest = "mtr"){
       calib = `<br><span style="color:#0f7a6a">🎯 3D 實測校準：2D 預估 <b>${scoreOf(e)}</b> ➔ <b>${calTotal}</b> 分（實測 ${Math.round(dist)}m${detour ? `｜繞路系數 ${detour}×` : ""}｜垂直爬升 +${up.toFixed(1)}m｜Naismith 等效步程 ${Math.round(dEff)}m）</span>`;
     }
     document.getElementById("routeStats").innerHTML =
-      `<b>${e.name_tc}</b> → ${done.c.zh}${note ? `<br><span style="color:#b45309">⚠ ${note}</span>` : ""}<br>
+      `<b>${e.name_tc}${origin ? " " + origin.label : ""}</b> → ${done.c.zh}${note ? `<br><span style="color:#b45309">⚠ ${note}</span>` : ""}<br>
        模式 ${usedMode}（${MODE_LABELS[usedMode]}）｜全程步行約 <b>${Math.round(dist)} 米</b>｜${path.length} 個路徑點｜高度 ${Math.min(...zs).toFixed(1)}m – ${Math.max(...zs).toFixed(1)}m（高差 ${(Math.max(...zs)-Math.min(...zs)).toFixed(1)}m）${disclaim}${calib}`;
     document.getElementById("steps").innerHTML = steps.slice(0,25).map(s=>`<li>${s}</li>`).join("")
       + (steps.length>25 ? `<li>… 共 ${steps.length} 步</li>` : "");
@@ -686,6 +741,7 @@ async function compareModes(){
   const seq = ++cmpSeq;
   const e = DATA.find(x => x._key === currentRoute.key);
   const destPt = currentRoute.a || currentRoute.c || (currentRoute.dest === "sch" ? e.nearest_school : e.nearest_mtr);
+  const fromPt = currentRoute.o || e;
   if (!destPt || destPt.lat == null) return;
   const btn = document.getElementById("cmpGo");
   const box = document.getElementById("cmpBox");
@@ -693,7 +749,7 @@ async function compareModes(){
   box.style.display = "block"; box.innerHTML = "對比中…";
   try {
     const results = await Promise.all([1,2,5].map(async m => {
-      try { return {m, j: await solveOnce(e, destPt, m)}; } catch (err){ return {m, err}; }
+      try { return {m, j: await solveOnce(fromPt, destPt, m)}; } catch (err){ return {m, err}; }
     }));
     if (seq !== cmpSeq) return;
     if (cmpLayer) map.removeLayer(cmpLayer);

@@ -14,12 +14,14 @@
 
 用法：python build_app.py
 """
-import json, math, os, sys
+import json, math, os, re, sys, time, urllib.parse, urllib.request
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 TPL = os.path.join(BASE, "estate_matcher_template.html")
 SRC = os.path.join(BASE, "data", "normalized", "all_estates_enriched.json")
 SCHOOL_CACHE = os.path.join(BASE, "data", "normalized", "edb_schools.json")
+OSM_CACHE = os.path.join(BASE, "data", "normalized", "osm_block_coords.json")
+GENERIC_BLOCK = re.compile(r"^\s*(第\s*[0-9一二兩三四五六七八九十]+\s*座|BLOCK\s*\d+)\s*$", re.I)
 OUT = os.path.join(BASE, "index.html")   # GitHub Pages 根路徑直接開 app
 K_NEAREST = 3
 sys.path.insert(0, BASE)
@@ -52,6 +54,90 @@ def smooth_score(d, d0, hl):
     if d <= d0:
         return 100.0
     return round(max(5.0, 100.0 * math.exp(-math.log(2) / hl * (d - d0))), 1)
+
+
+def ensure_block_coords(data):
+    """用 OSM Overpass 為 PRH 專名座（耀康樓等）補座級座標。
+    批次模式：每 20 個屋邨併一條查詢（全港約 13 條請求），事後按
+    「座名精確匹配 + 距屋邨中心 ≤400m」歸配。跳過「第N座／BLOCK N」通用名（易誤配）。
+    快取 data/normalized/osm_block_coords.json（key: source|邨名）。
+    網絡受阻時可設環境變數 HKGV_SKIP_OSM=1 跳過查詢（只用快取）。"""
+    if os.environ.get("HKGV_SKIP_OSM"):
+        print("  OSM 座級座標：HKGV_SKIP_OSM=1，跳過查詢", flush=True)
+    cache = {}
+    if os.path.exists(OSM_CACHE):
+        with open(OSM_CACHE, encoding="utf-8") as f:
+            cache = json.load(f)
+    skip = bool(os.environ.get("HKGV_SKIP_OSM"))
+    todo = []
+    for e in data:
+        key = e["source"] + "|" + e["name_tc"]
+        if e.get("lat") is None or not e.get("blocks") or key in cache or skip:
+            continue
+        if all(GENERIC_BLOCK.match(b["n"] or "") for b in e["blocks"]):
+            cache[key] = {}          # 冇可匹配座名，記空免重查
+            continue
+        todo.append(e)
+    if not todo:
+        print("  OSM 座級座標：快取已齊，0 次查詢", flush=True)
+    else:
+        BATCH = 20
+        batches = [todo[i:i+BATCH] for i in range(0, len(todo), BATCH)]
+        print(f"  OSM 座級座標：{len(todo)} 個屋邨待查，分 {len(batches)} 批…", flush=True)
+        for bi, batch in enumerate(batches, 1):
+            clauses = ";".join(f'way["building"]["name"](around:400,{e["lat"]},{e["lng"]});'
+                               for e in batch)
+            q = f"[out:json][timeout:90];({clauses});out center tags;"
+            named = []
+            for attempt in range(3):
+                try:
+                    url = "https://overpass-api.de/api/interpreter?data=" + urllib.parse.quote(q)
+                    req = urllib.request.Request(url, headers={"User-Agent": "HKGV-prototype/1.0 (CSDI Awards 2026)"})
+                    with urllib.request.urlopen(req, timeout=120) as r:
+                        d = json.loads(r.read().decode("utf-8", "replace"))
+                    for el in d.get("elements", []):
+                        nm = ((el.get("tags") or {}).get("name") or "").strip()
+                        c = el.get("center") or {}
+                        if nm and c.get("lat") and c.get("lon"):
+                            named.append((nm, float(c["lat"]), float(c["lon"])))
+                    break
+                except Exception as ex:
+                    if attempt < 2:
+                        time.sleep(4 * (attempt + 1))
+                    else:
+                        print(f"  OSM 批 {bi}/{len(batches)} FAIL {type(ex).__name__}，該批下次重試", flush=True)
+            if named:
+                for e in batch:
+                    key = e["source"] + "|" + e["name_tc"]
+                    hit = {}
+                    for b in e["blocks"]:
+                        bn = (b["n"] or "").strip()
+                        if not bn or GENERIC_BLOCK.match(bn):
+                            continue
+                        cand = [(nm, la, lo) for nm, la, lo in named
+                                if (bn in nm or nm in bn)
+                                and haversine(e["lat"], e["lng"], la, lo) <= 400]
+                        if cand:
+                            nm, la, lo = min(cand, key=lambda x: haversine(e["lat"], e["lng"], x[1], x[2]))
+                            hit[bn] = (la, lo)
+                    cache[key] = hit
+            time.sleep(2.0)
+            print(f"  OSM 批 {bi}/{len(batches)} 完成（累計 named buildings {len(named)}）", flush=True)
+            with open(OSM_CACHE, "w", encoding="utf-8") as f:   # 每批即寫快取
+                json.dump(cache, f, ensure_ascii=False)
+    n_hit = 0
+    for e in data:
+        key = e["source"] + "|" + e["name_tc"]
+        coords = cache.get(key) or {}
+        for b in e.get("blocks", []):
+            pos = coords.get((b["n"] or "").strip())
+            if pos:
+                b["lat"], b["lng"] = pos
+                n_hit += 1
+    with open(OSM_CACHE, "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False)
+    print(f"  OSM 座級座標：套用 {n_hit} 座（快取 {os.path.relpath(OSM_CACHE, BASE)}）", flush=True)
+    return n_hit
 
 
 def top_k_mtr(lat, lng, venues, k=K_NEAREST):
@@ -91,6 +177,10 @@ with open(SRC, encoding="utf-8") as f:
 from stage2_full import build_mtr_venues
 venues = build_mtr_venues()
 schools = load_schools()
+
+# OSM 座級定位（首跑約 10 分鐘，快取後即時）
+ensure_block_coords(data)
+
 n_mtr = n_sch = 0
 for e in data:
     if e.get("lat") is None:

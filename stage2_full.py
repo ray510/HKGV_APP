@@ -127,7 +127,7 @@ def build_prh_estates():
                 "region_tc": r.get("region_chinese_name") or "",
                 "lat": None, "lng": None, "blocks": set(),
                 "total_units": 0, "elevator_units": 0,
-                "floors": [], "areas": []})
+                "floors": [], "areas": [], "blk": {}})
             lift = elevator_flag(r.get("avail_of_elevator_services"))
             e["total_units"] += 1
             n_units += 1
@@ -136,6 +136,20 @@ def build_prh_estates():
                 n_lift += 1
             if r.get("chinese_name_of_block"):
                 e["blocks"].add(r["chinese_name_of_block"])
+            # 座別聚合（改善「揀樓前知呢座有冇𨋢」痛點）
+            bn = (r.get("chinese_name_of_block") or "").strip() or "?"
+            b = e["blk"].setdefault(bn, {"u": 0, "e": 0, "f": [], "a": []})
+            b["u"] += 1
+            if lift:
+                b["e"] += 1
+            try:
+                b["f"].append(float(str(r.get("floor_number")).strip()))
+            except (TypeError, ValueError):
+                pass
+            try:
+                b["a"].append(float(r.get("internal_floor_area")))
+            except (TypeError, ValueError):
+                pass
             try:
                 e["floors"].append(float(str(r.get("floor_number")).strip()))
             except (TypeError, ValueError):
@@ -151,6 +165,12 @@ def build_prh_estates():
     out = []
     for e in est.values():
         fl, ar = e["floors"], e["areas"]
+        blocks = sorted(
+            ({"n": bn, "u": b["u"], "e": b["e"],
+              "f1": min(b["f"]) if b["f"] else None, "f2": max(b["f"]) if b["f"] else None,
+              "a": round(sum(b["a"]) / len(b["a"]), 1) if b["a"] else None}
+             for bn, b in e["blk"].items()),
+            key=lambda x: -x["u"])
         out.append({
             "source": "PRH", "name_tc": e["name_tc"], "name_en": e["name_en"],
             "district_tc": e["district_tc"], "region_tc": e["region_tc"],
@@ -159,9 +179,11 @@ def build_prh_estates():
             "non_elevator_units": e["total_units"] - e["elevator_units"],
             "blocks_count": len(e["blocks"]),
             "min_floor": min(fl) if fl else None, "max_floor": max(fl) if fl else None,
-            "avg_area": round(sum(ar) / len(ar), 2) if ar else None})
+            "avg_area": round(sum(ar) / len(ar), 2) if ar else None,
+            "blocks": blocks})
     out.sort(key=lambda x: -x["total_units"])
-    print(f"Part 1 完成：{len(out)} 個屋邨 / {sum(x['total_units'] for x in out):,} 個單位", flush=True)
+    print(f"Part 1 完成：{len(out)} 個屋邨 / {sum(x['total_units'] for x in out):,} 個單位 / "
+          f"{sum(len(x['blocks']) for x in out)} 座", flush=True)
     return out
 
 
@@ -287,6 +309,24 @@ def main():
     with open(os.path.join(NORM, "swd_care_points.json"), "w", encoding="utf-8") as f:
         json.dump(care, f, ensure_ascii=False)
 
+    # LPH 座別聚合（由 Stage 1 單位級 CSV）
+    lph_blocks = {}
+    with open(os.path.join(NORM, "lph_units.csv"), encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            k = (r["project_tc"], (r.get("block_tc") or "").strip() or "?")
+            b = lph_blocks.setdefault(k, {"u": 0, "e": 0, "f": [], "a": []})
+            b["u"] += 1
+            if str(r.get("elevator", "")).strip().upper() == "Y":
+                b["e"] += 1
+            try:
+                b["f"].append(float(r.get("floor_num")))
+            except (TypeError, ValueError):
+                pass
+            try:
+                b["a"].append(float(r.get("internal_floor_area")))
+            except (TypeError, ValueError):
+                pass
+
     # LPH 10 項目（用現有 summary CSV）
     lph = []
     with open(os.path.join(NORM, "lph_projects_summary.csv"), encoding="utf-8-sig") as f:
@@ -298,7 +338,14 @@ def main():
                         "non_elevator_units": int(r["non_elevator_units"]),
                         "blocks_count": int(r["blocks_count"]),
                         "min_floor": float(r["min_floor"]), "max_floor": float(r["max_floor"]),
-                        "avg_area": float(r["avg_internal_area"])})
+                        "avg_area": float(r["avg_internal_area"]),
+                        "blocks": sorted(
+                            ({"n": bn, "u": b["u"], "e": b["e"],
+                              "f1": min(b["f"]) if b["f"] else None,
+                              "f2": max(b["f"]) if b["f"] else None,
+                              "a": round(sum(b["a"]) / len(b["a"]), 1) if b["a"] else None}
+                             for (ptc, bn), b in lph_blocks.items() if ptc == r["project_tc"]),
+                            key=lambda x: -x["u"])})
 
     all_est = lph + prh
     for e in all_est:
