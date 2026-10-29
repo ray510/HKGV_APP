@@ -452,7 +452,7 @@ function render(){
     const nBlk = (e.blocks||[]).length;
     const blkBtn = nBlk ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
     const el = document.createElement("div"); el.className = "card";
-    const dests = ["mtr","sch","care","eld","shel","kg","pg","hosp"].filter(d => e.lat != null && DEST[d].pool(e).length);
+    const dests = ["mtr","sch","care","eld","shel","kg","pg","hosp","pier"].filter(d => e.lat != null && DEST[d].pool(e).length);
     const routeBtns = dests.length
       ? `<div class="dchips">` + dests.map(d => {
           const cnt = (d === "kg" || d === "hosp") ? ` ${DEST[d].pool(e).length}` : "";
@@ -754,8 +754,9 @@ const DEST = {
   pg:   {label:"🎠 遊樂場",  kind:"共融遊樂場", pool:e => (e.nearest_pg_name_tc && e.nearest_pg_lat != null
           ? [{zh:e.nearest_pg_name_tc, lat:e.nearest_pg_lat, lng:e.nearest_pg_lng, distance_m:e.nearest_pg_dist_m}] : [])},
   hosp: {label:"🏥 急症室",  kind:"急症醫院", pool:e => (e.ae_hospitals||[]).map(h => ({zh:h.n, lat:h.lat, lng:h.lng, distance_m:h.d}))},
+  pier: {label:"⛴️ 碼頭",    kind:"渡輪碼頭", pool:e => (e.nearest_pier ? [{zh:e.nearest_pier.zh, lat:e.nearest_pier.lat, lng:e.nearest_pier.lng, distance_m:e.nearest_pier.distance_m}] : [])},
 };
-const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場", hosp:"🏥 急症室"};
+const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場", hosp:"🏥 急症室", pier:"⛴️ 碼頭"};
 
 async function planRoute(key, dest = "mtr", origin = null, destOverride = null){
   const seq = ++planSeq;

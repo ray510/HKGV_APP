@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSDI 深挖續篇 · 座級覆蓋率實測＋部門數據盤點＋3D 模型源</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1f2933; --muted:#6b7280;
+    --accent:#0b6e99; --accent2:#0f9d8a; --line:#e5e7eb; --soft:#eef4f8;
+    --good:#0f9d8a; --bad:#c2410c; --star:#b45309;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"PingFang HK","Microsoft YaHei",-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px}
+  header{background:linear-gradient(135deg,#0b6e99,#0f9d8a);color:#fff;padding:34px 28px}
+  header h1{margin:0 0 6px;font-size:26px}
+  header p{margin:0;opacity:.92;font-size:14px}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 20px 60px}
+  .note{background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:8px;padding:14px 16px;margin:20px 0;font-size:13.5px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:22px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .stat b{display:block;font-size:24px;color:var(--accent)}
+  .stat span{font-size:12.5px;color:var(--muted)}
+  h2.sec{font-size:21px;margin:38px 0 6px;padding-top:10px;border-top:2px solid var(--line)}
+  h2.sec .tag{font-size:12px;background:var(--accent);color:#fff;padding:2px 10px;border-radius:20px;vertical-align:3px;margin-right:8px}
+  .lead{font-size:13.5px;color:var(--muted);margin:0 0 14px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);
+    border-radius:10px;overflow:hidden;font-size:13.5px;margin:12px 0}
+  th{background:var(--soft);text-align:left;padding:9px 12px;font-size:12.5px;color:var(--accent);border-bottom:1px solid var(--line)}
+  td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  code{background:#eef2f6;border:1px solid #dfe6ec;border-radius:5px;padding:1px 6px;
+    font-family:Consolas,Menlo,monospace;font-size:12.5px;color:#0f4c5c;word-break:break-all}
+  .ok{color:var(--good);font-weight:700}
+  .no{color:var(--bad);font-weight:700}
+  .win{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--good);
+    border-radius:10px;padding:16px 18px;margin:14px 0}
+  .win h3{margin:0 0 4px;font-size:16.5px}
+  .win .meta{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+  .win .use{background:#f0faf7;border:1px dashed var(--good);border-radius:8px;
+    padding:8px 12px;font-size:13px;margin-top:10px}
+  .pill{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:6px;
+    padding:1px 8px;font-size:12px;color:var(--accent);margin:2px 4px 2px 0}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+  .bar{height:9px;background:var(--soft);border-radius:6px;overflow:hidden;margin:4px 0 10px;min-width:100px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .catrow{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0}
+  .catrow .t{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:2px}
+  .catrow .t b{font-weight:600}
+  .catrow .t span{color:var(--muted);font-size:12.5px}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:24px}
+  .big{font-size:40px;font-weight:800;color:var(--good);line-height:1.2}
+  ul.tight{margin:6px 0;padding-left:20px;font-size:13px}
+  ul.tight li{margin:2px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>CSDI 深挖續篇 · 座級覆蓋率實測＋部門數據盤點＋3D 模型源</h1>
+  <p>承接《CSDI Portal 搜尋面板深度分析》｜全港 258 邨 1,713 座真實數據實測｜2026-10-29</p>
+</header>
+<div class="wrap">
+
+  <div class="note">
+    📌 深挖三件事：① 拿管線真實座名清單（258 邨 1,713 座）逐邨 bbox 查詢地政「建築物」多邊形，
+    <b>實測座級匹配覆蓋率</b>（同 OSM 比拚）；② 盤點社署 129／運輸署 41／醫管局 14 個數據集（離島錨點＋長者模式素材）；
+    ③ 探清 3D 模型下載源（3D-BIT00／可視化三維地圖）。全程 258 個 API 查詢 4 分 56 秒跑完，0 錯誤。
+  </div>
+
+  <div class="grid">
+    <div class="stat"><div class="big">91.7%</div><span>座級座標覆蓋（1,571/1,713 座）</span></div>
+    <div class="stat"><b>247/258</b><span>邨至少 1 座匹配（95.7%）</span></div>
+    <div class="stat"><b>75/101</b><span>「第N座」通用名都匹配到</span></div>
+    <div class="stat"><b>74</b><span>渡輪碼頭（運輸署，2026-10-26）</span></div>
+    <div class="stat"><b>129</b><span>社署數據集（全站第一大部門）</span></div>
+    <div class="stat"><b>6,751</b><span>3D 模型 tile（3D-BIT00＋單體化）</span></div>
+  </div>
+
+  <!-- ============ 10 coverage ============ -->
+  <h2 class="sec"><span class="tag">⑩</span>★ 座級定位覆蓋率實測——CSDI 官方多邊形 vs OSM</h2>
+  <p class="lead">方法：每邨以座標做 500m bbox → 查 <code>BuildingBlockType='Tower' AND BuildingNameTC IS NOT NULL</code> →
+    座名正規化（全形→半形、去空白、大寫）→ 精確／尾碼匹配管線座名 → polygon 頂點平均 = centroid。
+    快取已存 <code>data/normalized/csdi_block_coords.json</code>（1,571 條，key=<code>SRC|邨名|座名</code>，含 CSUID＋Storeys）。</p>
+
+  <table>
+    <tr><th style="width:30%">指標</th><th style="width:22%">結果</th><th>對比現況</th></tr>
+    <tr><td>邨級（≥1 座拎到座標）</td><td><b class="ok">247 / 258（95.7%）</b></td><td>11 邨全座未中（見下）</td></tr>
+    <tr><td>座級（逐座有 centroid）</td><td><b class="ok">1,571 / 1,713（91.7%）</b></td><td>OSM 快取只有 13 條（網絡故障殘留）——<b>提升逾百倍</b></td></tr>
+    <tr><td>「第N座」通用名</td><td><b class="ok">75 / 101（74.3%）</b></td><td>OSM 直接跳過呢類；地政層有名（如華景山莊第二十座）</td></tr>
+    <tr><td>簡約公屋（LPH）</td><td><b class="ok">9 / 10 邨有匹配</b></td><td>新落成樓宇已入地政層（2026-10-22 更新版）</td></tr>
+    <tr><td>API 錯誤</td><td><b class="ok">0</b></td><td>258 查詢 4 分 56 秒，maxAllowableOffset 簡化幾何省流量</td></tr>
+  </table>
+
+  <div class="cols">
+    <div class="win">
+      <h3>未匹配嘅 142 座——係咩嚟？</h3>
+      <div class="meta">佔 8.3%，樣本分析：</div>
+      <ul class="tight">
+        <li>太和邨（喜和樓等 6）、朗屏邨（鵲屏樓等 9）、啟田邨、麗閣邨、藍田邨、大坑東邨等<b>舊邨</b>——多數係座名歷史變體／重建前後差異，或 LandsD 用緊另一個名（例如英文系名）</li>
+        <li>石硤尾邨「第二十二座／第四十四座」——舊式長型大廈， LandsD 可能未有獨立名</li>
+        <li>海富苑海泰閣——「閣」類命名，可加同義規則（座／閣／樓）再捉一輪</li>
+      </ul>
+      <div class="use">🎯 <b>三層 fallback 齋打</b>：CSDI 多邊形（91.7%）→ OSM 匹配（舊有邏輯兜底）→ 人工核定（現 3 邨機制）。
+        邨級座標本身 258/258 已齊，座級只係「釘位靚唔靚」，唔影響評分同 3D 路線（起點 fallback 邨中心）。</div>
+    </div>
+    <div class="win">
+      <h3>bonus：每座送埋 Storeys（層數）</h3>
+      <div class="meta">快取每條記錄含 <code>csuid</code>＋<code>storeys</code></div>
+      <ul class="tight">
+        <li>卡片「▼ 座別明細」可以直接用官方層數核對管線 <code>f1/f2</code> 樓層範圍</li>
+        <li><code>BuildingCSUID</code>（空間單元唯一碼）可以做跨數據集 join（例如日後將單位級數據掛去樓宇單元）</li>
+        <li>賽後 3D 升級：BaseHeight/TopHeight 可即刻做偽 3D 擠出，唔使等真模型</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ 11 ferry ============ -->
+  <h2 class="sec"><span class="tag">⑪</span>離島錨點升級——運輸署「渡輪碼頭位置」比 CEDD 更好用</h2>
+  <p class="lead">深挖運輸署 41 個數據集，發現一個之前 CKAN 搜尋漏咗嘅正解：</p>
+  <table>
+    <tr><th style="width:30%">數據集</th><th>內容（實測）</th><th style="width:30%">定位</th></tr>
+    <tr><td><b>渡輪碼頭位置</b>（運輸署）<br>td_rcd_1671692797539_19916｜2026-10-26</td>
+        <td><b>74 個碼頭點</b>，WGS84 座標，欄位 STOP_ID＋LAST_UPDATE_DATE（名稱經 STOP_ID 對 TD 路線／渡輪資料映射）</td>
+        <td><b>離島 6 邨替代錨點首選</b>：長洲／坪洲／梅窩等「最近碼頭」直線距離＋3D 路線到碼頭</td></tr>
+    <tr><td>公眾碼頭（CEDD）｜531 點</td><td>結構編號（HP077）＋座標，冇名</td><td>fallback／覆蓋更偏遠小碼頭</td></tr>
+    <tr><td>巴士路線站位置座標（運輸署）｜2026-10-26</td><td>巴士站逐個座標</td><td>非離島冇港鐵屋邨嘅次選錨點</td></tr>
+    <tr><td>專線小巴總站位置座標＋路線（運輸署）｜2026-10</td><td>GMB 總站座標</td><td>「最後一里」接駁資訊（卡片 pill）</td></tr>
+  </table>
+
+  <!-- ============ 12 swd ============ -->
+  <h2 class="sec"><span class="tag">⑫</span>社署 129 個數據集盤點——全站第一大部門</h2>
+  <p class="lead">主題分佈（按繁中標題關鍵詞歸類）——《屋邨智配》核心素材庫：</p>
+  <div class="catrow"><div class="t"><b>社區中心／服務隊／支援點</b><span>28</span></div><div class="bar"><i style="width:100%"></i></div></div>
+  <div class="catrow"><div class="t"><b>託管／兒童／青少年</b><span>24</span></div><div class="bar"><i style="width:86%"></i></div></div>
+  <div class="catrow"><div class="t"><b>復康／殘疾人士服務</b><span>22</span></div><div class="bar"><i style="width:79%"></i></div></div>
+  <div class="catrow"><div class="t"><b>長者／安老</b><span>16</span></div><div class="bar"><i style="width:57%"></i></div></div>
+  <div class="catrow"><div class="t"><b>家庭／輔導</b><span>7</span></div><div class="bar"><i style="width:25%"></i></div></div>
+  <div class="catrow"><div class="t"><b>醫務社會服務／健康</b><span>3</span></div><div class="bar"><i style="width:11%"></i></div></div>
+  <div class="catrow"><div class="t"><b>其他（牌照／統計／計劃名單）</b><span>29</span></div><div class="bar"><i style="width:100%;opacity:.45"></i></div></div>
+
+  <div class="note">
+    🔎 <b>對長者模式最有價值嘅長者/安老 16 個</b>（節錄）：香港安老院位置（827 間）｜附設於安老院舍嘅長者日間護理單位｜
+    長者社區照顧服務券｜家居照顧及支援服務隊｜長者地區中心／長者鄰舍中心｜老有所為活動計劃……
+    復康 22 個（日間暫顧／緊急住宿空置名額、殘疾人士院舍）對應「無障礙家庭」Persona；全清單見 <code>csdi_deepdive_inventory.json</code>。
+  </div>
+
+  <!-- ============ 13 ha ============ -->
+  <h2 class="sec"><span class="tag">⑬</span>醫管局 14 個數據集全清單——長者「醫護生活圈」素材齊</h2>
+  <div class="cols">
+    <div>
+      <ul class="tight">
+        <li>🏥 按醫院劃分的急症室等候時間（18 醫院＋座標＋實時連結）</li>
+        <li>🏥 按醫院劃分的急症室就診人次</li>
+        <li>🏥 醫院管理局轄下醫院/機構目錄（2026-09-17）</li>
+        <li>🏥 按專科及醫院劃分的醫院病床數目</li>
+        <li>🏥 按醫院劃分的病人住院日次／出院人次及死亡人數</li>
+      </ul>
+    </div>
+    <div>
+      <ul class="tight">
+        <li>💊 醫院管理局轄下專科門診診所目錄（2026-09-17）</li>
+        <li>💊 醫院管理局轄下家庭醫學診所目錄（2026-10-25）</li>
+        <li>💊 18區家庭醫學診所最近四星期平均診症名額（含座標）</li>
+        <li>💊 中醫診所暨教研中心目錄＋服務量</li>
+        <li>💊 按診所劃分的普通科門診等就診人次（4 個統計集）</li>
+      </ul>
+    </div>
+  </div>
+  <div class="use" style="background:#f0faf7;border:1px dashed var(--good);border-radius:8px;padding:8px 12px;font-size:13px;margin-top:10px">
+    🎯 長者模式可以由而家「急症室」一個維度，升級做 <b>急症室＋專科門診＋家庭醫學＋中醫</b> 四類醫護目的地（全部有座標）；
+    等候時間／籌額連結可以做「實時到訪提示」。用 <code>q=apiso_OrganizationName_txt:"Hospital Authority"</code> 一擊拎齊。
+  </div>
+
+  <!-- ============ 14 3d ============ -->
+  <h2 class="sec"><span class="tag">⑭</span>3D 模型下載源確認——賽後「3D 立體視覺」路線圖有官方落腳點</h2>
+  <table>
+    <tr><th style="width:26%">數據集</th><th>內容（實測）</th><th style="width:30%">用法</th></tr>
+    <tr><td>三維空間數據 3D-BIT00<br>（地政總署）</td>
+        <td><b>3,295 個 tile</b>（SHEETNO 網格，HK1980 Min_x/Min_y/Max_x/Max_y），每 tile 直接俾
+          <b>3DS／FBX／MAX／VRML</b> 下載 URL（download.map.gov.hk 帶 key）</td>
+        <td>決賽現場 3D 展示／賽後 Three.js 場景：按屋邨 bbox 撞 SHEETNO 即拎模型</td></tr>
+    <tr><td>可視化三維地圖（單體化模型）<br>（地政總署）</td>
+        <td><b>3,456 個 tile</b>，Format_FBX＋<b>Format_glTF</b>（Web 友好）＋Download_API</td>
+        <td>Web 端首選 glTF：單體化模型＝逐幢分開，可以高亮「你揀嗰座」</td></tr>
+    <tr><td>建築物多邊形（⑧已證）</td><td>BaseHeight／TopHeight／Storeys</td><td>零成本偽 3D（2.5D 擠出）過渡方案</td></tr>
+  </table>
+
+  <!-- ============ 15 next ============ -->
+  <h2 class="sec"><span class="tag">⑮</span>深挖結論與下一步</h2>
+  <table>
+    <tr><th style="width:8%">優先</th><th style="width:46%">行動</th><th>依據</th></tr>
+    <tr><td>P0</td><td><b>build_app.py 座級釘位改用 <code>csdi_block_coords.json</code></b>（CSDI→OSM→人工 三層 fallback），卡片加官方 Storeys 核對</td><td>⑩ 覆蓋率 91.7%，快取已就位，改動集中喺座級定位模組</td></tr>
+    <tr><td>P0</td><td>離島 6 邨掛「最近渡輪碼頭」錨點（TD 74 碼頭）＋3D 路線到碼頭</td><td>⑪ 渡輪碼頭位置 2026-10-26 更新</td></tr>
+    <tr><td>P1</td><td>長者模式醫護圈升級：＋專科門診／家醫／中醫目的地（HA 3 個目錄＋籌額）</td><td>⑬ 14 個 HA 數據集全有座標</td></tr>
+    <tr><td>P1</td><td>建議書第 4 節數據源表 8→<b>13 個</b>（＋A&E／安老院／渡輪碼頭／公眾碼頭／HA 目錄），互操作敘述同步升級</td><td>⑩–⑬ 全部實測 id</td></tr>
+    <tr><td>P2</td><td>142 座未匹配名稱規則再捉一輪（座／閣／樓同義＋英文系名）＋社署 129 深挖長者 16 選 2 接入</td><td>⑩ 未匹配清單＋⑫ 主題盤點</td></tr>
+  </table>
+
+  <div class="note">
+    ⚠️ 附註：座級快取 <code>data/normalized/csdi_block_coords.json</code> 為 2026-10-29 快照（地政「建築物」層每日更新，重跑
+    <code>csdi_block_coverage.py</code> 約 5 分鐘即刷新）；SWD／TD／HA 清單見 <code>csdi_deepdive_inventory.json</code>。
+    兩者同 scan 腳本一樣暫未 commit。
+  </div>
+
+</div>
+<footer>
+  實測 2026-10-29｜腳本 csdi_block_coverage.py／csdi_deepdive_inventory.py｜承接 csdi_portal_analysis.html（《CSDI Portal 搜尋面板深度分析》）｜
+  《屋邨智配・3D 無障礙生活圈》CSDI Awards 2026 調研
+</footer>
+</body>
+</html>

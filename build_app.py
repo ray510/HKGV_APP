@@ -24,6 +24,8 @@ KG_CACHE = os.path.join(BASE, "data", "normalized", "edb_kindergartens.json")
 HOSPITAL_SRC = os.path.join(BASE, "data", "raw", "osm_hospitals.json")
 OSM_CACHE = os.path.join(BASE, "data", "normalized", "osm_block_coords.json")
 LANDSD_CACHE = os.path.join(BASE, "data", "normalized", "landsd_block_coords.json")
+CSDI_BLOCK_CACHE = os.path.join(BASE, "data", "normalized", "csdi_block_coords.json")
+FERRY_CACHE = os.path.join(BASE, "data", "normalized", "ferry_piers.json")
 LANDSD_QUERY = ("https://portal.csdi.gov.hk/server/rest/services/common/"
                 "landsd_rcd_1637211194312_35158/FeatureServer/0/query")
 GENERIC_BLOCK = re.compile(r"^\s*(第\s*[0-9一二兩三四五六七八九十]+\s*座|BLOCK\s*\d+)\s*$", re.I)
@@ -81,6 +83,54 @@ def smooth_score(d, d0, hl):
     if d <= d0:
         return 100.0
     return round(max(5.0, 100.0 * math.exp(-math.log(2) / hl * (d - d0))), 1)
+
+
+def ensure_csdi_block_coords(data):
+    """座級座標第一層：全港 bbox 實測快取（csdi_block_coords.json，1,571/1,713 座＝91.7%，
+    key = source|邨名|座名）。含 csuid／storeys。"""
+    if not os.path.exists(CSDI_BLOCK_CACHE):
+        return 0
+    with open(CSDI_BLOCK_CACHE, encoding="utf-8") as f:
+        cache = json.load(f)
+    n = 0
+    for e in data:
+        for b in e.get("blocks", []):
+            if b.get("lat") is not None:
+                continue
+            v = cache.get(f'{e["source"]}|{e["name_tc"]}|{b.get("n", "")}')
+            if not v:
+                continue
+            b["lat"], b["lng"] = v["lat"], v["lng"]
+            if v.get("storeys") is not None:
+                b["s"] = v["storeys"]
+            n += 1
+    print(f"  CSDI 座級座標：套用 {n} 座（bbox 實測快取）", flush=True)
+    return n
+
+
+def attach_ferry_piers(data):
+    """離島錨點：運輸署「渡輪碼頭位置」（74 個，2026-10-26 更新）＋OSM 名配對。
+    每邨計算最近碼頭，供「⛴️ 碼頭」3D 路線目的地（尤其 6 個無鐵路屋邨）。"""
+    if not os.path.exists(FERRY_CACHE):
+        return 0
+    with open(FERRY_CACHE, encoding="utf-8") as f:
+        piers = json.load(f)
+    if not piers:
+        return 0
+    n = 0
+    for e in data:
+        if e.get("lat") is None:
+            continue
+        best, bd = None, 1e18
+        for p in piers:
+            d = haversine(e["lat"], e["lng"], p["lat"], p["lng"])
+            if d < bd:
+                best, bd = p, d
+        e["nearest_pier"] = {"zh": best["zh"], "lat": round(best["lat"], 5),
+                             "lng": round(best["lng"], 5), "distance_m": int(bd)}
+        n += 1
+    print(f"  ⛴️ 渡輪碼頭錨點：{n} 邨（最近碼頭中位數 {sorted(x['nearest_pier']['distance_m'] for x in data)[n//2]}m）", flush=True)
+    return n
 
 
 def ensure_landsd_block_coords(data):
@@ -289,9 +339,13 @@ schools = load_schools()
 kgs = load_kindergartens()
 ae_hosp = load_ae_hospitals()
 
-# 座級定位：官方 LandsD「建築物」優先，OSM 作 fallback（首跑 LandsD 約 70 批查詢）
+# 座級定位三層 fallback：CSDI bbox 實測 → LandsD 按名查 → OSM
+ensure_csdi_block_coords(data)
 ensure_landsd_block_coords(data)
 ensure_block_coords(data)
+
+# 離島錨點：最近渡輪碼頭
+attach_ferry_piers(data)
 
 n_mtr = n_sch = 0
 for e in data:

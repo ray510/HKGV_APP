@@ -7,6 +7,39 @@
   "departments": 71,
   "updated_last_90d": 477,
   "updated_last_365d": 939,
+  "rea_reverse_engineering": {
+    "tool": "rea-agents 6.8.0 (analyze-javascript-application, 30 files, evidence bundle rea_analysis/rea_js_evidence.json 37.5 MB)",
+    "platform": "Esri Geoportal Server 2.6.0 (Dojo AMD app, index metadata_v1)",
+    "real_search_endpoint": "GET|POST /geoportal/elastic/metadata/item/_search",
+    "endpoint_map": {
+      "search_panel": "./elastic/metadata/item/_search (GET params size/from/sort=fileid:asc; POST ES DSL query.bool.must + aggregations + track_total_hits)",
+      "self_description": "./rest/geoportal (metadataIndexName=metadata, version 2.6.0)",
+      "item_detail": "./rest/metadata/item/{id} (JSON) 及 ./rest/metadata/item/{id}/xml (ISO 19115 XML)",
+      "autocomplete": "/csdi-webpage/searchDataset?search_query= (searchType: dataset|category|provider)",
+      "opensearch": "./opensearch?",
+      "address_lookup": "https://www.als.ogcio.gov.hk/galookup?ga= (OnGeoAddress 空間過濾)",
+      "login": "./oauth/token (grant_type=password, client_id=geoportal-client)",
+      "proxy": "viewer/proxy.jsp"
+    },
+    "search_box_dsl": "simple_query_string + analyze_wildcard:true (app/search/SearchBox.js)",
+    "facet_fields": ["categories_s", "contact_organizations_s", "themes_s", "apiso_Format_s", "apiso_Type_s"],
+    "full_grab": {
+      "catalog": "data/csdi_catalog_full.json (1,159 records, 4.5 MB, 27 normalized fields)",
+      "xml_zip": "data/csdi_metadata_xml.zip (1,159 個完整 ISO 19115 XML, 4.9 MB)",
+      "facets": "data/csdi_facets.json"
+    },
+    "elastic_stats": {
+      "total": 1159,
+      "cssd": 1085,
+      "departments": 71,
+      "with_bbox": 1159,
+      "with_full_xml": 1159,
+      "resources": {"geojson": 1533, "WMS": 1145, "FeatureServer": 1118, "WFS": 1118, "kml": 6},
+      "with_FeatureServer": 1118,
+      "with_geojson": 1080,
+      "note": "sys_modified_dt 反映系統維護（全部近 90 日,2026-09 reindex）；apiso_Modified_dt 極少變（90 日內 2 個）——兩個日期意義唔同"
+    }
+  },
   "by_category_en": {
     "Labour, Community and Social Welfare": 165,
     "Development": 130,

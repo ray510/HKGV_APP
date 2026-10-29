@@ -1,0 +1,1266 @@
+{
+  "swd": {
+    "count": 129,
+    "titles": [
+      [
+        "中度智障人士宿舍",
+        "Hostel for Moderately Mentally Handicapped Persons",
+        "2026-05-29",
+        true
+      ],
+      [
+        "中途宿舍",
+        "Halfway House",
+        "2026-05-29",
+        true
+      ],
+      [
+        "交通意外傷亡援助組",
+        "Traffic Accident Victims Assistance Section",
+        "2026-09-27",
+        true
+      ],
+      [
+        "保良局翠林中心家庭暴力受害人支援計劃",
+        "Po Leung Kuk Tsui Lam Centre Victim Support Programme for Victims of Family Violence",
+        "2026-10-12",
+        true
+      ],
+      [
+        "保護家庭及兒童服務課",
+        "Family and Child Protective Services Units",
+        "2026-09-27",
+        true
+      ],
+      [
+        "兒童及青年中心名單",
+        "List of Children and Youth Centres",
+        "2026-08-30",
+        true
+      ],
+      [
+        "兒童院名單",
+        "List of Children's Homes",
+        "2026-09-13",
+        true
+      ],
+      [
+        "共享親職支援中心名單",
+        "List of Specialised Co-parenting Support Centres",
+        "2026-10-12",
+        true
+      ],
+      [
+        "加強課餘託管收費減免計劃服務單位名單",
+        "List of Service Units Providing Fee-waiving Subsidies under Enhanced After School Care Programme",
+        "2026-10-11",
+        true
+      ],
+      [
+        "區域監護事務處服務單位名單",
+        "List of Regional Guardianship Offices",
+        "2026-06-12",
+        true
+      ],
+      [
+        "參與到校學前康復服務的幼稚園╱幼稚園暨幼兒中心名單",
+        "List of Kindergartens (KGs) /Kindergarten-cum-Child Care Centres (KG-cum-CCCs) Participating in On-site Pre-school Rehabilitation Services (OPRS)",
+        "2026-10-25",
+        true
+      ],
+      [
+        "參與改善買位計劃的私營安老院名單",
+        "List of Private Residential Care Homes for the Elderly Participating in Enhanced Bought Place Scheme",
+        "2026-05-29",
+        true
+      ],
+      [
+        "參與私營殘疾人士院舍買位計劃的私營殘疾人士院舍",
+        "Private Residential Care Homes for Persons with Disabilities (RCHDs) Participating in the Bought Place Scheme for RCHDs",
+        "2026-06-12",
+        true
+      ],
+      [
+        "可供申請｢幼兒中心家長津貼｣的資助獨立幼兒中心及附設於幼稚園的資助幼兒中心名單",
+        "List of aided standalone Child Care Centres (CCCs) and aided CCCs attached to Kindergartens (KGs) available for Child Care Centre Parent Subsidy (CCCPS) application",
+        "2026-10-11",
+        true
+      ],
+      [
+        "單身人士宿舍名單",
+        "List of Hostels for Single Persons",
+        "2026-09-30",
+        true
+      ],
+      [
+        "嚴重智障人士宿舍",
+        "Hostel for Severely Mentally Handicapped Persons",
+        "2026-05-29",
+        true
+      ],
+      [
+        "嚴重殘疾人士家居照顧服務",
+        "Home Care Service for Persons with Severe Disabilities",
+        "2026-06-12",
+        true
+      ],
+      [
+        "嚴重殘疾人士日間照顧服務",
+        "Day Care Service for Persons with Severe Disabilities",
+        "2026-09-28",
+        true
+      ],
+      [
+        "嚴重殘疾人士護理院",
+        "Care and Attention Home for Severely Disabled Persons",
+        "2026-05-29",
+        true
+      ],
+      [
+        "嚴重肢體傷殘人士宿舍",
+        "Hostel for Severely Physically Handicapped Persons",
+        "2026-05-29",
+        true
+      ],
+      [
+        "嚴重肢體傷殘人士綜合支援服務",
+        "Integrated Support Service for Persons with Severe Physical Disabilities",
+        "2026-10-12",
+        true
+      ],
+      [
+        "嚴重肢體傷殘兼智障人士宿舍",
+        "Hostel for Severely Physically and Mentally Handicapped Persons",
+        "2026-05-29",
+        true
+      ],
+      [
+        "四肢癱瘓病人過渡期護理支援中心",
+        "Transitional Care and Support Centre for Tetraplegic Patients",
+        "2026-05-29",
+        true
+      ],
+      [
+        "在校課後託管服務計劃",
+        "School-based After School Care Service Scheme",
+        "2026-10-27",
+        true
+      ],
+      [
+        "地區褔利辦事處",
+        "District Social Welfare Offices",
+        "2026-10-11",
+        true
+      ],
+      [
+        "地區言語治療服務",
+        "List of District-based Speech Therapy Team (DSTT)",
+        "2026-10-11",
+        true
+      ],
+      [
+        "夜青後援住宿服務名單",
+        "List of Back-up Shelter Service for Young Night Drifters",
+        "2026-05-29",
+        true
+      ],
+      [
+        "學前兒童課餘託管服務",
+        "After School Care Programme for Pre-primary Children",
+        "2026-05-29",
+        true
+      ],
+      [
+        "學前單位社工服務",
+        "Social Work Service for Pre-primary Institutions",
+        "2025-12-16",
+        true
+      ],
+      [
+        "學校社會工作服務機構名單",
+        "List of School Social Work Organisations",
+        "2026-06-12",
+        true
+      ],
+      [
+        "安老院舍外展專業服務隊",
+        "Multi-disciplinary Outreaching Support Teams for the Elderly",
+        "2026-06-12",
+        true
+      ],
+      [
+        "家居照顧及支援服務隊",
+        "Home Care and Support Services Teams",
+        "2026-10-11",
+        true
+      ],
+      [
+        "家居照顧服務隊",
+        "Home Care Services Teams",
+        "2026-10-11",
+        true
+      ],
+      [
+        "家庭支援網絡隊名單",
+        "List of Family Support Networking Team (FSNTs)",
+        "2026-09-27",
+        true
+      ],
+      [
+        "家庭生活教育服務單位",
+        "List of Family Life Education Units",
+        "2026-06-12",
+        true
+      ],
+      [
+        "家長／親屬資源中心",
+        "Parents / Relatives Resource Centres",
+        "2026-09-28",
+        true
+      ],
+      [
+        "家長／親屬資源中心專業支援隊",
+        "Professional Support Team to Parents / Relatives Resource Centre",
+        "2024-12-23",
+        true
+      ],
+      [
+        "少數族裔外展隊",
+        "Outreaching Teams for Ethnic Minorities",
+        "2026-06-12",
+        true
+      ],
+      [
+        "展能中心",
+        "Day Activity Centre",
+        "2026-05-29",
+        true
+      ],
+      [
+        "幼稚園暨幼兒中心兼收計劃名單",
+        "List of Integrated Programme in Kindergarten-cum-Child Care Centre",
+        "2026-10-11",
+        true
+      ],
+      [
+        "延長時間服務",
+        "Extended Hours Service",
+        "2026-10-11",
+        true
+      ],
+      [
+        "感化及社會服務令辦事處的名單",
+        "List of Probation and Community Service Orders Offices",
+        "2026-06-12",
+        true
+      ],
+      [
+        "感化院舍",
+        "Correctional Home",
+        "2026-05-29",
+        true
+      ],
+      [
+        "戒毒輔導服務中心名單",
+        "List of Centres for Drug Counselling",
+        "2026-05-29",
+        true
+      ],
+      [
+        "按區域劃分的安老院舍",
+        "Five-cluster Boundaries of Residential Care Homes for the Elderly",
+        "2025-11-18",
+        true
+      ],
+      [
+        "按區域劃分的殘疾人士院舍",
+        "Five-cluster Boundaries of Residential Care Homes for Persons with Disabilities",
+        "2025-09-26",
+        true
+      ],
+      [
+        "推行展能中心延展照顧計劃的服務單位名單",
+        "List of Day Activity Centres operating Extended Care Program",
+        "2025-11-01",
+        true
+      ],
+      [
+        "提供資助安老服務宿位的津助及合約院舍",
+        "Subvented and Contract Homes providing Subsidised Residential Care Services for the Elderly",
+        "2026-10-11",
+        true
+      ],
+      [
+        "提供青少年深宵外展服務的單位名單",
+        "List of Agencies providing Services for Young Night Drifters",
+        "2026-05-29",
+        true
+      ],
+      [
+        "收容所名單(殘疾人士)",
+        "List of Place of Refuge (for persons with disabilities)",
+        "2025-01-20",
+        true
+      ],
+      [
+        "日間社區康復中心",
+        "Community Rehabilitation Day Centre",
+        "2026-05-29",
+        true
+      ],
+      [
+        "早期教育及訓練中心",
+        "Early Education and Training Centre",
+        "2026-05-29",
+        true
+      ],
+      [
+        "智障 / 肢體傷殘人士輔助宿舍",
+        "Supported Hostel for Mentally / Physically Handicapped",
+        "2026-05-29",
+        true
+      ],
+      [
+        "智障人士輔助宿舍",
+        "Supported Hostel for Mentally Handicapped",
+        "2026-05-29",
+        true
+      ],
+      [
+        "智障及視障人士輔助宿舍",
+        "Supported Hostel for Visually and Mentally Handicapped",
+        "2026-05-29",
+        true
+      ],
+      [
+        "暫託幼兒服務",
+        "Occasional Child Care Service",
+        "2026-10-11",
+        true
+      ],
+      [
+        "暫託服務/緊急住宿服務空置名額查詢系統--殘疾人士指定住宿暫顧服務",
+        "Vacancy Enquiry System for Respite Services/ Emergency Placement --Residential Respite Service for Persons with Disabilities",
+        "2026-10-12",
+        true
+      ],
+      [
+        "暫託服務/緊急住宿服務空置名額查詢系統--殘疾人士日間暫顧服務",
+        "Vacancy Enquiry System for Respite Services/ Emergency Placement –Day Respite Service Persons with Disabilities",
+        "2026-09-28",
+        true
+      ],
+      [
+        "暫託服務/緊急住宿服務空置名額查詢系統--殘疾人士緊急住宿服務",
+        "Vacancy Enquiry System for Respite Services/ Emergency Placement -- Emergency Placement for Persons with Disabilities",
+        "2026-09-28",
+        true
+      ],
+      [
+        "暴力及執法傷亡賠償組",
+        "Criminal and Law Enforcement Injuries Compensation Section",
+        "2026-09-27",
+        true
+      ],
+      [
+        "曾違法者及刑釋人士服務宿舍名單",
+        "List of Subvented Hostels for Ex-offenders and Discharged Prisoners",
+        "2026-06-12",
+        true
+      ],
+      [
+        "殘疾人士地區支援中心",
+        "District Support Centre for Persons with Disabilities",
+        "2026-10-11",
+        true
+      ],
+      [
+        "殘疾人士社交及康樂中心",
+        "Social & Recreational Centre for Persons with Disabilities",
+        "2026-05-29",
+        true
+      ],
+      [
+        "殘疾人士輔助就業培訓",
+        "Supported Employment Training for Persons with Disabilities (SET)",
+        "2026-01-17",
+        true
+      ],
+      [
+        "殘疾幼兒暫託服務",
+        "Occasional Child Care Service for Children with Disabilities (OCCS for CD)",
+        "2026-10-12",
+        true
+      ],
+      [
+        "濫用精神藥物者輔導中心",
+        "List of Counselling Centre for Psychotropic Substance Abusers",
+        "2026-05-29",
+        true
+      ],
+      [
+        "照顧者支援專線182 183",
+        "Designated Hotline for Carer Support 182 183",
+        "2026-10-11",
+        true
+      ],
+      [
+        "特殊幼兒中心",
+        "Special Child Care Centre",
+        "2026-05-29",
+        true
+      ],
+      [
+        "特殊需要信託辦事處",
+        "Special Needs Trust Office",
+        "2026-06-12",
+        true
+      ],
+      [
+        "男/女童宿舍名單",
+        "List of Boys'/Girls' Hostels",
+        "2026-05-29",
+        true
+      ],
+      [
+        "男/女童院名單",
+        "List of Boys'/Girls' Homes",
+        "2026-09-25",
+        true
+      ],
+      [
+        "留宿幼兒中心及兒童收容中心名單",
+        "List of Residential Child Care Centres and Children's Reception Centre",
+        "2026-06-12",
+        true
+      ],
+      [
+        "盲人護理安老院",
+        "Care and Attention Home for the Aged Blind",
+        "2026-05-29",
+        true
+      ],
+      [
+        "短期食物援助服務隊",
+        "Short-term Food Assistance Service Teams",
+        "2026-08-30",
+        true
+      ],
+      [
+        "社區中心名單",
+        "List of Community Centres",
+        "2026-06-12",
+        true
+      ],
+      [
+        "社區客廳試行計劃",
+        "Pilot Programme on Community Living Room",
+        "2026-10-14",
+        true
+      ],
+      [
+        "社區復康網絡",
+        "Community Rehabilitation Network",
+        "2026-05-29",
+        true
+      ],
+      [
+        "社區支援服務計劃中心名單",
+        "List of Community Support Service Scheme (CSSS)",
+        "2026-06-12",
+        true
+      ],
+      [
+        "社會保障上訴委員會",
+        "Social Security Appeal Board",
+        "2026-05-29",
+        true
+      ],
+      [
+        "社會保障辦事處",
+        "Social Security Field Units",
+        "2026-10-25",
+        true
+      ],
+      [
+        "社會福利署醫務社會服務單位名單",
+        "List of Medical Social Services Units under Social Welfare Department",
+        "2026-10-11",
+        true
+      ],
+      [
+        "私營及非牟利幼兒中心",
+        "Private and Non-profit making standalone Child Care Centre",
+        "2026-10-11",
+        true
+      ],
+      [
+        "私營殘疾人士院舍專業外展服務",
+        "Professional Outreaching Teams for Private Residential Care Homes for Persons with Disabilities",
+        "2026-06-12",
+        true
+      ],
+      [
+        "精神健康綜合社區中心",
+        "Integrated Community Centre for Mental Wellness",
+        "2026-09-27",
+        true
+      ],
+      [
+        "精神復元人士輔助宿舍",
+        "Supported Hostel for Persons in Mental Recovery",
+        "2026-05-29",
+        true
+      ],
+      [
+        "精神復元人士過渡支援服務",
+        "Transitional Support Service for Persons in Mental Recovery",
+        "2026-01-17",
+        true
+      ],
+      [
+        "綜合家庭服務中心 / 綜合服務中心",
+        "Integrated Family Service Centres / Integrated Services Centres",
+        "2026-05-29",
+        true
+      ],
+      [
+        "綜合家庭服務中心／綜合服務中心(提供家庭服務)服務範圍",
+        "Integrated Family Service Centres / Integrated Services Centres (for providing family services) Boundary",
+        "2024-11-28",
+        true
+      ],
+      [
+        "綜合康復服務中心",
+        "Integrated Rehabilitation Services Centre",
+        "2026-05-29",
+        true
+      ],
+      [
+        "綜合服務中心名單",
+        "List of Integrated Service Centres",
+        "2026-06-12",
+        true
+      ],
+      [
+        "綜合社區康復中心",
+        "Integrated Community Rehabilitation Centre",
+        "2025-11-06",
+        true
+      ],
+      [
+        "綜合職業康復服務中心",
+        "Integrated Vocational Rehabilitation Services Centre",
+        "2026-10-25",
+        true
+      ],
+      [
+        "綜合職業訓練中心",
+        "Integrated Vocational Training Centre",
+        "2026-05-29",
+        true
+      ],
+      [
+        "綜合青少年服務中心",
+        "Integrated Children and Youth Services Centre",
+        "2026-05-29",
+        true
+      ],
+      [
+        "網上青年支援隊名單",
+        "List of Cyber Youth Support Teams",
+        "2026-09-27",
+        true
+      ],
+      [
+        "緊急安置服務名單(殘疾人士)",
+        "List of Emergency Placement Service (for persons with disabilities)",
+        "2025-01-20",
+        true
+      ],
+      [
+        "聽覺受損人士綜合服務中心",
+        "Integrated Service Centre for Persons with Hearing Impairment",
+        "2026-05-29",
+        true
+      ],
+      [
+        "肢體傷殘人士輔助宿舍",
+        "Supported Hostel for Physically Handicapped",
+        "2026-05-29",
+        true
+      ],
+      [
+        "臨床心理服務課名單",
+        "List of Clinical Psychology Units",
+        "2026-06-12",
+        true
+      ],
+      [
+        "自殺危機處理中心資料",
+        "Information of Suicide Crisis Intervention Centre",
+        "2026-06-12",
+        true
+      ],
+      [
+        "自閉症人士支援中心",
+        "Support Centre for Persons with Autism",
+        "2026-09-28",
+        true
+      ],
+      [
+        "視覺受損人士綜合服務中心",
+        "Integrated Service Centre for Persons with Visual Impairment",
+        "2026-05-29",
+        true
+      ],
+      [
+        "設有住宿服務的特殊幼兒中心",
+        "Residential Special Child Care Centre",
+        "2026-05-29",
+        true
+      ],
+      [
+        "設有特殊名額的中途宿舍",
+        "Halfway House with Special Provision",
+        "2026-10-11",
+        true
+      ],
+      [
+        "課餘託管收費減免計劃服務單位名單",
+        "List of Service Units Providing Fee-waiving Subsidies under After School Care Programme",
+        "2026-10-25",
+        true
+      ],
+      [
+        "資助獨立幼兒中心",
+        "Aided Standalone Child Care Centre",
+        "2026-10-25",
+        true
+      ],
+      [
+        "跨境及國際社會服務",
+        "Cross-boundary and Inter-country Social Service",
+        "2026-01-17",
+        true
+      ],
+      [
+        "邊緣社群支援計劃名單",
+        "List of Care and Support Networking Team",
+        "2026-06-12",
+        true
+      ],
+      [
+        "邊緣青少年危機住宿服務名單",
+        "List of Crisis Residential Service for Youth-at-Risk",
+        "2026-09-22",
+        true
+      ],
+      [
+        "鄰舍層面社區發展計劃工作隊名單",
+        "List of Neighbourhood Level Community Development Projects",
+        "2026-08-16",
+        true
+      ],
+      [
+        "鄰里支援幼兒照顧計劃",
+        "Neighbourhood Support Child Care Project",
+        "2026-05-29",
+        true
+      ],
+      [
+        "醫院管理局醫務社會服務單位名單",
+        "List of Medical Social Services Units under Hospital Authority",
+        "2026-09-13",
+        true
+      ],
+      [
+        "長期護理院",
+        "Long Stay Care Home",
+        "2026-05-29",
+        true
+      ],
+      [
+        "長者咭辦事處",
+        "Senior Citizen Card Office",
+        "2026-05-29",
+        true
+      ],
+      [
+        "長者地區中心",
+        "District Elderly Community Centres",
+        "2026-10-11",
+        true
+      ],
+      [
+        "長者支援服務隊名單",
+        "List of Supporting Teams for the Elderly",
+        "2026-09-27",
+        true
+      ],
+      [
+        "長者日間護理中心",
+        "Day Care Centres for the Elderly",
+        "2026-08-02",
+        true
+      ],
+      [
+        "長者活動中心",
+        "Social Centre for the Elderly",
+        "2026-06-12",
+        true
+      ],
+      [
+        "長者社區照顧服務券計劃",
+        "Community Care Service Voucher Scheme for the Elderly",
+        "2026-09-27",
+        true
+      ],
+      [
+        "長者鄰舍中心",
+        "Neighbourhood Elderly Centres",
+        "2026-10-11",
+        true
+      ],
+      [
+        "長者院舍照顧服務券",
+        "Residential Care Service Voucher Scheme for the Elderly",
+        "2026-09-27",
+        true
+      ],
+      [
+        "附設於安老院舍的長者日間護理單位",
+        "Day Care Units for the Elderly attached to Residential Care Home for the Elderly",
+        "2026-06-12",
+        true
+      ],
+      [
+        "附設於幼稚園的資助幼兒中心",
+        "Aided Child Care Centre attached to Kindergarten",
+        "2026-10-25",
+        true
+      ],
+      [
+        "附設於長者地區中心的長者日間護理單位",
+        "District Elderly Community Centre cum Day Care Units for the Elderly",
+        "2026-06-12",
+        true
+      ],
+      [
+        "露宿者綜合服務隊名單",
+        "List of Integrated Services Teams for Street Sleepers",
+        "2026-06-12",
+        true
+      ],
+      [
+        "青少年外展社會工作隊名單",
+        "List of Youth Outreaching Social Work Teams",
+        "2026-06-12",
+        true
+      ],
+      [
+        "香港安老院位置",
+        "Location of Residential Care Homes for the Elderly in Hong Kong",
+        "2026-10-25",
+        true
+      ],
+      [
+        "香港殘疾人士院舍位置",
+        "Location of Residential Care Homes for Persons with Disabilities in Hong Kong",
+        "2026-10-11",
+        true
+      ],
+      [
+        "高危青少年及受感化青少年住宿服務名單",
+        "List of Residential Service for High-Risk Youth and Young Probationers",
+        "2026-09-27",
+        true
+      ]
+    ]
+  },
+  "td": {
+    "count": 41,
+    "titles": [
+      [
+        "交通情況快拍圖像",
+        "Traffic Snapshot Images",
+        "2026-10-23",
+        true
+      ],
+      [
+        "交通探測器位置",
+        "Locations of traffic detectors",
+        "2026-10-08",
+        true
+      ],
+      [
+        "交通流量統計",
+        "Traffic Flow Census",
+        "2026-02-09",
+        true
+      ],
+      [
+        "來自閉路電視人工智能影像分析系統的交通數據",
+        "Traffic data from AI Video Analytics System of CCTVs",
+        "2025-11-06",
+        true
+      ],
+      [
+        "偵察車速攝影機箱的地點",
+        "Locations of Speed Enforcement Camera housing",
+        "2026-07-06",
+        true
+      ],
+      [
+        "公共車輛分組",
+        "Public Vehicles Unit",
+        "2025-11-03",
+        true
+      ],
+      [
+        "咪錶泊車位的分佈情況及使用情況",
+        "Distribution of Metered Parking Spaces and its Occupancy",
+        "2026-10-28",
+        true
+      ],
+      [
+        "單車資訊",
+        "Cycling Information",
+        "2026-10-22",
+        true
+      ],
+      [
+        "安裝在智慧燈柱上的交通探測器所收集的交通數據",
+        "Traffic data collected by traffic detectors installed at Smart Lampposts",
+        "2026-10-08",
+        true
+      ],
+      [
+        "專線小巴總站位置座標",
+        "Coordinate of GMB Terminus Location",
+        "2026-10-26",
+        true
+      ],
+      [
+        "專線小巴路線",
+        "Green Minibus Route",
+        "2026-10-02",
+        true
+      ],
+      [
+        "山頂纜車站位置",
+        "Coordinates of peak tram stops",
+        "2026-10-26",
+        true
+      ],
+      [
+        "已裝設感應器的非咪錶路旁泊車位的位置及使用情況",
+        "Location and occupancy status of non-metered on-street parking spaces installed with sensors",
+        "2025-11-11",
+        true
+      ],
+      [
+        "巴士路線",
+        "Bus Route",
+        "2026-09-25",
+        true
+      ],
+      [
+        "巴士路線站位置座標",
+        "Coordinate of Bus Stop Location",
+        "2026-10-26",
+        true
+      ],
+      [
+        "指定車輛測試中心",
+        "Designated Car Testing Centres",
+        "2026-07-17",
+        true
+      ],
+      [
+        "數碼輔助交通設備圖",
+        "Digitized Traffic Aids Drawings",
+        "2026-09-25",
+        true
+      ],
+      [
+        "渡輪碼頭位置",
+        "Coordinates of ferry piers",
+        "2026-10-26",
+        true
+      ],
+      [
+        "牌照事務處",
+        "Licensing Offices",
+        "2025-11-03",
+        true
+      ],
+      [
+        "牌照記錄辦事處",
+        "Licensing Record Offices",
+        "2025-11-03",
+        true
+      ],
+      [
+        "的士上落客點",
+        "Taxi Pick-up & Drop-off Points",
+        "2026-07-06",
+        true
+      ],
+      [
+        "的士站",
+        "Taxi Stands",
+        "2026-07-06",
+        true
+      ],
+      [
+        "空置車位資訊",
+        "Parking Vacancy Data",
+        "2025-11-11",
+        true
+      ],
+      [
+        "行人專用街道",
+        "Pedestrian Streets",
+        "2026-10-23",
+        true
+      ],
+      [
+        "行車時間顯示器（第二代）",
+        "Journey Time Indicators (2nd Generation)",
+        "2026-10-23",
+        true
+      ],
+      [
+        "行車速度屏",
+        "Speed Map Panels",
+        "2025-11-11",
+        true
+      ],
+      [
+        "裝設衝紅燈攝影機系統的路口",
+        "Junctions with Red Light Camera System installed",
+        "2026-07-06",
+        true
+      ],
+      [
+        "路口交通黑點列表",
+        "Junction Blacksite List",
+        "2026-10-07",
+        true
+      ],
+      [
+        "車隊的士停車處",
+        "Coordinate of Fleet Taxi Stopping Places",
+        "2026-03-09",
+        true
+      ],
+      [
+        "過境服務分組",
+        "Cross Boundary Unit",
+        "2025-11-03",
+        true
+      ],
+      [
+        "道路工程位置數據",
+        "Roadworks Location Data",
+        "2026-10-28",
+        true
+      ],
+      [
+        "道路工程的日間禁制路線位置",
+        "Route list for day-time ban for roadworks",
+        "2025-10-17",
+        true
+      ],
+      [
+        "道路工程需要交通影響評估的路線位置",
+        "Route list for Traffic Impact Assessment for roadworks",
+        "2025-10-17",
+        true
+      ],
+      [
+        "道路網絡",
+        "Road Network",
+        "2026-10-12",
+        false
+      ],
+      [
+        "違例駕駛記分辦事處",
+        "Driving-offence Points Office",
+        "2025-11-03",
+        true
+      ],
+      [
+        "隧道及管制區營辦商",
+        "Tunnel and Control Area Operators",
+        "2026-07-14",
+        true
+      ],
+      [
+        "電車站位置座標",
+        "Coordinate of Tram Stop Location",
+        "2026-10-26",
+        true
+      ],
+      [
+        "駕駛事務組",
+        "Driving Services Section",
+        "2025-11-03",
+        true
+      ],
+      [
+        "駕駛考試中心",
+        "Driving Test Centres",
+        "2026-05-11",
+        true
+      ],
+      [
+        "駕駛考試排期事務處及筆試中心",
+        "Driving Test Appointment Office and Written Test Centre",
+        "2025-11-03",
+        true
+      ],
+      [
+        "驗車中心",
+        "Vehicle Examination Centres",
+        "2025-11-03",
+        true
+      ]
+    ]
+  },
+  "ha": {
+    "count": 14,
+    "titles": [
+      [
+        "18區家庭醫學診所在最近四星期平均診症名額(籌額)概覽",
+        "Average Number of Family Medicine Clinic Quota for the Preceding 4 Weeks for 18 Districts",
+        "2025-10-12",
+        true
+      ],
+      [
+        "中醫診所暨教研中心服務量",
+        "Chinese Medicine Clinics cum Training and Research Centres Service Throughput",
+        "2025-12-19",
+        true
+      ],
+      [
+        "中醫診所暨教研中心目錄",
+        "List of Chinese Medicine Clinics cum Training and Research Centres",
+        "2026-09-17",
+        true
+      ],
+      [
+        "按主要專科及診所劃分的專科門診(臨床)就診人次",
+        "Number of Specialist Outpatient (Clinical) Attendances by Major Specialty and Clinic",
+        "2025-12-12",
+        true
+      ],
+      [
+        "按專科及醫院劃分的醫院病床數目(截至各年度的三月三十一日)",
+        "Number of Hospital Beds by Specialty and Hospital (as at 31 March of respective years)",
+        "2025-12-12",
+        true
+      ],
+      [
+        "按專職醫療部門及診所劃分的專職醫療(門診)就診人次",
+        "Number of Allied Health (Outpatient) Attendances by Allied Health Department and Clinic",
+        "2025-12-19",
+        true
+      ],
+      [
+        "按診所劃分的普通科門診、家庭醫學專科門診及基層醫療服務就診人次",
+        "Number of General Outpatient Attendances, Family Medicine Specialist Clinic Attendances and Primary Care Attendances by Clinic",
+        "2025-12-12",
+        true
+      ],
+      [
+        "按醫院劃分的急症室就診人次",
+        "Number of Accident and Emergency Attendances by Hospital",
+        "2025-12-12",
+        true
+      ],
+      [
+        "按醫院劃分的急症室等候時間",
+        "Accident and Emergency Waiting Time by Hospital",
+        "2025-10-13",
+        true
+      ],
+      [
+        "按醫院劃分的病人住院日次",
+        "Number of Patient Days by Hospital",
+        "2025-12-12",
+        true
+      ],
+      [
+        "按醫院劃分的病人出院人次及死亡人數",
+        "Number of Discharges and Deaths by Hospital",
+        "2025-12-12",
+        true
+      ],
+      [
+        "醫院管理局轄下家庭醫學診所目錄",
+        "Hospital Authority Family Medicine Clinic List",
+        "2026-10-25",
+        true
+      ],
+      [
+        "醫院管理局轄下專科門診診所目錄",
+        "Hospital Authority Specialist Outpatient Clinic List",
+        "2026-09-17",
+        true
+      ],
+      [
+        "醫院管理局轄下醫院/機構目錄",
+        "Hospital Authority Hospital/Institution List",
+        "2026-09-17",
+        true
+      ]
+    ]
+  },
+  "swd_themes": {
+    "長者/安老": [
+      "參與改善買位計劃的私營安老院名單（2026-05-29）",
+      "安老院舍外展專業服務隊（2026-06-12）",
+      "按區域劃分的安老院舍（2025-11-18）",
+      "提供資助安老服務宿位的津助及合約院舍（2026-10-11）",
+      "盲人護理安老院（2026-05-29）",
+      "長者咭辦事處（2026-05-29）",
+      "長者地區中心（2026-10-11）",
+      "長者支援服務隊名單（2026-09-27）",
+      "長者日間護理中心（2026-08-02）",
+      "長者活動中心（2026-06-12）",
+      "長者社區照顧服務券計劃（2026-09-27）",
+      "長者鄰舍中心（2026-10-11）",
+      "長者院舍照顧服務券（2026-09-27）",
+      "附設於安老院舍的長者日間護理單位（2026-06-12）",
+      "附設於長者地區中心的長者日間護理單位（2026-06-12）",
+      "香港安老院位置（2026-10-25）"
+    ],
+    "復康/殘疾": [
+      "參與私營殘疾人士院舍買位計劃的私營殘疾人士院舍（2026-06-12）",
+      "嚴重殘疾人士家居照顧服務（2026-06-12）",
+      "嚴重殘疾人士日間照顧服務（2026-09-28）",
+      "嚴重殘疾人士護理院（2026-05-29）",
+      "嚴重肢體傷殘人士宿舍（2026-05-29）",
+      "嚴重肢體傷殘人士綜合支援服務（2026-10-12）",
+      "嚴重肢體傷殘兼智障人士宿舍（2026-05-29）",
+      "按區域劃分的殘疾人士院舍（2025-09-26）",
+      "收容所名單(殘疾人士)（2025-01-20）",
+      "智障 / 肢體傷殘人士輔助宿舍（2026-05-29）",
+      "暫託服務/緊急住宿服務空置名額查詢系統--殘疾人士指定住宿暫顧服務（2026-10-12）",
+      "暫託服務/緊急住宿服務空置名額查詢系統--殘疾人士日間暫顧服務（2026-09-28）",
+      "暫託服務/緊急住宿服務空置名額查詢系統--殘疾人士緊急住宿服務（2026-09-28）",
+      "殘疾人士地區支援中心（2026-10-11）",
+      "殘疾人士社交及康樂中心（2026-05-29）",
+      "殘疾人士輔助就業培訓（2026-01-17）",
+      "殘疾幼兒暫託服務（2026-10-12）",
+      "社區復康網絡（2026-05-29）",
+      "私營殘疾人士院舍專業外展服務（2026-06-12）",
+      "緊急安置服務名單(殘疾人士)（2025-01-20）",
+      "肢體傷殘人士輔助宿舍（2026-05-29）",
+      "香港殘疾人士院舍位置（2026-10-11）"
+    ],
+    "託管/兒童/青少年": [
+      "保護家庭及兒童服務課（2026-09-27）",
+      "兒童及青年中心名單（2026-08-30）",
+      "兒童院名單（2026-09-13）",
+      "加強課餘託管收費減免計劃服務單位名單（2026-10-11）",
+      "參與到校學前康復服務的幼稚園╱幼稚園暨幼兒中心名單（2026-10-25）",
+      "可供申請｢幼兒中心家長津貼｣的資助獨立幼兒中心及附設於幼稚園的資助幼兒中心名單（2026-10-11）",
+      "在校課後託管服務計劃（2026-10-27）",
+      "學前兒童課餘託管服務（2026-05-29）",
+      "幼稚園暨幼兒中心兼收計劃名單（2026-10-11）",
+      "提供青少年深宵外展服務的單位名單（2026-05-29）",
+      "暫託幼兒服務（2026-10-11）",
+      "特殊幼兒中心（2026-05-29）",
+      "留宿幼兒中心及兒童收容中心名單（2026-06-12）",
+      "私營及非牟利幼兒中心（2026-10-11）",
+      "綜合青少年服務中心（2026-05-29）",
+      "網上青年支援隊名單（2026-09-27）",
+      "設有住宿服務的特殊幼兒中心（2026-05-29）",
+      "課餘託管收費減免計劃服務單位名單（2026-10-25）",
+      "資助獨立幼兒中心（2026-10-25）",
+      "邊緣青少年危機住宿服務名單（2026-09-22）",
+      "鄰里支援幼兒照顧計劃（2026-05-29）",
+      "附設於幼稚園的資助幼兒中心（2026-10-25）",
+      "青少年外展社會工作隊名單（2026-06-12）",
+      "高危青少年及受感化青少年住宿服務名單（2026-09-27）"
+    ],
+    "家庭/輔導": [
+      "保良局翠林中心家庭暴力受害人支援計劃（2026-10-12）",
+      "家庭支援網絡隊名單（2026-09-27）",
+      "家庭生活教育服務單位（2026-06-12）",
+      "戒毒輔導服務中心名單（2026-05-29）",
+      "濫用精神藥物者輔導中心（2026-05-29）",
+      "綜合家庭服務中心 / 綜合服務中心（2026-05-29）",
+      "綜合家庭服務中心／綜合服務中心(提供家庭服務)服務範圍（2024-11-28）"
+    ],
+    "醫務/健康": [
+      "社會福利署醫務社會服務單位名單（2026-10-11）",
+      "精神健康綜合社區中心（2026-09-27）",
+      "醫院管理局醫務社會服務單位名單（2026-09-13）"
+    ],
+    "社區中心/服務": [
+      "共享親職支援中心名單（2026-10-12）",
+      "四肢癱瘓病人過渡期護理支援中心（2026-05-29）",
+      "家居照顧及支援服務隊（2026-10-11）",
+      "家居照顧服務隊（2026-10-11）",
+      "家長／親屬資源中心（2026-09-28）",
+      "家長／親屬資源中心專業支援隊（2024-12-23）",
+      "展能中心（2026-05-29）",
+      "推行展能中心延展照顧計劃的服務單位名單（2025-11-01）",
+      "日間社區康復中心（2026-05-29）",
+      "早期教育及訓練中心（2026-05-29）",
+      "照顧者支援專線182 183（2026-10-11）",
+      "短期食物援助服務隊（2026-08-30）",
+      "社區中心名單（2026-06-12）",
+      "社區客廳試行計劃（2026-10-14）",
+      "社區支援服務計劃中心名單（2026-06-12）",
+      "精神復元人士過渡支援服務（2026-01-17）",
+      "綜合康復服務中心（2026-05-29）",
+      "綜合服務中心名單（2026-06-12）",
+      "綜合社區康復中心（2025-11-06）",
+      "綜合職業康復服務中心（2026-10-25）",
+      "綜合職業訓練中心（2026-05-29）",
+      "聽覺受損人士綜合服務中心（2026-05-29）",
+      "自殺危機處理中心資料（2026-06-12）",
+      "自閉症人士支援中心（2026-09-28）",
+      "視覺受損人士綜合服務中心（2026-05-29）",
+      "邊緣社群支援計劃名單（2026-06-12）",
+      "鄰舍層面社區發展計劃工作隊名單（2026-08-16）",
+      "露宿者綜合服務隊名單（2026-06-12）"
+    ]
+  },
+  "swd_other": [
+    "中度智障人士宿舍（2026-05-29）",
+    "中途宿舍（2026-05-29）",
+    "交通意外傷亡援助組（2026-09-27）",
+    "區域監護事務處服務單位名單（2026-06-12）",
+    "單身人士宿舍名單（2026-09-30）",
+    "嚴重智障人士宿舍（2026-05-29）",
+    "地區褔利辦事處（2026-10-11）",
+    "地區言語治療服務（2026-10-11）",
+    "夜青後援住宿服務名單（2026-05-29）",
+    "學前單位社工服務（2025-12-16）",
+    "學校社會工作服務機構名單（2026-06-12）",
+    "少數族裔外展隊（2026-06-12）",
+    "延長時間服務（2026-10-11）",
+    "感化及社會服務令辦事處的名單（2026-06-12）",
+    "感化院舍（2026-05-29）",
+    "智障人士輔助宿舍（2026-05-29）",
+    "智障及視障人士輔助宿舍（2026-05-29）",
+    "暴力及執法傷亡賠償組（2026-09-27）",
+    "曾違法者及刑釋人士服務宿舍名單（2026-06-12）",
+    "特殊需要信託辦事處（2026-06-12）",
+    "男/女童宿舍名單（2026-05-29）",
+    "男/女童院名單（2026-09-25）",
+    "社會保障上訴委員會（2026-05-29）",
+    "社會保障辦事處（2026-10-25）",
+    "精神復元人士輔助宿舍（2026-05-29）",
+    "臨床心理服務課名單（2026-06-12）",
+    "設有特殊名額的中途宿舍（2026-10-11）",
+    "跨境及國際社會服務（2026-01-17）",
+    "長期護理院（2026-05-29）"
+  ]
+}

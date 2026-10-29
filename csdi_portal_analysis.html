@@ -293,14 +293,58 @@
     <tr><td>P2</td><td>深挖社署 129 個數據集（全站第一大部門）</td><td><code>q=apiso_OrganizationName_txt:"Social Welfare Department"</code> + 引號片語，逐類盤點</td></tr>
   </table>
 
+  <!-- ============ 10 REA 逆向 ============ -->
+  <h2 class="sec"><span class="tag">⑩</span>★ REA 逆向工程——搜尋面板真實架構（源碼級證據）</h2>
+  <p class="lead">用 <b>REA（rea-agents 6.8.0「Reverse engineer anything」）</b>嘅 <code>analyze-javascript-application</code> 對 geoportal 前端
+    <b>30 個 JS 模組</b>（AppStarter → App → SearchPanel → app/search/* 全鏈）做靜態重建（證據包 37.5 MB），
+    由源碼層面證實：2024 改版後搜尋面板<b>唔再經</b> <code>/rest/metadata/search</code>，而係直接打 <b>Elasticsearch 代理</b>。</p>
+
+  <div class="use">🎯 核心發現（<code>app/search/SearchPane.js:121</code>）：
+    <code>var url = "./elastic/" + AppContext.geoportal.metadataIndexName + "/item/_search"</code>
+    —— 即 <code>GET/POST /geoportal/elastic/metadata/item/_search</code>（index=<code>metadata_v1</code>，由 <code>./rest/geoportal</code> 自述端點取得）。</div>
+
+  <table>
+    <tr><th style="width:30%">端點（源碼位置）</th><th>作用與用法</th></tr>
+    <tr><td><code>/geoportal/elastic/metadata/item/_search</code><br><small>SearchPane.js / CollectionsFilter.js</small></td><td><b>搜尋主端點</b>。GET：<code>?size=&amp;from=&amp;sort=fileid:asc</code>；POST：完整 ES DSL（<code>query.bool.must</code> + <code>aggregations</code> + <code>track_total_hits</code>）。實測單頁 <code>size=1300</code> 可行，1,159 條 13 秒全收</td></tr>
+    <tr><td><code>/geoportal/rest/geoportal</code><br><small>AppClient.pingGeoportal</small></td><td>平台自述：版本 2.6.0、index 名、登入能力旗標（OPEN 站免 token）</td></tr>
+    <tr><td><code>/geoportal/rest/metadata/item/{id}</code>（及 <code>/xml</code>）</td><td>單條元數據 JSON／完整 ISO 19115 XML</td></tr>
+    <tr><td><code>/csdi-webpage/searchDataset?search_query=</code><br><small>App.js:658</small></td><td>頁首自動完成建議，回 <code>searchType: dataset|category|provider</code></td></tr>
+    <tr><td><code>/geoportal/opensearch?</code><br><small>OpenSearchLinksPane</small></td><td>OpenSearch 標準輸出</td></tr>
+    <tr><td><code>https://www.als.ogcio.gov.hk/galookup?ga=</code><br><small>OnGeoAddress.js</small></td><td>OGCIO 地址搜尋 →「附近」空間過濾嘅地址轉座標</td></tr>
+    <tr><td><code>/geoportal/oauth/token</code><br><small>AppClient.generateToken</small></td><td>登入（<code>client_id=geoportal-client</code>；公開目錄唔使）</td></tr>
+  </table>
+
+  <table>
+    <tr><th style="width:30%">搜尋行為（源碼證據）</th><th>解釋</th></tr>
+    <tr><td><code>simple_query_string</code>＋<code>analyze_wildcard:true</code><br><small>SearchBox.js:87</small></td><td><b>解開咗③節懸念</b>：單字搜尋近乎冇篩選效應，係因為面板用 ES simple_query_string 打全文索引（多欄 OR）——要精準就必須引號片語或欄位限定</td></tr>
+    <tr><td>Facet 欄位：<code>categories_s</code>／<code>contact_organizations_s</code>／<code>themes_s</code><br><small>TermsAggregation.js</small></td><td>側欄「分類／部門／主題」聚合過濾嘅來源欄位，可直接用 POST DSL 複製同款統計</td></tr>
+    <tr><td><code>sort=fileid:asc</code>（title 非 sortable）</td><td>ES 直連嘅穩定分頁要用 <code>fileid</code>；<code>title</code> 係 text 欄位，sort 會 400</td></tr>
+    <tr><td><code>_source</code> 含 <code>sys_xml_clob</code></td><td>每條記錄自帶<b>完整 ISO 19115 XML</b>（平均 29 KB）——全量 XML 免逐條打 <code>/item/{id}/xml</code></td></tr>
+  </table>
+
+  <p class="lead"><b>全量抓取成果（經逆向端點，2026-10-29 實測）</b>：</p>
+  <table>
+    <tr><th style="width:38%">產物</th><th>內容</th></tr>
+    <tr><td><code>data/csdi_catalog_full.json</code>（4.5 MB）</td><td>1,159 條 × 27 欄標準化：三語標題／描述／部門／分類／主題／<b>resources 全端點</b>／links（含直下載）／bbox＋中心點／CRS／三種日期／access</td></tr>
+    <tr><td><code>data/csdi_metadata_xml.zip</code>（4.9 MB）</td><td><b>1,159 個完整 ISO 19115 元數據 XML</b>（compress 後）——法援任何深入欄位（屬性定義、更新頻率、聯絡人）離線可查</td></tr>
+    <tr><td><code>data/csdi_facets.json</code></td><td>官方 facet 聚合原始值（分類／部門／主題／格式／類型 × doc_count）</td></tr>
+  </table>
+
+  <div class="use">🎯 對《屋邨智配》嘅意義：① 全量 XML = 以後盤點新數據源<b>離線做</b>（比賽場地冇網都得）；
+    ② ES DSL 端點支援空間過濾（<code>envelope_geo</code> geo_shape）——將來「屋邨周邊 800m 有咩政府數據集」可以一條查詢搞定；
+    ③ <code>links_s</code> 有 Shapefile／GDB 直下載鏈（<code>/csdi-webpage/download/...</code>），抓大檔唔使經 file-api。</div>
+
   <div class="note">
     ⚠️ 使用注意（同項目已知限制一致）：CSDI 服務單次查詢上限 5,000 條；官方偶有欄位改名（2026-10 例子），
-    抓取器保留動態鍵名解析；全部分類／部門統計以 2026-10-29 實測快照為準（<code>data/csdi_catalog.json</code>）。
+    抓取器保留動態鍵名解析；全部分類／部門統計以 2026-10-29 實測快照為準（<code>data/csdi_catalog.json</code>；
+    REA 全量版 <code>data/csdi_catalog_full.json</code>）。日期欄位注意：<code>sys_modified_dt</code> 係系統維護時間戳（2026-09 reindex 後全部近 90 日），
+    <code>apiso_Modified_dt</code> 係 ISO 元數據聲明日期（極少變，90 日內只有 2 個）——時效分析要用啱欄位。
   </div>
 
 </div>
 <footer>
   實測日期 2026-10-29｜掃描腳本 csdi_portal_scan.py／scan2/3/4｜全量目錄 data/csdi_catalog.json（1,159 條）｜
+  REA 逆向＋全量 XML：csdi_portal_analysis ⑩、rea_analysis/（grab_all.py + 證據包）、data/csdi_catalog_full.json + csdi_metadata_xml.zip｜
   《屋邨智配・3D 無障礙生活圈》CSDI Awards 2026 調研產物
 </footer>
 </body>
