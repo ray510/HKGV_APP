@@ -47,13 +47,13 @@ python -m http.server 8642
 
 ## GitHub Pages 線上版
 
-原型已自動托管於 GitHub Pages（`.github/workflows/pages.yml`：push 到 `main` 即自動部署）：
+原型已托管於 GitHub Pages（Source：`main` 分支根目錄，push 到 `main` 即自動重新部署）：
 
 > **https://ray510.github.io/HKGV_APP/**
 
 - 無需本地環境，手機／電腦瀏覽器直接開啟；3D 路線 API 為 https，CORS 已實測通過
 - URL Hash 深連結照常可用，例如 `https://ray510.github.io/HKGV_APP/#estate=葵涌邨&mode=2&dest=mtr`
-- 若 Actions 首次運行未自動開啟 Pages：Repo → Settings → Pages → Source 揀「GitHub Actions」再重跑 workflow
+- 如需關閉／改設定：Repo → Settings → Pages
 
 ## 功能特點
 
