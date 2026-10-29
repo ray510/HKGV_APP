@@ -96,6 +96,13 @@
   .go.chain{background:linear-gradient(90deg,#b45309,#d97706);font-size:12px}
   .go.chain.alt2{background:linear-gradient(90deg,#7c3aed,#a855f7)}
   .wp{width:22px;height:22px;border-radius:50%;background:#b45309;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  #kgModal{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1300;display:none;align-items:center;justify-content:center;padding:20px}
+  .kgCard{background:#fff;border-radius:12px;max-width:520px;width:100%;max-height:80vh;display:flex;flex-direction:column;padding:16px}
+  #kgList{overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+  .kgRow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;font-size:12.5px;text-align:left;width:100%}
+  .kgRow:hover{border-color:var(--accent);background:#f0f7fb}
+  .kgRow b{font-weight:600;color:#1f2933}
+  .kgRow span{color:var(--muted);white-space:nowrap}
   #elev svg{cursor:crosshair}
   #cmpTray{position:sticky;bottom:0;z-index:10;background:#fff;border:1.5px solid #7c3aed;border-radius:10px;padding:8px 10px;display:none;gap:6px;align-items:center;font-size:12px;margin-top:10px;box-shadow:0 -2px 10px rgba(124,58,237,.12)}
   #cmpTray b{color:#7c3aed}
@@ -253,8 +260,7 @@
   <div id="map"></div>
 </div>
 
-<div id="cmpModal">
-  <div class="cmpCard">
+<div id="cmpModal">  <div class="cmpCard">
     <div class="cmpHead">
       <b>📊 屋邨並排比較 — 揀樓評估</b>
       <span>
@@ -268,6 +274,16 @@
     </div>
     <div id="cmpTable"></div>
     <p class="cmpFoot">評分按當前「生活圈評分視角」即時計算，距離為直線估算；3D 實測步行路線請喺主畫面逐個屋邨規劃。數據來源：房屋局・房委會・教育局・社會福利署・地政總署（DATA.GOV.HK / CSDI）。本報告由開發原型生成，僅供參考；揀樓決定請以房屋局及房委會官方公布為準。</p>
+  </div>
+</div>
+
+<div id="kgModal">
+  <div class="kgCard">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h4 id="kgTitle" style="margin:0;font-size:14.5px">👶 選擇幼稚園</h4>
+      <button id="kgClose" style="border:0;background:#f3f4f6;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px">✕ 關閉</button>
+    </div>
+    <div id="kgList"></div>
   </div>
 </div>
 
@@ -436,8 +452,10 @@ function render(){
     const el = document.createElement("div"); el.className = "card";
     const dests = ["mtr","sch","care","eld","shel","kg","pg"].filter(d => e.lat != null && DEST[d].pool(e).length);
     const routeBtns = dests.length
-      ? `<div class="dchips">` + dests.map(d =>
-          `<button class="dchip" data-p="${e._key}" data-d="${d}" data-lb="${DEST[d].label}">${DEST[d].label}</button>`).join("") + `</div>`
+      ? `<div class="dchips">` + dests.map(d => {
+          const cnt = d === "kg" ? ` ${DEST[d].pool(e).length}` : "";
+          return `<button class="dchip" data-p="${e._key}" data-d="${d}" data-lb="${DEST[d].label}">${DEST[d].label}${cnt}</button>`;
+        }).join("") + `</div>`
       : "";
     const canChainChild = e.lat != null && DEST.mtr.pool(e).length && (e.nearest_care || e.nearest_school);
     const canChainElder = e.lat != null && DEST.mtr.pool(e).length && (e.nearest_elderly || e.nearest_shelter);
@@ -478,7 +496,10 @@ function render(){
       ${routeBtns}${chainBtns}${addCmpBtn}${blkBtn}`;
     box.appendChild(el);
   });
-  box.querySelectorAll(".dchip").forEach(btn => btn.onclick = () => planRoute(btn.dataset.p, btn.dataset.d));
+  box.querySelectorAll(".dchip").forEach(btn => btn.onclick = () => {
+    if (btn.dataset.d === "kg") openKgPicker(btn.dataset.p);   // 幼稚園：先揀邊間
+    else planRoute(btn.dataset.p, btn.dataset.d);
+  });
   box.querySelectorAll(".go.chain").forEach(btn => btn.onclick = () => planChain(btn.dataset.p, btn.dataset.c));
   box.querySelectorAll(".addCmp").forEach(btn => btn.onclick = () => {
     const k = btn.dataset.c, i = compareSet.indexOf(k);
@@ -692,6 +713,28 @@ function bindElevHover(){
   });
 }
 
+// ---- 幼稚園選擇器（800m 內全部，逐間揀去規劃 3D 路線）----
+function openKgPicker(key){
+  const e = DATA.find(x => x._key === key);
+  const list = (e.nearest_kgs || []).slice().sort((a, b) => a.d - b.d);
+  document.getElementById("kgTitle").textContent =
+    `👶 ${e.name_tc}：800m 內幼稚園（${list.length} 間）`;
+  const box = document.getElementById("kgList");
+  box.innerHTML = list.length
+    ? list.map((k, i) => `<button class="kgRow" data-i="${i}"><b>${k.n}</b><span>${k.d} 米</span></button>`).join("")
+    : `<div class="hint">此屋邨 800m 內冇幼稚園記錄。</div>`;
+  box.querySelectorAll(".kgRow").forEach(b => b.onclick = () => {
+    const k = list[+b.dataset.i];
+    document.getElementById("kgModal").style.display = "none";
+    planRoute(key, "kg", null, {zh: k.n, lat: k.lat, lng: k.lng, distance_m: k.d});
+  });
+  document.getElementById("kgModal").style.display = "flex";
+}
+document.getElementById("kgClose").onclick = () => document.getElementById("kgModal").style.display = "none";
+document.getElementById("kgModal").addEventListener("click", ev => {
+  if (ev.target.id === "kgModal") ev.target.style.display = "none";
+});
+
 // 目的地配置：mtr 有 3 站雙錨點 fallback，其餘單點
 const DEST = {
   mtr:  {label:"🚇 港鐵",    kind:"港鐵站",   pool:e => (e.mtr_candidates?.length ? e.mtr_candidates : [e.nearest_mtr].filter(Boolean))},
@@ -705,12 +748,12 @@ const DEST = {
 };
 const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場"};
 
-async function planRoute(key, dest = "mtr", origin = null){
+async function planRoute(key, dest = "mtr", origin = null, destOverride = null){
   const seq = ++planSeq;
   const e = DATA.find(x => x._key === key);
   const cfg = DEST[dest] || DEST.mtr;
   const kind = cfg.kind;
-  const cands = cfg.pool(e);
+  const cands = destOverride ? [destOverride] : cfg.pool(e);
   const btn = document.querySelector(`[data-p="${CSS.escape(key)}"][data-d="${dest}"]`);
   const panel = document.getElementById("routePanel");
   const attempts = [];

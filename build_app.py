@@ -212,8 +212,12 @@ for e in data:
         continue
     e["mtr_candidates"] = top_k_mtr(e["lat"], e["lng"], venues)
     e["school_candidates"] = top_k(e["lat"], e["lng"], schools)
-    # 最近 2 間幼稚園（1500m 內，供 3D 路線目的地）
-    e["nearest_kgs"] = [k for k in top_k(e["lat"], e["lng"], kgs, k=2) if k["distance_m"] <= 1500]
+    # 800m 內全部幼稚園（供用戶逐間揀；上限 40，冇就退到 2km 內最近 1 間）
+    kg_all = top_k(e["lat"], e["lng"], kgs, k=40)
+    within = [k for k in kg_all if k["distance_m"] <= 800]
+    if not within and kg_all and kg_all[0]["distance_m"] <= 2000:
+        within = kg_all[:1]
+    e["nearest_kgs"] = within
     for k in e["nearest_kgs"]:
         k["n"] = k.pop("zh")
         k["d"] = k.pop("distance_m")
