@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSDI Portal 搜尋面板深度分析 · portal.csdi.gov.hk</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1f2933; --muted:#6b7280;
+    --accent:#0b6e99; --accent2:#0f9d8a; --line:#e5e7eb; --soft:#eef4f8;
+    --good:#0f9d8a; --bad:#c2410c; --star:#b45309;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"PingFang HK","Microsoft YaHei",-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px}
+  header{background:linear-gradient(135deg,#0b6e99,#0f9d8a);color:#fff;padding:34px 28px}
+  header h1{margin:0 0 6px;font-size:26px}
+  header p{margin:0;opacity:.92;font-size:14px}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 20px 60px}
+  .note{background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:8px;padding:14px 16px;margin:20px 0;font-size:13.5px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:22px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .stat b{display:block;font-size:24px;color:var(--accent)}
+  .stat span{font-size:12.5px;color:var(--muted)}
+  h2.sec{font-size:21px;margin:38px 0 6px;padding-top:10px;border-top:2px solid var(--line)}
+  h2.sec .tag{font-size:12px;background:var(--accent);color:#fff;padding:2px 10px;border-radius:20px;vertical-align:3px;margin-right:8px}
+  .lead{font-size:13.5px;color:var(--muted);margin:0 0 14px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);
+    border-radius:10px;overflow:hidden;font-size:13.5px;margin:12px 0}
+  th{background:var(--soft);text-align:left;padding:9px 12px;font-size:12.5px;color:var(--accent);border-bottom:1px solid var(--line)}
+  td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  code{background:#eef2f6;border:1px solid #dfe6ec;border-radius:5px;padding:1px 6px;
+    font-family:Consolas,Menlo,monospace;font-size:12.5px;color:#0f4c5c;word-break:break-all}
+  .ok{color:var(--good);font-weight:700}
+  .no{color:var(--bad);font-weight:700}
+  .bar{height:9px;background:var(--soft);border-radius:6px;overflow:hidden;margin:4px 0 10px;min-width:120px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .catrow{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0}
+  .catrow .t{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:2px}
+  .catrow .t b{font-weight:600}
+  .catrow .t span{color:var(--muted);font-size:12.5px}
+  .win{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--good);
+    border-radius:10px;padding:16px 18px;margin:14px 0}
+  .win h3{margin:0 0 4px;font-size:16.5px}
+  .win .meta{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+  .win .use{background:#f0faf7;border:1px dashed var(--good);border-radius:8px;
+    padding:8px 12px;font-size:13px;margin-top:10px}
+  .pill{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:6px;
+    padding:1px 8px;font-size:12px;color:var(--accent);margin:2px 4px 2px 0}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:24px}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>CSDI Portal 搜尋面板深度分析</h1>
+  <p>portal.csdi.gov.hk/geoportal/#searchPanel｜空間數據共享平台（地政總署）｜2026-10-29 全站實測（1,159 個數據集全部收齊）</p>
+</header>
+<div class="wrap">
+
+  <div class="note">
+    📌 <b>分析目的</b>：#searchPanel 係 CSDI Portal 找數據集嘅主入口，本身係 JavaScript 單頁應用（SPA）——
+    直接抓網頁只會拎到空殼。本次分析直接解剖佢背後嘅 <b>REST 搜尋 API</b>，實測每個搜尋面板控件對應嘅參數、
+    回應欄位結構、全站 1,159 個數據集嘅分類／部門／服務格式統計，並按《屋邨智配》路線圖需求做針對性搜尋。
+    實測腳本：<code>csdi_portal_scan.py</code>（+scan2/3/4），全量目錄已存 <code>data/csdi_catalog.json</code> 可重用。
+  </div>
+
+  <div class="grid">
+    <div class="stat"><b>1,159</b><span>數據集總數（全站）</span></div>
+    <div class="stat"><b>71</b><span>提供部門／機構</span></div>
+    <div class="stat"><b>1,085</b><span>CSSD 核心共享數據（94%）</span></div>
+    <div class="stat"><b>1,118</b><span>有 FeatureServer 可程式化存取（96%）</span></div>
+    <div class="stat"><b>477</b><span>近 90 日有更新（41%）</span></div>
+    <div class="stat"><b>100%</b><span>數據集有空間範圍（bbox）</span></div>
+  </div>
+
+  <!-- ============ 1 架構 ============ -->
+  <h2 class="sec"><span class="tag">①</span>平台定位與搜尋面板架構</h2>
+  <p class="lead">CSDI（Common Spatial Data Infrastructure，空間數據共享平台）係香港政府嘅官方空間數據目錄，由地政總署營運，
+    同 DATA.GOV.HK（CKAN）互補：CSDI 專注<b>有空間屬性嘅數據集</b>，元數據符合 ISO 19115 標準。</p>
+
+  <table>
+    <tr><th style="width:34%">搜尋面板 UI 控件</th><th>底層 API 參數（實測）</th><th style="width:26%">實測結果</th></tr>
+    <tr><td>搜尋關鍵字框</td><td><code>q=&lt;關鍵字&gt;</code>（片語要加英文雙引號）</td><td><span class="ok">✅</span> 見③配方</td></tr>
+    <tr><td>地圖拉框（空間範圍）</td><td><code>&amp;bbox=xmin,ymin,xmax,ymax&amp;geomRel=esriGeometryRelationIntersection</code></td><td><span class="ok">✅</span> 實測 1,155→1,151</td></tr>
+    <tr><td>CSDI 數據分類篩選</td><td>回應欄位 <code>categories_s</code>（每集一個主分類）</td><td><span class="ok">✅</span> 21 類，見④</td></tr>
+    <tr><td>提供部門篩選</td><td><code>q=apiso_OrganizationName_txt:"Hospital Authority"</code></td><td><span class="ok">✅</span> HA→22 個數據集</td></tr>
+    <tr><td>排序（相關性／標題／日期）</td><td><code>&amp;sortField=title&amp;sortOrder=asc</code></td><td><span class="ok">✅</span> <b>必用</b>，見③陷阱</td></tr>
+    <tr><td>分頁</td><td><code>size=</code>（每頁筆數）＋ <code>from=</code>（0-based 起始）</td><td><span class="ok">✅</span> size=200×6 頁收齊</td></tr>
+    <tr><td>數據集詳情頁</td><td><code>/geoportal/rest/metadata/item/&lt;id&gt;?f=json</code>（／html／xml）</td><td><span class="ok">✅</span> ISO 19115 全文</td></tr>
+  </table>
+
+  <div class="note">
+    🔍 架構結論：CSDI Portal 係 <b>Esri Geoportal Server 2</b> 架構（Elasticsearch 後端）。前端 <code>#searchPanel</code> 只係 hash 路由；
+    真正嘅搜尋引擎喺 <code>GET https://portal.csdi.gov.hk/geoportal/rest/metadata/search?f=json</code>——
+    同項目現有「通用抓取器」同一套理念：<b>唔使開瀏覽器，直接打 API 就可以做全站數據集偵察</b>。
+  </div>
+
+  <!-- ============ 2 回應欄位 ============ -->
+  <h2 class="sec"><span class="tag">②</span>搜尋回應欄位解剖——一個 hit 拎齊所有接數據要嘅嘢</h2>
+  <p class="lead">每個搜尋結果（<code>results[]</code>）嘅 <code>_source</code> 已經齊晒，<b>唔使再逐個打詳情頁</b>：</p>
+
+  <table>
+    <tr><th style="width:32%">欄位</th><th>內容</th><th style="width:30%">對項目嘅用途</th></tr>
+    <tr><td><code>title</code> / <code>title_tc_s</code> / <code>title_sc_s</code></td><td>英／繁／簡三語標題</td><td>前端顯示、雙語報告</td></tr>
+    <tr><td><code>apiso_OrganizationName_txt</code></td><td>部門三語</td><td>數據來源表「提供機構」欄</td></tr>
+    <tr><td><code>categories_s</code></td><td>官方 CSDI 分類（三語）</td><td>分類統計、建議書數據盤點</td></tr>
+    <tr><td><code>resources_nst</code> ★</td><td><b>全部服務端點</b>：FeatureServer／WFS／WMS／GeoJSON file-api，連 URL</td><td><b>直接接數據，零轉介</b></td></tr>
+    <tr><td><code>url_http_download_s</code></td><td>主下載端點</td><td>抓取器 fallback</td></tr>
+    <tr><td><code>envelope_geo</code> / <code>bbox</code></td><td>空間範圍（WGS84）</td><td>空間過濾、快速製圖</td></tr>
+    <tr><td><code>apiso_Modified_dt</code></td><td>最後更新日期</td><td>數據時效審計</td></tr>
+    <tr><td><code>apiso_Subject_txt</code></td><td>主題關鍵詞，含 <code>Common Sharable Spatial Data (CSSD)</code> 標記</td><td>識別官方保證維護嘅核心數據集</td></tr>
+    <tr><td><code>apiso_CRS</code></td><td>座標系統（絕大多數 <code>4326</code> WGS84）</td><td>同 3D 路線 API 一致，免轉換</td></tr>
+  </table>
+
+  <!-- ============ 3 配方 ============ -->
+  <h2 class="sec"><span class="tag">③</span>搜尋實戰配方（全部實測過）</h2>
+  <p class="lead">CSDI 搜尋對<b>短關鍵字極度寬鬆</b>（近乎全文 OR 匹配），單字搜尋基本上冇用。以下係實測有效／無效嘅配方：</p>
+
+  <table>
+    <tr><th style="width:8%">結果</th><th style="width:30%">配方</th><th>實測例子</th><th style="width:18%">命中</th></tr>
+    <tr><td class="no">❌</td><td>單個短詞（中英都係）</td><td><code>q=醫院</code>／<code>q=pier</code></td><td>1,159／1,155（＝冇篩）</td></tr>
+    <tr><td class="ok">✅</td><td>引號片語（繁中）</td><td><code>q="急症室"</code></td><td><b>76</b>，首名即目標</td></tr>
+    <tr><td class="ok">✅</td><td>引號片語（精準名）</td><td><code>q="香港安老院位置"</code></td><td><b>460</b>，首名正確</td></tr>
+    <tr><td class="ok">✅</td><td>部門欄位限定</td><td><code>q=apiso_OrganizationName_txt:"Hospital Authority"</code></td><td><b>22</b>（HA 全部數據集）</td></tr>
+    <tr><td class="ok">✅</td><td>空間範圍過濾</td><td><code>&amp;bbox=113.82,22.24,114.2,22.56&amp;geomRel=esriGeometryRelationIntersection</code></td><td>1,155→1,151</td></tr>
+    <tr><td class="ok">✅</td><td>穩定分頁三件套</td><td><code>&amp;sortField=title&amp;sortOrder=asc</code> + size/from</td><td>1,159 全收齊</td></tr>
+    <tr><td class="no">❌</td><td>欄位限定（英文欄）</td><td><code>q=title:hospital</code></td><td>HTTP 500</td></tr>
+    <tr><td class="no">❌</td><td>欄位限定（中文值）</td><td><code>q=title:"急症室"</code></td><td>0</td></tr>
+  </table>
+
+  <div class="note">
+    ⚠️ <b>分頁陷阱（重要）</b>：唔加 <code>sortField</code> 時文件順序唔穩定，翻頁會重複／漏—實測 6 頁只收得 1,027 條（漏 132）。
+    加 <code>sortField=title&amp;sortOrder=asc</code> 後 1,159 條全收齊。<b>日後任何全站掃描腳本必須帶排序參數。</b>
+  </div>
+
+  <!-- ============ 4 分類統計 ============ -->
+  <h2 class="sec"><span class="tag">④</span>全站 21 個官方分類分佈（1,159 個數據集）</h2>
+  <p class="lead">同 DATA.GOV.HK 嘅 20 類 CKAN 分類（早前 hk_open_data_classification.html 報告）唔同，CSDI 有自己嘅分類體系；
+    每個數據集恰好一個主分類（總和 1,159）。社福類係全站第一大板塊——對《屋邨智配》係好消息。</p>
+
+  <div class="cols">
+    <div>
+      <div class="catrow"><div class="t"><b>勞工、社區及社會福利</b><span>165</span></div><div class="bar"><i style="width:100%"></i></div></div>
+      <div class="catrow"><div class="t"><b>發展</b><span>130</span></div><div class="bar"><i style="width:79%"></i></div></div>
+      <div class="catrow"><div class="t"><b>運輸</b><span>90</span></div><div class="bar"><i style="width:55%"></i></div></div>
+      <div class="catrow"><div class="t"><b>環境</b><span>84</span></div><div class="bar"><i style="width:51%"></i></div></div>
+      <div class="catrow"><div class="t"><b>工商業</b><span>79</span></div><div class="bar"><i style="width:48%"></i></div></div>
+      <div class="catrow"><div class="t"><b>框架空間數據主題集</b><span>74</span></div><div class="bar"><i style="width:45%"></i></div></div>
+      <div class="catrow"><div class="t"><b>公用事業</b><span>65</span></div><div class="bar"><i style="width:39%"></i></div></div>
+      <div class="catrow"><div class="t"><b>康樂及文化</b><span>65</span></div><div class="bar"><i style="width:39%"></i></div></div>
+      <div class="catrow"><div class="t"><b>房屋</b><span>59</span></div><div class="bar"><i style="width:36%"></i></div></div>
+      <div class="catrow"><div class="t"><b>教育</b><span>52</span></div><div class="bar"><i style="width:32%"></i></div></div>
+      <div class="catrow"><div class="t"><b>衞生</b><span>48</span></div><div class="bar"><i style="width:29%"></i></div></div>
+    </div>
+    <div>
+      <div class="catrow"><div class="t"><b>氣候及氣象</b><span>47</span></div><div class="bar"><i style="width:28%"></i></div></div>
+      <div class="catrow"><div class="t"><b>體育</b><span>43</span></div><div class="bar"><i style="width:26%"></i></div></div>
+      <div class="catrow"><div class="t"><b>地理</b><span>43</span></div><div class="bar"><i style="width:26%"></i></div></div>
+      <div class="catrow"><div class="t"><b>法律及保安</b><span>41</span></div><div class="bar"><i style="width:25%"></i></div></div>
+      <div class="catrow"><div class="t"><b>選舉</b><span>31</span></div><div class="bar"><i style="width:19%"></i></div></div>
+      <div class="catrow"><div class="t"><b>人口</b><span>15</span></div><div class="bar"><i style="width:9%"></i></div></div>
+      <div class="catrow"><div class="t"><b>土地資訊</b><span>15</span></div><div class="bar"><i style="width:9%"></i></div></div>
+      <div class="catrow"><div class="t"><b>科技</b><span>8</span></div><div class="bar"><i style="width:5%"></i></div></div>
+      <div class="catrow"><div class="t"><b>共享空間數據</b><span>4</span></div><div class="bar"><i style="width:3%"></i></div></div>
+      <div class="catrow"><div class="t"><b>航空照片</b><span>1</span></div><div class="bar"><i style="width:2%"></i></div></div>
+    </div>
+  </div>
+
+  <!-- ============ 5 部門 ============ -->
+  <h2 class="sec"><span class="tag">⑤</span>提供部門 Top 15（共 71 個部門／機構）</h2>
+  <table>
+    <tr><th style="width:56%">部門</th><th style="width:16%">數據集</th><th>與《屋邨智配》關係</th></tr>
+    <tr><td>社會福利署 Social Welfare Department</td><td><b>129</b></td><td>★ 已用（託管／長者中心）＋ 新發現安老院 827 間</td></tr>
+    <tr><td>地政總署 Lands Department</td><td><b>100</b></td><td>★ 已用（3D 路線 API／港鐵場地）</td></tr>
+    <tr><td>康樂及文化事務署 LCSD</td><td>64</td><td>★ 已用（共融遊樂場 44 個）</td></tr>
+    <tr><td>漁農自然護理署 AFCD</td><td>48</td><td>—</td></tr>
+    <tr><td>渠務署 DSD</td><td>48</td><td>—</td></tr>
+    <tr><td>香港天文台 HKO</td><td>48</td><td>★ 已用（天氣聯動）</td></tr>
+    <tr><td>政府統計處 C&amp;SD</td><td>42</td><td>人口／統計背景</td></tr>
+    <tr><td>環境保護署 EPD</td><td>41</td><td>賽後空氣質素圖層</td></tr>
+    <tr><td>運輸署 TD</td><td>41</td><td>★ 巴士路線／專線小巴總站（離島錨點候補）</td></tr>
+    <tr><td>教育局 EDB</td><td>36</td><td>★ 已用（小學／幼稚園）</td></tr>
+    <tr><td>屋宇署 BD</td><td>33</td><td>—</td></tr>
+    <tr><td>規劃署 PlanD</td><td>31</td><td>—</td></tr>
+    <tr><td>機電工程署 EMSD</td><td>31</td><td>—</td></tr>
+    <tr><td>民政事務總署 HAD</td><td>30</td><td>★ 已用（社區會堂／避暑中心）</td></tr>
+    <tr><td>路政署 HyD</td><td>29</td><td>—</td></tr>
+  </table>
+
+  <!-- ============ 6 服務格式 ============ -->
+  <h2 class="sec"><span class="tag">⑥</span>服務格式統計——96% 數據集可程式化直接存取</h2>
+  <div class="grid">
+    <div class="stat"><b>1,145</b><span>WMS（99%）</span></div>
+    <div class="stat"><b>1,118</b><span>FeatureServer（ArcGIS REST）</span></div>
+    <div class="stat"><b>1,118</b><span>WFS（OGC）</span></div>
+    <div class="stat"><b>1,081</b><span>GeoJSON file-api（93%）</span></div>
+    <div class="stat"><b>91</b><span>HTTP 檔案下載</span></div>
+    <div class="stat"><b>2</b><span>KML</span></div>
+  </div>
+  <div class="note">
+    💡 三種接口協議（ArcGIS FeatureServer、OGC WFS/WMS、file-api GeoJSON）喺同一個數據集並存，
+    同《屋邨智配》建議書第 4 節「三種接口協議共存」嘅互操作敘述完全脗合——而且 file-api GeoJSON 端點
+    <code>https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id=&lt;id&gt;&amp;format=geojson&amp;layer_name=&lt;layer&gt;</code>
+    係最平內路：一個 GET 返回 WGS84 GeoJSON，項目 Part 5 通用抓取器已經支援。
+  </div>
+
+  <!-- ============ 7 roadmap wins ============ -->
+  <h2 class="sec"><span class="tag">⑦</span>★ 對《屋邨智配》路線圖嘅直接收穫（全部已驗證座標／記錄數）</h2>
+  <p class="lead">針對 README 開發路線圖三個未完成項做搜尋，<b>全部搵到官方帶座標數據集</b>：</p>
+
+  <div class="win">
+    <h3>🏥 按醫院劃分的急症室等候時間（醫管局 HA）— 18 間醫院</h3>
+    <div class="meta">fhb_rcd_1636947932221_94410｜更新 2025-10-13｜分類：衞生｜18 條記錄全數有 WGS84 座標</div>
+    <div>欄位（實測）：<span class="pill">hospName_TC/EN/SC</span><span class="pill">LATITUDE</span><span class="pill">LONGITUDE</span><span class="pill">JSON_TC = HA 實時等候時間 API 連結</span></div>
+    <div style="margin-top:6px"><code>https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id=fhb_rcd_1636947932221_94410&amp;format=geojson&amp;layer_name=geotagging</code></div>
+    <div class="use">🎯 <b>解決路線圖「醫管局醫院／急症室位置（CKAN 暫未搵到有座標嘅 HA JSON）」</b>——CSDI 有，而且連實時等候時間連結都有。v3.5 已用 OSM Overpass 補咗 23 間急症醫院；呢個官方 HA 源（18 間＋實時等候時間 API 連結）可作<b>正式升級</b>：以官方座標取代 OSM 眾包座標，並可喺前端直連 HA 等候時間數據。</div>
+  </div>
+
+  <div class="win">
+    <h3>👵 香港安老院位置（社會福利署）— 827 間</h3>
+    <div class="meta">swd_rcd_1633511356628_23572｜更新 2026-10-25（極新）｜827 條記錄</div>
+    <div>欄位（實測）：<span class="pill">NameTC/EN</span><span class="pill">AddressTC/EN</span><span class="pill">DistrictTC（18 區）</span><span class="pill">Latitude/Longitude</span><span class="pill">LORCHEnum（牌照編號）</span></div>
+    <div style="margin-top:6px"><code>https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id=swd_rcd_1633511356628_23572&amp;format=geojson&amp;layer_name=BIRCHE</code></div>
+    <div class="use">🎯 <b>解決路線圖「配套數據擴充：安老院舍」</b>——長者 Persona 可加「最近安老院／護理安老院可達性」新維度；85 個「residential care」相關社署數據集可再深挖（日間護理、暫託服務等）。</div>
+  </div>
+
+  <div class="win">
+    <h3>⛴️ 公眾碼頭（土木工程拓展署 CEDD）— 531 個點</h3>
+    <div class="meta">cedd_rcd_1696844622988_9055｜更新 2024-01-18｜531 條記錄，geometry 直接 WGS84</div>
+    <div>注意（實測）：屬性只有結構編號（<code>STRUCTURE_=HP077</code> 等），<b>冇中文名稱</b>——做「最近碼頭直線距離」夠用，顯示名稱要另外配對或標「公眾碼頭 #HP077」。</div>
+    <div style="margin-top:6px"><code>https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id=cedd_rcd_1696844622988_9055&amp;format=geojson&amp;layer_name=PMIS_point</code></div>
+    <div class="use">🎯 <b>解決路線圖「離島屋邨碼頭／巴士總站替代錨點（數碼共融）」</b>——長洲／坪洲／梅窩等 6 個「冇路去港鐵站」屋邨改用最近公眾碼頭做 3D 路線錨點；巴士一側可用運輸署「巴士路線」（2026-09-25 更新）＋「專線小巴總站位置座標」補足。</div>
+  </div>
+
+  <div class="win">
+    <h3>🌡️ 臨時避暑中心（民政事務總署）＋ 醫管局目錄系列</h3>
+    <div class="meta">臨時避暑中心 <code>had_rcd_1634542411218_91745</code>（更新 2026-10-25）——<b>項目已在用嘅同一個 dataset id，證實就係官方最乾淨嘅源</b>；另發現「臨時避寒中心」（2026-10-14）可做冬季對稱功能。</div>
+    <div>HA 系列用部門限定一擊拎齊 22 個數據集：<span class="pill">醫院/機構目錄（2026-09-17）</span><span class="pill">專科門診診所目錄</span><span class="pill">家庭醫學診所目錄＋18區籌額</span><span class="pill">中醫診所</span></div>
+    <div class="use">🎯 長者模式可升級為「急症室＋專科門診＋安老院＋避暑／避寒中心」完整醫護生活圈；建議書第 4 節互操作數據集可由 8 個增至 <b>11+ 個</b>（評分準則 25% 直接受惠）。</div>
+  </div>
+
+  <!-- ============ 8 building-level ============ -->
+  <h2 class="sec"><span class="tag">⑧</span>★ 每一棟樓嘅位置——座級定位嘅官方解法（追加深挖實測）</h2>
+  <p class="lead">針對「有無每一棟樓嘅位置」實測驗證：<b>有，而且係官方帶名＋帶高度嘅建築物多邊形</b>。
+    呢個發現可以直接取代 OSM Overpass 匹配，解決 README 已知限制 3.5「座級定位覆蓋率不保證」。</p>
+
+  <table>
+    <tr><th style="width:26%">數據集</th><th>粒度同內容（實測）</th><th style="width:28%">對座級定位嘅價值</th></tr>
+    <tr><td><b>建築物（地政總署）</b><br>landsd_rcd_1637211194312_35158<br>更新 2026-10-22</td>
+        <td><b>342,233 個建築物多邊形</b>（全港、Active），64,224 個有 <code>BuildingNameTC</code>（53,544 個 Tower）。
+            欄位：<code>BuildingNameTC/EN</code>、<code>BuildingBlockType</code>（Tower／Podium）、<code>BuildingCSUID</code>、<code>GeoRefNo</code>、<code>BaseHeight/TopHeight/Storeys/StoreysInBasement</code></td>
+        <td>★ 首選：屋邨 bbox 一次拎晒全部座多邊形，polygon centroid 就係座級座標；仲送樓高／層數</td></tr>
+    <tr><td>樓宇資料及樓齡紀錄（屋宇署）<br>bd_rcd_1631167534872_19764</td>
+        <td>51,354 個點，<code>ADDRESS_E/C</code>＋18 區＋<code>LATITUDE/LONGITUDE</code></td>
+        <td>私人樓宇為主，可做樓齡／地址輔助；公屋座唔係主對象</td></tr>
+    <tr><td>公共屋邨位置及資料（房委會）<br>housingauthority_rcd_1765182404740_4034</td>
+        <td>245 邨，每邨一點；座名只係文字欄 <code>name_of_blocks_tc</code>，另有入伙年份／座類型／單位數／EMAC</td>
+        <td>座名清單來源（同現有管線一致），配地政多邊形即得官方座級座標</td></tr>
+    <tr><td>三維空間數據 3D-BIT00／可視化三維地圖（單體化）</td>
+        <td>LOD 建築模型（tile 下載，3d.map.gov.hk API）</td>
+        <td>賽後「3D 立體視覺」升級源</td></tr>
+  </table>
+
+  <div class="note">
+    ✅ <b>實測證據</b>：① <code>BuildingNameTC LIKE '%耀康樓%'</code> → 天耀邨耀康樓（Tower，75 頂點，centroid 22.4493, 114.0039；
+    同名 Podium 另有一筆）＋逸東樓同樣搜中；② 葵涌一帶 bbox（114.125–114.150 / 22.355–22.375）一次過拎到
+    石籬邨 <b>澤蔭樓、盛蔭樓、石怡樓、興福樓、葵喜樓、百葵樓</b> 等座名，仲有華景山莊「第二十座」式逐座名。
+  </div>
+
+  <div class="win">
+    <h3>🏗️ 座級定位升級方案（取代 OSM 匹配）</h3>
+    <div class="meta">接入點：build_app.py 座級定位模組｜現況：OSM 匹配覆蓋率不保證、「第N座」跳過</div>
+    <div><b>做法</b>：每邨以 mtr_candidates 同款 bbox（約 500m）查 <code>BuildingBlockType='Tower' AND BuildingNameTC IS NOT NULL</code>
+      → 座名正規化（全形／半形、去空格）後同管線座名匹配 → polygon centroid（<code>returnGeometry=true</code> 取 rings 平均）即座級座標。</div>
+    <div class="use">🎯 三大着數：① <b>官方數據</b>（地政總署維護，覆蓋全港 342 萬… 34.2 萬幢，唔靠 OSM 眾包）；
+      ② <b>連「第N座」都有名</b>（華景山莊第二十座實測在列），OSM 跳過嘅座可以補返；
+      ③ <b>免費送樓高／層數</b>（Storeys/TopHeight）——卡片可以加「呢座幾多層」剖面資訊。注意同名 Tower/Podium 要 filter Tower＋最大面積去重；座名匹配保留現有正規化邏輯。</div>
+  </div>
+
+  <!-- ============ 9 next ============ -->
+  <h2 class="sec"><span class="tag">⑨</span>建議下一步</h2>
+  <table>
+    <tr><th style="width:8%">優先</th><th style="width:44%">行動</th><th>落地方式</th></tr>
+    <tr><td>P0</td><td>座級定位改用地政總署「建築物」多邊形（取代 OSM）</td><td>每邨 bbox → Tower+有名 → 座名正規化匹配 → centroid；「第N座」可補返，另得樓高／層數（見⑧）</td></tr>
+    <tr><td>P1</td><td>急症室 18 醫院 → 長者模式 3D 目的地（第 8 個）</td><td>file-api geojson 一次抓 18 點，接入 <code>stage2_full.py</code> Part 5 通用抓取器（動態鍵名解析已兼容）</td></tr>
+    <tr><td>P0</td><td>安老院 827 間 → 長者 Persona 新評分維度</td><td>同上；800m 密度＋最近距離，公式沿用 v3 平滑衰減</td></tr>
+    <tr><td>P1</td><td>公眾碼頭 531 點 → 離島 6 邨替代錨點</td><td>build_app.py 為 6 個離島邨改掛「最近碼頭」候選錨點，3D API 照用</td></tr>
+    <tr><td>P1</td><td>建議書數據源表更新 8→11 個</td><td>直接引用本報告⑦嘅 dataset id 同端點</td></tr>
+    <tr><td>P2</td><td>深挖社署 129 個數據集（全站第一大部門）</td><td><code>q=apiso_OrganizationName_txt:"Social Welfare Department"</code> + 引號片語，逐類盤點</td></tr>
+  </table>
+
+  <div class="note">
+    ⚠️ 使用注意（同項目已知限制一致）：CSDI 服務單次查詢上限 5,000 條；官方偶有欄位改名（2026-10 例子），
+    抓取器保留動態鍵名解析；全部分類／部門統計以 2026-10-29 實測快照為準（<code>data/csdi_catalog.json</code>）。
+  </div>
+
+</div>
+<footer>
+  實測日期 2026-10-29｜掃描腳本 csdi_portal_scan.py／scan2/3/4｜全量目錄 data/csdi_catalog.json（1,159 條）｜
+  《屋邨智配・3D 無障礙生活圈》CSDI Awards 2026 調研產物
+</footer>
+</body>
+</html>

@@ -23,6 +23,9 @@ SCHOOL_CACHE = os.path.join(BASE, "data", "normalized", "edb_schools.json")
 KG_CACHE = os.path.join(BASE, "data", "normalized", "edb_kindergartens.json")
 HOSPITAL_SRC = os.path.join(BASE, "data", "raw", "osm_hospitals.json")
 OSM_CACHE = os.path.join(BASE, "data", "normalized", "osm_block_coords.json")
+LANDSD_CACHE = os.path.join(BASE, "data", "normalized", "landsd_block_coords.json")
+LANDSD_QUERY = ("https://portal.csdi.gov.hk/server/rest/services/common/"
+                "landsd_rcd_1637211194312_35158/FeatureServer/0/query")
 GENERIC_BLOCK = re.compile(r"^\s*(第\s*[0-9一二兩三四五六七八九十]+\s*座|BLOCK\s*\d+)\s*$", re.I)
 OUT = os.path.join(BASE, "index.html")   # GitHub Pages 根路徑直接開 app
 K_NEAREST = 3
@@ -80,8 +83,80 @@ def smooth_score(d, d0, hl):
     return round(max(5.0, 100.0 * math.exp(-math.log(2) / hl * (d - d0))), 1)
 
 
+def ensure_landsd_block_coords(data):
+    """官方座級定位（主要來源）：地政總署「建築物」數據集（2026-10-22 更新）。
+    BuildingNameTC 逐座名＋BuildingBlockType（Tower/Podium）＋Storeys/TopHeight，
+    polygon centroid 作座級座標。按名批量查（每批 25 個），快取 landsd_block_coords.json。
+    注意：同名樓宇跨屋邨存在（實測兩個耀富樓），故每座須距屋邨中心 ≤800m 才採用。"""
+    cache = {}
+    if os.path.exists(LANDSD_CACHE):
+        with open(LANDSD_CACHE, encoding="utf-8") as f:
+            cache = json.load(f)
+    names = sorted({(b.get("n") or "").strip() for e in data for b in e.get("blocks", [])
+                    if (b.get("n") or "").strip() and not GENERIC_BLOCK.match(b.get("n") or "")})
+    todo = [n for n in names if n not in cache]
+    if todo:
+        print(f"  LandsD 座級：{len(todo)} 個新座名待查（分 {len(todo)//25 + 1} 批）…", flush=True)
+        for i in range(0, len(todo), 25):
+            batch = todo[i:i+25]
+            where = "BuildingNameTC IN (" + ",".join("'" + n.replace("'", "''") + "'" for n in batch) + ")"
+            qs = urllib.parse.urlencode({
+                "where": where,
+                "outFields": "BuildingNameTC,BuildingBlockType,Storeys,TopHeight",
+                "returnCentroid": "true", "returnGeometry": "false",
+                "outSR": "4326", "f": "json"})
+            got = None
+            for attempt in range(3):
+                try:
+                    req = urllib.request.Request(LANDSD_QUERY + "?" + qs,
+                                                 headers={"User-Agent": "HKGV-prototype/1.0 (CSDI Awards 2026)"})
+                    with urllib.request.urlopen(req, timeout=60) as r:
+                        got = json.loads(r.read().decode("utf-8", "replace"))
+                    break
+                except Exception:
+                    if attempt < 2:
+                        time.sleep(2 * (attempt + 1))
+            if not got or "error" in (got or {}):
+                continue
+            for ft in got.get("features", []):
+                a = ft.get("attributes") or {}
+                c = ft.get("centroid") or {}
+                nm = (a.get("BuildingNameTC") or "").strip()
+                if not nm or c.get("x") is None:
+                    continue
+                cache.setdefault(nm, []).append({
+                    "lat": round(c["y"], 5), "lng": round(c["x"], 5),
+                    "t": a.get("BuildingBlockType") or "",
+                    "s": a.get("Storeys"), "h": a.get("TopHeight")})
+            time.sleep(0.3)
+        with open(LANDSD_CACHE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False)
+    n_hit = 0
+    for e in data:
+        if e.get("lat") is None:
+            continue
+        for b in e.get("blocks", []):
+            cands = cache.get((b.get("n") or "").strip())
+            if not cands:
+                continue
+            ranked = sorted(
+                ((haversine(e["lat"], e["lng"], c["lat"], c["lng"]), c) for c in cands),
+                key=lambda x: (x[1].get("t") != "Tower", x[0]))   # Tower 優先，再按距離
+            dist, best = ranked[0]
+            if dist > 800:
+                continue
+            b["lat"], b["lng"] = best["lat"], best["lng"]
+            if best.get("s") is not None:
+                b["s"] = best["s"]
+            if best.get("h") is not None:
+                b["h"] = round(float(best["h"]), 1)
+            n_hit += 1
+    print(f"  LandsD 座級座標：套用 {n_hit} 座（官方，快取 {os.path.relpath(LANDSD_CACHE, BASE)}）", flush=True)
+    return n_hit
+
+
 def ensure_block_coords(data):
-    """用 OSM Overpass 為 PRH 專名座（耀康樓等）補座級座標。
+    """用 OSM Overpass 為 PRH 專名座（耀康樓等）補座級座標（LandsD 未覆蓋時嘅 fallback）。
     批次模式：每 20 個屋邨併一條查詢（全港約 13 條請求），事後按
     「座名精確匹配 + 距屋邨中心 ≤400m」歸配。跳過「第N座／BLOCK N」通用名（易誤配）。
     快取 data/normalized/osm_block_coords.json（key: source|邨名）。
@@ -154,6 +229,8 @@ def ensure_block_coords(data):
         key = e["source"] + "|" + e["name_tc"]
         coords = cache.get(key) or {}
         for b in e.get("blocks", []):
+            if b.get("lat") is not None:      # LandsD 官方座標優先，唔覆蓋
+                continue
             pos = coords.get((b["n"] or "").strip())
             if pos:
                 b["lat"], b["lng"] = pos
@@ -212,7 +289,8 @@ schools = load_schools()
 kgs = load_kindergartens()
 ae_hosp = load_ae_hospitals()
 
-# OSM 座級定位（首跑約 10 分鐘，快取後即時）
+# 座級定位：官方 LandsD「建築物」優先，OSM 作 fallback（首跑 LandsD 約 70 批查詢）
+ensure_landsd_block_coords(data)
 ensure_block_coords(data)
 
 n_mtr = n_sch = 0

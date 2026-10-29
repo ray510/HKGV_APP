@@ -74,7 +74,7 @@ python -m http.server 8642
 | 🏥 急症醫院可達性 | OSM `amenity=hospital`＋`emergency=yes`：80 間醫院（23 間設急症室），每邨顯示最近急症醫院距離，長者模式「長者/會堂」維度加入 30% 急症可達性 |
 | 🔗 多段路線鏈 | 「育兒返工鏈」（屋邨→託管→港鐵）／「護老返工鏈」（屋邨→長者中心→港鐵）：3 停靠點一次 solve，編號地圖釘＋分段繁中導航＋總爬升 |
 | 剖面 hover 聯動 | 滑鼠沿高程剖面左右移動，地圖上同步顯示發光光點——即時睇出「邊一段上斜、邊個位落地下」|
-| 🏢 座別明細（深入到座） | 每個屋邨可展開**逐座樓**數據：座名、單位數、有𨋢單位比例、樓層範圍、平均面積——直接回應「揀樓前知呢座有冇𨋢直達」核心痛點；有座級座標嘅座（OSM 建築物匹配）可按「🚶 由呢座出發」規劃 3D 路線，並在地圖釘出各座位置（全幢有𨋢＝綠釘／部分＝橙釘） |
+| 🏢 座別明細（深入到座） | 每個屋邨可展開**逐座樓**數據：座名、單位數、有𨋢比例、樓層範圍、平均面積、**樓高（層／米，地政總署官方數據）**；座級位置用**官方「建築物」數據集**（1,517/1,713 座＝88.6%，其餘 OSM 補），可按「🚶 由呢座出發」規劃 3D 路線＋地圖座釘（全幢有𨋢＝綠／部分＝橙） |
 | 📊 比較籃＋列印報告 | 最多 3 個屋邨並排 PK（單位數／升降機覆蓋率／評分分項／三類可達性），一鍵列印 A4 社工／家庭揀樓評估報告（@media print 排版，前線社工可印紙本畀唔識用手機嘅長者） |
 | 🔗 URL Hash 深連結 | 每條規劃好的路線自動寫入 `#estate=葵涌邨&mode=2&dest=mtr`，評審由 PDF 建議書超連結一鍵跳入場景、自動畫好 3D 路線 |
 | 🤖 AI 選樓顧問（廣東話） | 【預設隱藏——設 `SHOW_AI_ADVISOR = true` 重啟】自然語言輸入家庭需要，規則引擎解析後自動套用篩選＋切換出行模式；正式版採用 LLM 函數調用 |
@@ -129,7 +129,8 @@ python -m http.server 8642
         ├── edb_schools.json         ← 697 間資助小學（含座標，build 快取）
         ├── edb_kindergartens.json   ← 1,224 間幼稚園（去重，build 快取）
         ├── lcsd_playgrounds.json    ← 44 個 LCSD 共融遊樂場（DMS 座標快取）
-        ├── osm_block_coords.json    ← 座級座標快取（OSM 建築物匹配）
+        ├── landsd_block_coords.json ← 座級座標快取（地政總署「建築物」，官方）
+        ├── osm_block_coords.json    ← 座級座標快取（OSM fallback）
         ├── swd_care_points.json     ← 311 個在校課後託管服務點（管線快取）
         ├── lph_projects_enriched.json
         └── all_estates_enriched.json ← ★ 258 屋邨 + v3 評分（sub_scores/density_800m，餵前端）
@@ -195,6 +196,7 @@ python -m http.server 8642
 | 11 | 共融遊樂場（pefac） | 康樂及文化事務署 | `https://www.lcsd.gov.hk/datagovhk/facility/facility-pefac.json`（44 個，DMS 座標）|
 | 12 | 實時天氣／警告 | 香港天文台 | `data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread`＋`warnsum`（前端直連，CORS 開放）|
 | 13 | 醫院及急症室（80 間、23 間急症） | OpenStreetMap 貢獻者 | Overpass API `amenity=hospital`（`emergency=yes` 即急症；醫管局無公開設施座標，CSDI 無 ha 圖層、DATA.GOV.HK 只有統計）|
+| 14 | 建築物（342,233 多邊形，64,224 有樓名，Tower 53,544） | 地政總署 | CSDI FeatureServer `landsd_rcd_1637211194312_35158`：`BuildingNameTC/EN`、`BuildingBlockType`（Tower/Podium）、`Storeys`、`TopHeight`——座級座標＋樓高官方來源 |
 
 全部經 [DATA.GOV.HK](https://data.gov.hk) / [CSDI Portal](https://portal.csdi.gov.hk) 公開發布；三維路線 API 已實測 CORS 開放（有反映 `Access-Control-Allow-Origin`），前端可直連、無需後端代理。
 
@@ -299,7 +301,7 @@ python -m http.server 8642
 1. **必須以 http(s) 開啟**：3D 路線 API 由 `file://` 調用會被瀏覽器 CORS 擋。請 `python -m http.server` 後經 `http://127.0.0.1:8642/` 開啟（或直接用 GitHub Pages 線上版）。
 2. **3 個新屋邨座標為人工核定**：古雋邨（古洞北）、華富北邨（薄扶林）、曉茵邨（秀茂坪）房委會單位檔無座標，已以核定座標補全（`coords_note` 欄位註明來源與說明），全港 258 邨 100% 可上圖、可規劃路線；日後可用 CSDI 地址搜尋服務覆核。
 3. **6 個離島／無鐵路覆蓋屋邨無法規劃港鐵路線**：長貴邨（長洲）、金坪邨（坪洲）、銀灣邨（梅窩）、馬坑邨（赤柱）、龍田邨、雅寧苑 —— **地理事實，非 bug**。原型會如實說明。可考慮日後加「渡輪碼頭」作為替代錨點。
-3.5. **座級定位依賴 OSM 匹配**：座級座標來自 OpenStreetMap 建築物名稱匹配（© OSM 貢獻者，ODbL 授權），覆蓋率不保證——未匹配座（常見於「第N座」通用名或 OSM 未收錄新邨）僅顯示數據無地圖釘位；座級路線起點為建築物中心，非單位門口。
+3.5. **座級定位＝官方 LandsD「建築物」為主**：地政總署 FeatureServer 按 `BuildingNameTC` 批量匹配（Tower 優先、同名須距屋邨中心 ≤800m 防跨邨誤配），**1,517/1,713 座（88.6%）**取得官方多邊形中心＋層數／樓高；餘下 11% 以 OSM 補（`HKGV_SKIP_OSM` 可跳過）。未匹配座僅顯示數據無地圖釘；座級路線起點為建築物中心，非單位門口。
 4. **距離為直線（haversine）近似**：評分卡距離非實測步行距離；實測路線以 3D API 為準。**錨點設計**：港鐵錨點取「場地多邊形邊界最近點」（點到線段投影）＋「站體中心」**雙錨點 fallback**，前端逐錨點嘗試——bbox 中心可能跌入站體範圍令網絡 snap 唔到（實例：天耀一邨→天水圍站直線 73m，邊界點實測 193m ✅，bbox 中心 ✗），邊界點亦可能面向路軌（葵涌邨→大窩口站直線 150m，中心實測 696m ✅，邊界點 ✗）。
 5. **API 紀錄上限**：CSDI 服務單次查詢上限 5,000 條紀錄；管線以 18 區分檔下載、前端按場地逐個調用，已避開。
 6. **舊座標系歷史數據**：個別數據集含 HK1980（EPSG:2326）EASTING/NORTHING 欄位，已於管線層處理；3D API 統一 `outSR=4326` 直出 WGS84。
@@ -348,4 +350,4 @@ python -m http.server 8642
 
 ---
 
-*最後更新：2026-10-29｜原型版本 v3.6（index.html, 1.3 MB：11 個政府／OSM 數據源＋HKO 天氣 API、5 維評分（含幼稚園密度）＋4 Persona、8 個 3D 目的地（幼稚園 800m／急症醫院 5km 全部列清單逐間選）、多段路線鏈、剖面 hover 聯動、天氣 × 避雨路線聯動、258 邨 100% 覆蓋）*
+*最後更新：2026-10-29｜原型版本 v3.7（index.html, 1.4 MB：11 個政府／OSM 數據源＋HKO 天氣 API、5 維評分（含幼稚園密度）＋4 Persona、8 個 3D 目的地（幼稚園 800m／急症醫院 5km 全部列清單逐間選）、多段路線鏈、剖面 hover 聯動、天氣 × 避雨路線聯動、258 邨 100% 覆蓋、座級定位升級官方建築物數據 88.6%）*

@@ -554,12 +554,13 @@ function toggleBlocks(key, btn){
     const pct = b.u ? Math.round(b.e / b.u * 100) : 0;
     const cls = pct >= 100 ? "good" : (pct > 0 ? "" : "bad");
     const coord = b.lat != null;
+    const hgt = (b.s != null ? `${b.s} 層` : "?") + (b.h != null ? `／${b.h}m` : "");
     return `<tr><td>${b.n}</td><td>${b.u}</td><td><span class="pill ${cls}">${pct}%</span></td>` +
-      `<td>${b.f1 ?? "?"}–${b.f2 ?? "?"}</td><td>${b.a ?? "?"} ㎡</td>` +
+      `<td>${b.f1 ?? "?"}–${b.f2 ?? "?"}</td><td>${b.a ?? "?"} ㎡</td><td>${hgt}</td>` +
       (coord ? `<td><button class="blkGo" data-n="${b.n}">🚶 由呢座出發</button></td>` : "<td></td>") + `</tr>`;
   }).join("");
-  boxEl.innerHTML = `<table class="blkT"><tr><th>座</th><th>單位</th><th>有𨋢</th><th>樓層</th><th>均面</th><th>路線</th></tr>${rows}</table>` +
-    `<div class="hint">有𨋢 %＝該座有升降機服務嘅單位比例。座級位置由 OSM 建築物匹配，只標示可配對座名。</div>`;
+  boxEl.innerHTML = `<table class="blkT"><tr><th>座</th><th>單位</th><th>有𨋢</th><th>樓層</th><th>均面</th><th>樓高</th><th>路線</th></tr>${rows}</table>` +
+    `<div class="hint">有𨋢 %＝該座有升降機服務嘅單位比例；樓高（層／米）來自地政總署「建築物」數據集；座級位置：官方建築物多邊形中心（LandsD），未覆蓋時以 OSM 補。</div>`;
   boxEl.style.display = "block";
   btn.textContent = "▲ 收起座別明細";
   boxEl.querySelectorAll(".blkGo").forEach(g => g.onclick = () => {
@@ -573,7 +574,7 @@ function toggleBlocks(key, btn){
       const full = b.u && b.e >= b.u;
       return L.circleMarker([b.lat, b.lng], {radius: 6, color: full ? "#0f9d8a" : "#b45309",
         fillOpacity: .85, weight: 2})
-        .bindPopup(`<b>${e.name_tc} ${b.n}</b><br>${b.u} 個單位｜有𨋢 ${b.e}/${b.u}（${Math.round(b.e/b.u*100)}%）<br>樓層 ${b.f1 ?? "?"}–${b.f2 ?? "?"}`);
+        .bindPopup(`<b>${e.name_tc} ${b.n}</b><br>${b.u} 個單位｜有𨋢 ${b.e}/${b.u}（${Math.round(b.e/b.u*100)}%）<br>樓層 ${b.f1 ?? "?"}–${b.f2 ?? "?"}${b.s != null ? `｜樓高 ${b.s} 層${b.h != null ? "／" + b.h + "m" : ""}` : ""}`);
     })).addTo(map);
     map.fitBounds(L.featureGroup(pts.map(b => [b.lat, b.lng])).getBounds().pad(.3), {maxZoom: 17});
   }
