@@ -115,7 +115,7 @@
     <p class="sub">全港公屋 × 簡約公屋智能配對｜CSDI 三維行人路線實測出行</p>
     <div class="statbar" id="statbar"></div>
 
-    <div class="panel">
+    <div class="panel" id="aiPanel">
       <b class="t">🤖 AI 選樓顧問（廣東話）</b>
       <div class="chips" id="aiExamples">
         <button class="chip">一家四口，有坐輪椅嘅長者同讀小二嘅小朋友，想近港鐵</button>
@@ -249,6 +249,7 @@ const API = "https://mapapi.hkmapservice.gov.hk/PedRoute/NAServer/route/solve";
 let mode = 2;
 const MAX_CARDS = 60;
 let aiAreaMin = 0;            // AI 顧問設定嘅平均面積門檻（㎡）
+const SHOW_AI_ADVISOR = false; // AI 選樓顧問開關（規則引擎原型；LLM 函數調用版做好後設 true 重啟）
 
 // 每個屋邨嘅唯一 key（必須喺所有用 _key 嘅邏輯之前賦值）
 const keyOf = e => e.source + "|" + e.name_tc;
@@ -860,6 +861,7 @@ document.querySelectorAll("#aiExamples .chip").forEach(c => c.onclick = () => {
   document.getElementById("aiInput").value = c.textContent;
   aiApply(c.textContent);
 });
+if (!SHOW_AI_ADVISOR) document.getElementById("aiPanel").style.display = "none";
 
 // ---- URL Hash 深連結：#estate=葵涌邨&mode=2&dest=mtr → 自動畫好 3D 路線 ----
 (function(){
