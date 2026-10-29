@@ -94,11 +94,11 @@ def smooth_distance_score(dist_m, full_radius=200.0, half_life=1000.0):
 
 
 def compute_living_circle_metrics(mtr_d, sch_d, sch_n800, kg_n800, care_d, care_n800,
-                                  elderly_d, shelter_d, elev_u, total_u):
+                                  elderly_d, shelter_d, hosp_d, elev_u, total_u):
     """生活圈評分 v3.2：五維標準化 0~100 後加權。
     小學 = 60% 最近距離 + 25% 800m 小學密度（5 間滿分）+ 15% 800m 幼稚園密度（3 間滿分）；
     託管 = 80% 最近距離 + 20% 密度（3 間滿分）；
-    長者/會堂 = 40% 長者日間護理單位 + 60% 社區會堂（避暑中心）平滑分；
+    長者/會堂 = 30% 長者日間護理單位 + 40% 社區會堂（避暑中心）+ 30% 急症醫院（OSM emergency=yes）；
     升降機 = 單位級覆蓋率 ×100。
     預設（育兒家庭）= 港鐵 35% + 小學 25% + 託管 15% + 長者/會堂 10% + 升降機 15%。"""
     s_mtr = smooth_distance_score(mtr_d, 200, 900)
@@ -107,8 +107,9 @@ def compute_living_circle_metrics(mtr_d, sch_d, sch_n800, kg_n800, care_d, care_
                   + 0.15 * min(1.0, (kg_n800 or 0) / 3.0) * 100.0, 1)
     s_care = round(0.8 * smooth_distance_score(care_d, 200, 1200)
                    + 0.2 * min(1.0, (care_n800 or 0) / 3.0) * 100.0, 1)
-    s_elder = round(0.4 * smooth_distance_score(elderly_d, 200, 1000)
-                    + 0.6 * smooth_distance_score(shelter_d, 200, 1000), 1)
+    s_elder = round(0.30 * smooth_distance_score(elderly_d, 200, 1000)
+                    + 0.40 * smooth_distance_score(shelter_d, 200, 1000)
+                    + 0.30 * smooth_distance_score(hosp_d, 300, 1500), 1)
     s_elev = round(elev_u / total_u * 100.0, 1) if total_u > 0 else 100.0
     score = round(0.35 * s_mtr + 0.25 * s_sch + 0.15 * s_care
                   + 0.10 * s_elder + 0.15 * s_elev, 1)
@@ -500,6 +501,51 @@ def build_community():
     return elderly, halls
 
 
+HOSPITAL_CACHE = os.path.join(RAW, "osm_hospitals.json")
+SZ_SKIP = ("深圳市", "罗湖", "人民医院", "远东", "希思", "盐田", "福田", "南山", "宝安", "龙岗", "珠海", "广州")
+
+
+def build_hospitals():
+    """醫院及急症室：OSM Overpass（amenity=hospital，emergency=yes 即設急症室）。
+    醫管局無公開設施座標（CSDI 無 ha 圖層、DATA.GOV.HK 只有統計），故用 OSM（ODbL）。
+    快取 data/raw/osm_hospitals.json；抓取失敗回 []（評分該維度退中位數）。"""
+    if os.path.exists(HOSPITAL_CACHE):
+        with open(HOSPITAL_CACHE, encoding="utf-8") as f:
+            return json.load(f)
+    q = ('[out:json][timeout:60];(node["amenity"="hospital"](22.15,113.83,22.56,114.45);'
+         'way["amenity"="hospital"](22.15,113.83,22.56,114.45););out center tags 400;')
+    d = None
+    for attempt in range(3):
+        try:
+            d = fetch_json("https://overpass-api.de/api/interpreter?data=" + urllib.parse.quote(q), timeout=90)
+            break
+        except Exception as e:
+            if attempt < 2:
+                print(f"Part 6 OSM 重試 {attempt+1}/2（{type(e).__name__}）…", flush=True)
+                time.sleep(4 * (attempt + 1))
+            else:
+                print(f"Part 6 OSM 醫院抓取失敗 {type(e).__name__}，跳過", flush=True)
+    if d is None:
+        return []
+    out = []
+    for el in d.get("elements", []):
+        t = el.get("tags") or {}
+        nm = (t.get("name") or "").strip()
+        if not nm or any(s in nm for s in SZ_SKIP):
+            continue
+        lat = el.get("lat") or (el.get("center") or {}).get("lat")
+        lng = el.get("lon") or (el.get("center") or {}).get("lon")
+        if lat is None or not (22.15 < lat < 22.56 and 113.83 < lng < 114.45):
+            continue
+        zh = nm.split(" ")[0] if any("\u4e00" <= ch <= "\u9fff" for ch in nm) else nm
+        out.append({"zh": zh, "en": nm, "lat": float(lat), "lng": float(lng),
+                    "ae": str(t.get("emergency", "")).lower() == "yes"})
+    with open(HOSPITAL_CACHE, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False)
+    print(f"Part 6 完成：{len(out)} 間醫院（{sum(1 for x in out if x['ae'])} 間設急症室）", flush=True)
+    return out
+
+
 def main():
     prh = build_prh_estates()
     schools = build_schools()
@@ -508,6 +554,8 @@ def main():
     care = build_care()
     mtr = build_mtr_venues()
     elderly, halls = build_community()
+    hospitals = build_hospitals()
+    ae_hospitals = [h for h in hospitals if h.get("ae")]
 
     # 託管點池快取（供 build_app.py／日後前端密度展示用）
     with open(os.path.join(NORM, "swd_care_points.json"), "w", encoding="utf-8") as f:
@@ -560,6 +608,8 @@ def main():
         c, cn = nearest_and_count(e["lat"], e["lng"], care)
         el, eln = nearest_and_count(e["lat"], e["lng"], elderly)
         sh, shn = nearest_and_count(e["lat"], e["lng"], halls)
+        ae, aen = nearest_and_count(e["lat"], e["lng"], ae_hospitals)
+        hp, hpn = nearest_and_count(e["lat"], e["lng"], hospitals)
         e["nearest_mtr"] = dict(m, count_800m=mn) if m else None
         e["nearest_school"] = {"zh": s["item"]["zh"], "en": s["item"].get("en"),
                                "lat": s["item"]["lat"], "lng": s["item"]["lng"],
@@ -584,12 +634,19 @@ def main():
                                 "distance_m": sh["distance_m"], "count_800m": shn,
                                 "heat_shelter": bool(sh["item"].get("heat_shelter")),
                                 "accessible": sh["item"].get("accessible")} if sh else None
+        e["nearest_ae_hospital"] = {"zh": ae["item"]["zh"], "lat": ae["item"]["lat"],
+                                    "lng": ae["item"]["lng"], "distance_m": ae["distance_m"],
+                                    "count_800m": aen} if ae else None
+        e["nearest_hospital"] = {"zh": hp["item"]["zh"], "lat": hp["item"]["lat"],
+                                 "lng": hp["item"]["lng"], "distance_m": hp["distance_m"],
+                                 "ae": bool(hp["item"].get("ae"))} if hp else None
         e["score"], e["sub_scores"] = compute_living_circle_metrics(
             m["distance_m"] if m else None,
             s["distance_m"] if s else None, sn, kgn,
             c["distance_m"] if c else None, cn,
             el["distance_m"] if el else None,
             sh["distance_m"] if sh else None,
+            ae["distance_m"] if ae else None,
             e["elevator_units"], e["total_units"])
         e["density_800m"] = {"schools": sn, "cares": cn}
     all_est.sort(key=lambda x: (-x["score"], -(x["total_units"] or 0)))

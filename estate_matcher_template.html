@@ -311,6 +311,7 @@ const dist2 = (e,k) => k==="mtr" ? (e.nearest_mtr?.distance_m ?? null)
                     : k==="sch" ? (e.nearest_school?.distance_m ?? null)
                     : k==="eld" ? (e.nearest_elderly?.distance_m ?? null)
                     : k==="shel" ? (e.nearest_shelter?.distance_m ?? null)
+                    : k==="hosp" ? (e.nearest_ae_hospital?.distance_m ?? null)
                     : (e.nearest_care?.distance_m ?? null);
 const smoothScore = (d, d0, hl) => d == null ? 50
   : (d <= d0 ? 100 : Math.max(5, 100 * Math.exp(-Math.log(2)/hl*(d-d0))));
@@ -324,8 +325,9 @@ function subs(e){
       + 0.15*Math.min(1,(e.kindergartens_800m??0)/3)*100)*10)/10,
     care: Math.round((0.8*smoothScore(dist2(e,"care"),200,1200)
       + 0.2*Math.min(1,(e.density_800m?.cares??0)/3)*100)*10)/10,
-    elderly_shelter: Math.round((0.4*smoothScore(dist2(e,"eld"),200,1000)
-      + 0.6*smoothScore(dist2(e,"shel"),200,1000))*10)/10,
+    elderly_shelter: Math.round((0.3*smoothScore(dist2(e,"eld"),200,1000)
+      + 0.4*smoothScore(dist2(e,"shel"),200,1000)
+      + 0.3*smoothScore(dist2(e,"hosp"),300,1500))*10)/10,
     elevator: t ? Math.round((e.elevator_units||0)/t*1000)/10 : 100
   };
 }
@@ -334,7 +336,7 @@ const WEIGHTS = {
   family:  {mtr:.35, school:.25, care:.15, elder:.10, elev:.15, label:"育兒家庭",
             hint:"港鐵 35% ＋ 小學 25%（含 800m 幼稚園密度）＋ 託管 15% ＋ 長者/會堂 10% ＋ 升降機 15%"},
   elder:   {mtr:.25, school:0,   care:0,   elder:.30, elev:.45, label:"長者安居",
-            hint:"升降機 45% ＋ 長者中心/避暑會堂 30% ＋ 港鐵 25%"},
+            hint:"升降機 45% ＋ 長者中心/避暑會堂/急症醫院 30% ＋ 港鐵 25%"},
   commute: {mtr:.75, school:0,   care:0,   elder:0,   elev:.25, label:"極速通勤",
             hint:"港鐵 75% ＋ 升降機 25%"},
   balanced:{mtr:.20, school:.20, care:.20, elder:.20, elev:.20, label:"全齡均衡",
@@ -450,7 +452,7 @@ function render(){
     const nBlk = (e.blocks||[]).length;
     const blkBtn = nBlk ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
     const el = document.createElement("div"); el.className = "card";
-    const dests = ["mtr","sch","care","eld","shel","kg","pg"].filter(d => e.lat != null && DEST[d].pool(e).length);
+    const dests = ["mtr","sch","care","eld","shel","kg","pg","hosp"].filter(d => e.lat != null && DEST[d].pool(e).length);
     const routeBtns = dests.length
       ? `<div class="dchips">` + dests.map(d => {
           const cnt = d === "kg" ? ` ${DEST[d].pool(e).length}` : "";
@@ -492,6 +494,7 @@ function render(){
       <div class="row">
         ${e.kindergartens_800m != null ? `<span class="pill">🧒 800m 幼稚園 ${e.kindergartens_800m} 間${e.nearest_kg_name_tc ? `（最近 ${e.nearest_kg_dist_m}m）` : ""}</span>` : ""}
         ${e.nearest_pg_name_tc ? `<span class="pill">🎠 ${e.nearest_pg_name_tc} ${e.nearest_pg_dist_m}m</span>` : ""}
+        ${e.nearest_ae_hospital ? `<span class="pill">🏥 急症 ${e.nearest_ae_hospital.zh} ${e.nearest_ae_hospital.distance_m}m</span>` : ""}
       </div>
       ${routeBtns}${chainBtns}${addCmpBtn}${blkBtn}`;
     box.appendChild(el);
@@ -745,8 +748,9 @@ const DEST = {
   kg:   {label:"👶 幼稚園",  kind:"幼稚園",   pool:e => (e.nearest_kgs||[]).map(k => ({zh:k.n, lat:k.lat, lng:k.lng, distance_m:k.d}))},
   pg:   {label:"🎠 遊樂場",  kind:"共融遊樂場", pool:e => (e.nearest_pg_name_tc && e.nearest_pg_lat != null
           ? [{zh:e.nearest_pg_name_tc, lat:e.nearest_pg_lat, lng:e.nearest_pg_lng, distance_m:e.nearest_pg_dist_m}] : [])},
+  hosp: {label:"🏥 急症室",  kind:"急症醫院", pool:e => [e.nearest_ae_hospital].filter(Boolean)},
 };
-const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場"};
+const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場", hosp:"🏥 急症室"};
 
 async function planRoute(key, dest = "mtr", origin = null, destOverride = null){
   const seq = ++planSeq;
@@ -1045,6 +1049,7 @@ document.getElementById("cmpOpen").onclick = () => {
     row("最近託管點", e => e.nearest_care ? `${e.nearest_care.zh}<div class="mini">${fmtD(e.nearest_care.distance_m)}</div>` : "-") +
     row("最近長者中心", e => e.nearest_elderly ? `${e.nearest_elderly.zh}<div class="mini">${fmtD(e.nearest_elderly.distance_m)}</div>` : "-") +
     row("最近社區會堂", e => e.nearest_shelter ? `${e.nearest_shelter.zh}${e.nearest_shelter.heat_shelter ? "（避暑中心）" : ""}<div class="mini">${fmtD(e.nearest_shelter.distance_m)}</div>` : "-") +
+    row("最近急症醫院", e => e.nearest_ae_hospital ? `${e.nearest_ae_hospital.zh}<div class="mini">${fmtD(e.nearest_ae_hospital.distance_m)}</div>` : "-") +
     row("800m 幼稚園", e => e.kindergartens_800m != null
       ? `${e.kindergartens_800m} 間<div class="mini">最近 ${e.nearest_kg_name_tc || "-"} ${fmtD(e.nearest_kg_dist_m)}</div>` : "-") +
     row("共融遊樂場", e => e.nearest_pg_name_tc
