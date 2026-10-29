@@ -60,7 +60,30 @@
     "http_download": 91,
     "kml": 2
   },
-  "extra_winners": {},
+  "extra_winners": {
+    "ha_directory": {
+      "title_tc": "醫院管理局轄下專科門診診所目錄",
+      "id": "fhb_rcd_1637120936400_35338",
+      "updated": "2026-09-17",
+      "urls": {
+        "FeatureServer": "https://portal.csdi.gov.hk/server/rest/services/common/fhb_rcd_1637120936400_35338/FeatureServer",
+        "WFS": "https://portal.csdi.gov.hk/server/services/common/fhb_rcd_1637120936400_35338/MapServer/WFSServer?service=wfs&request=GetCapabilities",
+        "WMS": "https://portal.csdi.gov.hk/server/services/common/fhb_rcd_1637120936400_35338/MapServer/WMSServer?service=wms&request=GetCapabilities",
+        "geojson": "https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id=fhb_rcd_1637120936400_35338&format=geojson&layer_name=SOCLINIC"
+      }
+    },
+    "heat_shelter": {
+      "title_tc": "臨時避暑中心",
+      "id": "had_rcd_1634542411218_91745",
+      "updated": "2026-10-25",
+      "urls": {
+        "FeatureServer": "https://portal.csdi.gov.hk/server/rest/services/common/had_rcd_1634542411218_91745/FeatureServer",
+        "WFS": "https://portal.csdi.gov.hk/server/services/common/had_rcd_1634542411218_91745/MapServer/WFSServer?service=wfs&request=GetCapabilities",
+        "WMS": "https://portal.csdi.gov.hk/server/services/common/had_rcd_1634542411218_91745/MapServer/WMSServer?service=wms&request=GetCapabilities",
+        "geojson": "https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id=had_rcd_1634542411218_91745&format=geojson&layer_name=HADTHS"
+      }
+    }
+  },
   "sample_features": {
     "a_and_e": {
       "fields": [
