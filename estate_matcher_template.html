@@ -392,7 +392,7 @@ document.getElementById("statbar").innerHTML =
 // 地圖 popup 共用：單位數只對有數據類型顯示；居屋顯示落成年份、私人顯示普查人口
 function popupHtml(e, withProfile){
   const stn = ST_NAME[e.source_type || e.source] || "";
-  const units = e.total_units != null ? `｜${e.total_units.toLocaleString()} 個單位`
+  const units = e.total_units != null ? `｜${e.total_units.toLocaleString()} 個單位${e.source_type === "HOS" && e.hos_year ? `（${e.hos_year} 落成）` : ""}`
     : e.source_type === "HOS" ? (e.hos_year ? `｜居屋 ${e.hos_year} 落成` : "｜居屋屋苑")
     : e.source_type === "PRV" ? (e.census_pop ? `｜人口 ${e.census_pop.toLocaleString()}（2021 普查）` : "｜私人屋苑")
     : e.source_type === "VLG" ? "｜鄉村（村級錨點）" : "";
@@ -513,18 +513,19 @@ function render(){
       </div>
       <div class="row">
         ${hasUnits ? `<span class="pill">${(e.total_units||0).toLocaleString()} 個單位</span>
-        <span class="pill">${e.blocks_count||"?"} 座</span>
-        <span class="pill">樓層 ${e.min_floor??"?"}–${e.max_floor??"?"}</span>
+        <span class="pill">${e.blocks_count||"?"} 座</span>` : ""}
+        ${e.source_type === "HOS" ? `${e.hos_scheme ? `<span class="pill">🔑 ${e.hos_scheme}</span>` : ""}${e.hos_year ? `<span class="pill">落成 ${e.hos_year}</span>` : ""}${e.hos_area_range ? `<span class="pill">實用約 ${e.hos_area_range} m²</span>` : ""}` : ""}
+        ${e.source_type !== "HOS" && hasUnits ? `<span class="pill">樓層 ${e.min_floor??"?"}–${e.max_floor??"?"}</span>
         <span class="pill">平均 ${e.avg_area??"?"} m²</span>` : ""}
-        ${e.source_type === "HOS" ? `${e.hos_scheme ? `<span class="pill">🔑 ${e.hos_scheme}</span>` : ""}${e.hos_year ? `<span class="pill">落成 ${e.hos_year}</span>` : ""}${e.blocks_count ? `<span class="pill">${e.blocks_count} 座</span>` : ""}` : ""}
         ${e.source_type === "PRV" ? `${e.census_pop ? `<span class="pill">人口 ${e.census_pop.toLocaleString()}（2021 普查）</span>` : ""}${e.census_income_md ? `<span class="pill">中位月入 $${Number(e.census_income_md).toLocaleString()}</span>` : ""}` : ""}
         ${e.source_type === "VLG" ? `<span class="pill">鄉村分界錨點</span>` : ""}
       </div>
-      ${hasUnits ? `<div class="row">
+      ${hasUnits && e.non_elevator_units != null ? `<div class="row">
         ${ok ? '<span class="pill good">✓ 全幢有升降機</span>'
              : `<span class="pill bad">✗ ${e.non_elevator_units} 個單位冇升降機</span>`}
         ${e.lat == null ? '<span class="pill noc">暫無座標，未能規劃路線</span>' : ""}
       </div>` : (e.lat == null ? `<div class="row"><span class="pill noc">暫無座標，未能規劃路線</span></div>` : "")}
+      ${e.hos_blocks ? `<div class="d" style="font-size:11px;margin:-4px 0 6px">座：${e.hos_blocks}</div>` : ""}
       <div class="row">
         ${m ? `<span class="pill">🚇 ${m.zh} ${m.distance_m}m</span>` : ""}
         ${e.nearest_elderly ? `<span class="pill">👵 長者中心 ${e.nearest_elderly.distance_m}m</span>` : ""}
@@ -1102,9 +1103,13 @@ document.getElementById("cmpOpen").onclick = () => {
     row("升降機覆蓋率", e => { const t = e.total_units || 0; return t ? Math.round((e.elevator_units||0)/t*100) + "%" : "N/A"; }) +
     row("冇升降機單位", e => e.non_elevator_units != null ? (e.non_elevator_units||0).toLocaleString() : "N/A") +
     row("平均面積", e => e.avg_area ? `${e.avg_area} ㎡` : "N/A") +
-    row("座數／樓層", e => e.blocks_count || e.min_floor != null
-      ? `${e.blocks_count || "?"} 座｜${e.min_floor ?? "?"}–${e.max_floor ?? "?"} 樓`
-      : (e.hos_year ? `落成 ${e.hos_year}` : "N/A")) +
+    row("座數／樓層", e => {
+      if (e.blocks_count && e.min_floor != null) return `${e.blocks_count} 座｜${e.min_floor}–${e.max_floor} 樓`;
+      const parts = [];
+      if (e.blocks_count) parts.push(`${e.blocks_count} 座`);
+      if (e.hos_area_range) parts.push(`實用約 ${e.hos_area_range} m²`);
+      if (e.hos_year) parts.push(`落成 ${e.hos_year}`);
+      return parts.length ? parts.join("｜") : "N/A"; }) +
     row(`生活圈評分（${pr.label}）`, fmtScore) +
     row("最近港鐵", e => e.nearest_mtr ? `${e.nearest_mtr.zh}<div class="mini">${fmtD(e.nearest_mtr.distance_m)}</div>` : "-") +
     row("最近小學", e => e.nearest_school ? `${e.nearest_school.zh}<div class="mini">${fmtD(e.nearest_school.distance_m)}</div>` : "-") +

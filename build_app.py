@@ -407,7 +407,7 @@ for e in data:
                                     "elderly_shelter": 50.0, "elevator": None}
         s["mtr"] = smooth_score(t["distance_m"], 200, 900)
         e["sub_scores"] = s
-        if e.get("total_units"):
+        if e.get("total_units") and s.get("elevator") is not None:
             e["score"] = round(0.35 * s["mtr"] + 0.25 * s.get("school", 50.0)
                                + 0.10 * s.get("care", 50.0) + 0.05 * s.get("childcare", 50.0)
                                + 0.10 * s.get("elderly_shelter", 50.0)

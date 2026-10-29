@@ -659,8 +659,16 @@ def _bbox_center(geometry):
     return (min(ys) + max(ys)) / 2, (min(xs) + max(xs)) / 2
 
 
+def _parse_int_loose(s):
+    """'3,222' / '1 060' / '816' → int；其他 → None。"""
+    s = str(s or "").replace(",", "").replace(" ", "").strip()
+    return int(s) if s.isdigit() else None
+
+
 def build_hos():
-    """B2 居屋 245 屋苑（房委會）：PRH 鏡像格式，source_type=HOS。單位／升降機冇公開源 → N/A。"""
+    """B2 居屋 245 屋苑（房委會）：PRH 鏡像格式，source_type=HOS。
+    有 no_of_flats（單位數）／no_of_blocks／saleable_area_m2（實用面積範圍）／name_of_blocks（座名）；
+    冇升降機單位級數據 → elevator N/A。"""
     gj = fetch_csdi_geojson(HOS_DATASET)
     out = []
     for ft in gj.get("features", []):
@@ -673,17 +681,21 @@ def build_hos():
         if not zh:
             continue
         nb = str(p.get("no_of_blocks") or "").strip()
+        flats = _parse_int_loose(p.get("no_of_flats_tc") or p.get("no_of_flats_en"))
+        saleable = (p.get("saleable_area_m2") or "").strip() or None
         out.append({"source": "HOS", "source_type": "HOS", "name_tc": zh,
                     "name_en": (p.get("estate_name_en") or "").strip() or None,
                     "district_tc": (p.get("district_name_tc") or "").strip() or None,
                     "region_tc": (p.get("region_name_tc") or "").strip() or None,
                     "lat": lat, "lng": lng,
-                    "total_units": None, "elevator_units": None, "non_elevator_units": None,
+                    "total_units": flats, "elevator_units": None, "non_elevator_units": None,
                     "min_floor": None, "max_floor": None, "avg_area": None,
                     "blocks_count": int(nb) if nb.isdigit() else None, "blocks": [],
                     "hos_year": (p.get("year_of_completion_tc") or "").strip() or None,
-                    "hos_scheme": (p.get("sold_under_tc") or "").strip() or None})
-    print(f"Part 9 完成：{len(out)} 個居屋屋苑（HOS）", flush=True)
+                    "hos_scheme": (p.get("sold_under_tc") or "").strip() or None,
+                    "hos_area_range": saleable,
+                    "hos_blocks": (p.get("name_of_blocks_tc") or "").strip() or None})
+    print(f"Part 9 完成：{len(out)} 個居屋屋苑（HOS，有單位數 {sum(1 for x in out if x['total_units'])}）", flush=True)
     return out
 
 
