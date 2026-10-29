@@ -20,7 +20,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 TPL = os.path.join(BASE, "estate_matcher_template.html")
 SRC = os.path.join(BASE, "data", "normalized", "all_estates_enriched.json")
 SCHOOL_CACHE = os.path.join(BASE, "data", "normalized", "edb_schools.json")
-OUT = os.path.join(BASE, "estate_matcher.html")
+OUT = os.path.join(BASE, "index.html")   # GitHub Pages 根路徑直接開 app
 K_NEAREST = 3
 sys.path.insert(0, BASE)
 

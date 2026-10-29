@@ -33,16 +33,27 @@ python pipeline_stage1.py    # 簡約公屋 28,951 單位 + 公共屋邨名單
 python stage2_full.py        # 18 區公屋聚合 + 小學 + 託管 → 生活圈評分
 
 # 2. 注入數據產出單檔原型（每次數據更新後重跑）
-python build_app.py          # → estate_matcher.html
+python build_app.py          # → index.html
 
 # 3. 起本地服務（3D 路線 API 需要 http(s) 環境，file:// 會被瀏覽器擋）
 python -m http.server 8642
-# 打開 http://127.0.0.1:8642/estate_matcher.html
+# 打開 http://127.0.0.1:8642/（index.html）
 ```
 
 **環境需求**：Python 3.8+（管線）；現代瀏覽器（原型）；網絡可連 `mapapi.hkmapservice.gov.hk`。
 
 ---
+
+
+## GitHub Pages 線上版
+
+原型已自動托管於 GitHub Pages（`.github/workflows/pages.yml`：push 到 `main` 即自動部署）：
+
+> **https://ray510.github.io/HKGV_APP/**
+
+- 無需本地環境，手機／電腦瀏覽器直接開啟；3D 路線 API 為 https，CORS 已實測通過
+- URL Hash 深連結照常可用，例如 `https://ray510.github.io/HKGV_APP/#estate=葵涌邨&mode=2&dest=mtr`
+- 若 Actions 首次運行未自動開啟 Pages：Repo → Settings → Pages → Source 揀「GitHub Actions」再重跑 workflow
 
 ## 功能特點
 
@@ -73,7 +84,7 @@ python -m http.server 8642
 ├── csdi_awards_2026_proposal.md     ← CSDI Awards 2026 參賽建議書（10 頁內）
 │
 │ ── 原型（前端）──
-├── estate_matcher.html              ← ★ 最終成品：單檔原型（build 產出，勿手改）
+├── index.html                       ← ★ 最終成品：單檔原型（build 產出，勿手改；GitHub Pages 根頁）
 ├── estate_matcher_template.html     ← 原型模板（__DATA__ 佔位符）
 ├── build_app.py                     ← build 腳本：注入數據 + 計算港鐵候選站
 ├── app_template.html                ← v1 舊模板（歷史保留）
@@ -126,7 +137,7 @@ python -m http.server 8642
 
 ### Build — `build_app.py`
 - 讀取 `all_estates_enriched.json`，為每個有座標屋邨**計算最近 3 個港鐵站候選**（`mtr_candidates`，規劃路線 fallback 用）
-- 注入 `estate_matcher_template.html` 的 `__DATA__` 佔位符 → `estate_matcher.html`
+- 注入 `estate_matcher_template.html` 的 `__DATA__` 佔位符 → `index.html`
 - 內建安全檢查：payload 不得含 `__DATA__` 或 `</script`
 
 ### 輸出 schema（`all_estates_enriched.json`）
@@ -235,7 +246,7 @@ python -m http.server 8642
 
 ## 已知限制與疑難排解
 
-1. **必須以 http(s) 開啟**：3D 路線 API 由 `file://` 調用會被瀏覽器 CORS 擋。請 `python -m http.server` 後經 `http://127.0.0.1:8642/estate_matcher.html` 開啟。
+1. **必須以 http(s) 開啟**：3D 路線 API 由 `file://` 調用會被瀏覽器 CORS 擋。請 `python -m http.server` 後經 `http://127.0.0.1:8642/` 開啟（或直接用 GitHub Pages 線上版）。
 2. **3 個屋邨暫無座標**：古雋邨（北區）、華富北邨（南區）、曉茵邨（觀塘）係新屋邨，房委會單位檔冇 `estate_map_latitude`、ES Locator 名單亦未收錄。已嘗試 Nominatim（無此新屋邨資料）與 geodata.gov.hk 地點搜尋（開發環境網絡受限）均失敗；原型標示「暫無座標」不上圖、不可規劃路線。待修：在正常網絡環境用 CSDI GeoAddress／數字政策辦公室「地址搜尋服務」補座標。
 3. **6 個離島／無鐵路覆蓋屋邨無法規劃港鐵路線**：長貴邨（長洲）、金坪邨（坪洲）、銀灣邨（梅窩）、馬坑邨（赤柱）、龍田邨、雅寧苑 —— **地理事實，非 bug**。原型會如實說明。可考慮日後加「渡輪碼頭」作為替代錨點。
 4. **距離為直線（haversine）近似**：評分卡距離非實測步行距離；實測路線以 3D API 為準。**錨點設計**：港鐵錨點取「場地多邊形邊界最近點」（點到線段投影）＋「站體中心」**雙錨點 fallback**，前端逐錨點嘗試——bbox 中心可能跌入站體範圍令網絡 snap 唔到（實例：天耀一邨→天水圍站直線 73m，邊界點實測 193m ✅，bbox 中心 ✗），邊界點亦可能面向路軌（葵涌邨→大窩口站直線 150m，中心實測 696m ✅，邊界點 ✗）。
@@ -283,4 +294,4 @@ python -m http.server 8642
 
 ---
 
-*最後更新：2026-10-28｜原型版本 v3.1（estate_matcher.html, 479 KB, 雙錨點 fallback＋評分 v3＋3D 校準＋4 Persona）*
+*最後更新：2026-10-29｜原型版本 v3.1（index.html, 479 KB, 雙錨點 fallback＋評分 v3＋3D 校準＋4 Persona；GitHub Pages 線上版見下）*
