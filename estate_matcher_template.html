@@ -41,6 +41,9 @@
   .badge{flex:none;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;letter-spacing:.5px}
   .badge.prh{background:#e3eff7;color:#0b6e99}
   .badge.lph{background:#f3e8ff;color:#7c3aed}
+  .badge.hos{background:#fef3c7;color:#b45309}
+  .badge.prv{background:#e0e7ff;color:#4338ca}
+  .badge.vlg{background:#dcfce7;color:#15803d}
   .card .d{font-size:12px;color:var(--muted);margin:2px 0 8px}
   .scorewrap{display:flex;gap:10px;align-items:center;margin-bottom:8px}
   .score{flex:none;width:52px;height:52px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
@@ -187,8 +190,11 @@
         <label class="chk"><span class="k">類型</span>
           <select id="etype">
             <option value="">全部</option>
-            <option value="PRH">公屋（房委會）</option>
-            <option value="LPH">簡約公屋</option>
+            <option value="PRH">🏠 公屋（房委會）</option>
+            <option value="LPH">🏘️ 簡約公屋</option>
+            <option value="HOS">🔑 居屋／綠置居</option>
+            <option value="PRV">🏢 私人屋苑</option>
+            <option value="VLG">🌄 鄉村（村屋）</option>
           </select></label>
         <label class="chk"><span class="k">地區</span>
           <select id="district"><option value="">全部</option></select></label>
@@ -349,8 +355,17 @@ const DIM_LABEL = {mtr:"🚇 港鐵", school:"🏫 小學", care:"👶 託管", 
 const DIM_COLOR = {mtr:"#0b6e99", school:"#0f9d8a", care:"#7c3aed", cc:"#db2777", elder:"#0d9488", elev:"#b45309"};
 function calcScore(e, p = profile){
   const w = WEIGHTS[p], s = subs(e);
-  const total = Math.round((w.mtr*s.mtr + w.school*s.school + w.care*s.care
-    + (w.cc||0)*s.childcare + w.elder*s.elderly_shelter + w.elev*s.elevator)*10)/10;
+  const hasElev = s.elevator != null;
+  let total;
+  if (hasElev){
+    total = Math.round((w.mtr*s.mtr + w.school*s.school + w.care*s.care
+      + (w.cc||0)*s.childcare + w.elder*s.elderly_shelter + w.elev*s.elevator)*10)/10;
+  } else {
+    // 居屋／私人／村屋：升降機 N/A → 其餘維度重歸一化
+    const base = w.mtr*s.mtr + w.school*s.school + w.care*s.care + (w.cc||0)*s.childcare + w.elder*s.elderly_shelter;
+    const wsum = w.mtr + w.school + w.care + (w.cc||0) + w.elder;
+    total = Math.round((base / wsum)*10)/10;
+  }
   const parts = ["mtr","school","care","cc","elder","elev"]
     .map(k => ({k, label: DIM_LABEL[k],
       sub: k === "elev" ? s.elevator : (k === "elder" ? s.elderly_shelter : s[k]), w: w[k]}))
@@ -449,13 +464,14 @@ function render(){
     const m = e.nearest_mtr, ok = e.non_elevator_units === 0;
     const pr = calcScore(e);
     const c = scoreColor(pr.total);
-    const brk = pr.parts.map(p =>
-      `<div>${p.label} ${p.sub} 分 × ${(p.w*100).toFixed(0)}%</div><div class="bar"><i style="width:${Math.round(p.sub)}%;background:${DIM_COLOR[p.k]}"></i></div>`).join("");
+    const brk = pr.parts.filter(p => p.sub != null).map(p =>
+      `<div>${p.label} ${p.sub} 分 × ${(p.w*100).toFixed(0)}%</div><div class="bar"><i style="width:${Math.round(p.sub)}%;background:${DIM_COLOR[p.k]}"></i></div>`).join("") +
+      pr.parts.filter(p => p.sub == null).map(p => `<div>${p.label} N/A（${e.source_type === "HOS" ? "居屋" : e.source_type === "PRV" ? "私人" : "村屋"}冇單位級數據）</div>`).join("");
     const addCmpBtn = `<button class="addCmp ${compareSet.includes(e._key)?"on":""}" data-c="${e._key}">${compareSet.includes(e._key)?"✓ 已加入比較":"＋ 加入比較"}</button>`;
     const nBlk = (e.blocks||[]).length;
     const blkBtn = nBlk ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
     const el = document.createElement("div"); el.className = "card";
-    const dests = ["mtr","sch","care","cc","eld","shel","kg","pg","hosp","pier"].filter(d => e.lat != null && DEST[d].pool(e).length);
+    const dests = ["mtr","sch","care","cc","eld","shel","kg","pg","hosp","pier","cold","lib"].filter(d => e.lat != null && DEST[d].pool(e).length);
     const routeBtns = dests.length
       ? `<div class="dchips">` + dests.map(d => {
           const cnt = (d === "kg" || d === "hosp") ? ` ${DEST[d].pool(e).length}` : "";
@@ -471,34 +487,52 @@ function render(){
         (canChainElder ? `<button class="go chain alt2" data-p="${e._key}" data-c="elder">🔗 護老返工鏈</button>` : "") +
         `</div>`
       : "";
+    const ST_META = {PRH:["prh","公屋"],LPH:["lph","簡屋"],HOS:["hos","居屋"],PRV:["prv","私人"],VLG:["vlg","村屋"]};
+    const [stCls, stLbl] = ST_META[e.source_type] || ST_META[e.source] || ["prh","公屋"];
+    const hasUnits = e.total_units != null;
     el.innerHTML = `
       <h3>${e.name_tc}
-        <span class="badge ${e.source==="LPH"?"lph":"prh"}">${e.source==="LPH"?"簡約公屋":"公屋"}</span></h3>
-      <div class="d">${e.district_tc}（${e.region_tc||"-"}）${e.name_en?"· "+e.name_en:""}</div>
+        <span class="badge ${stCls}">${stLbl}</span></h3>
+      <div class="d">${e.district_tc ? e.district_tc : ""}${e.region_tc ? `（${e.region_tc}）` : ""}${e.name_en?"· "+e.name_en:""}</div>
       <div class="scorewrap">
         <div class="score" style="background:${c}"><b>${pr.total}</b><i>生活圈</i></div>
         <div class="brk">${brk}</div>
       </div>
       <div class="row">
-        <span class="pill">${(e.total_units||0).toLocaleString()} 個單位</span>
+        ${hasUnits ? `<span class="pill">${(e.total_units||0).toLocaleString()} 個單位</span>
         <span class="pill">${e.blocks_count||"?"} 座</span>
         <span class="pill">樓層 ${e.min_floor??"?"}–${e.max_floor??"?"}</span>
-        <span class="pill">平均 ${e.avg_area??"?"} m²</span>
+        <span class="pill">平均 ${e.avg_area??"?"} m²</span>` : ""}
+        ${e.source_type === "HOS" ? `${e.hos_scheme ? `<span class="pill">🔑 ${e.hos_scheme}</span>` : ""}${e.hos_year ? `<span class="pill">落成 ${e.hos_year}</span>` : ""}${e.blocks_count ? `<span class="pill">${e.blocks_count} 座</span>` : ""}` : ""}
+        ${e.source_type === "PRV" ? `${e.census_pop ? `<span class="pill">人口 ${e.census_pop.toLocaleString()}（2021 普查）</span>` : ""}${e.census_income_md ? `<span class="pill">中位月入 $${Number(e.census_income_md).toLocaleString()}</span>` : ""}` : ""}
+        ${e.source_type === "VLG" ? `<span class="pill">鄉村分界錨點</span>` : ""}
       </div>
-      <div class="row">
+      ${hasUnits ? `<div class="row">
         ${ok ? '<span class="pill good">✓ 全幢有升降機</span>'
              : `<span class="pill bad">✗ ${e.non_elevator_units} 個單位冇升降機</span>`}
         ${e.lat == null ? '<span class="pill noc">暫無座標，未能規劃路線</span>' : ""}
-      </div>
+      </div>` : (e.lat == null ? `<div class="row"><span class="pill noc">暫無座標，未能規劃路線</span></div>` : "")}
       <div class="row">
         ${m ? `<span class="pill">🚇 ${m.zh} ${m.distance_m}m</span>` : ""}
         ${e.nearest_elderly ? `<span class="pill">👵 長者中心 ${e.nearest_elderly.distance_m}m</span>` : ""}
         ${e.nearest_shelter ? `<span class="pill">🌡️ 會堂 ${e.nearest_shelter.distance_m}m${e.nearest_shelter.heat_shelter ? "（避暑）" : ""}</span>` : ""}
+        ${e.nearest_cold_shelter ? `<span class="pill">❄️ 避寒 ${e.nearest_cold_shelter.distance_m}m</span>` : ""}
       </div>
       <div class="row">
         ${e.kindergartens_800m != null ? `<span class="pill">🧒 800m 幼稚園 ${e.kindergartens_800m} 間${e.nearest_kg_name_tc ? `（最近 ${e.nearest_kg_dist_m}m）` : ""}</span>` : ""}
         ${e.nearest_pg_name_tc ? `<span class="pill">🎠 ${e.nearest_pg_name_tc} ${e.nearest_pg_dist_m}m</span>` : ""}
         ${e.nearest_ae_hospital ? `<span class="pill">🏥 急症 ${e.nearest_ae_hospital.zh} ${e.nearest_ae_hospital.distance_m}m</span>` : ""}
+      </div>
+      <div class="row">
+        ${e.nearest_market ? `<span class="pill">🥬 街市 ${e.nearest_market.distance_m}m${e.nearest_market.count_800m ? `（800m ${e.nearest_market.count_800m} 個）` : ""}</span>` : ""}
+        ${e.nearest_library ? `<span class="pill">📚 圖書館 ${e.nearest_library.distance_m}m</span>` : ""}
+        ${e.nearest_clinic ? `<span class="pill">💉 門診 ${e.nearest_clinic.distance_m}m</span>` : ""}
+        ${e.nearest_maternal ? `<span class="pill">👶 母嬰健康院 ${e.nearest_maternal.distance_m}m</span>` : ""}
+      </div>
+      <div class="row">
+        ${e.nearest_livingroom ? `<span class="pill">🏠 社區客廳 ${e.nearest_livingroom.zh} ${e.nearest_livingroom.distance_m}m</span>` : ""}
+        ${e.nearest_postoffice ? `<span class="pill">📮 郵局 ${e.nearest_postoffice.distance_m}m</span>` : ""}
+        ${e.nearest_firestation ? `<span class="pill">🚒 消防 ${e.nearest_firestation.distance_m}m</span>` : ""}
       </div>
       ${routeBtns}${chainBtns}${addCmpBtn}${blkBtn}`;
     box.appendChild(el);
@@ -760,8 +794,10 @@ const DEST = {
   hosp: {label:"🏥 急症室",  kind:"急症醫院", pool:e => (e.ae_hospitals||[]).map(h => ({zh:h.n, lat:h.lat, lng:h.lng, distance_m:h.d}))},
   pier: {label:"⛴️ 碼頭",    kind:"渡輪碼頭", pool:e => (e.nearest_pier ? [{zh:e.nearest_pier.zh, lat:e.nearest_pier.lat, lng:e.nearest_pier.lng, distance_m:e.nearest_pier.distance_m}] : [])},
   cc:   {label:"👶 幼兒中心", kind:"幼兒中心", pool:e => (e.nearest_childcare ? [{zh:e.nearest_childcare.zh, lat:e.nearest_childcare.lat, lng:e.nearest_childcare.lng, distance_m:e.nearest_childcare.distance_m}] : [])},
+  cold: {label:"❄️ 避寒中心", kind:"避寒中心", pool:e => (e.nearest_cold_shelter ? [{zh:e.nearest_cold_shelter.zh, lat:e.nearest_cold_shelter.lat, lng:e.nearest_cold_shelter.lng, distance_m:e.nearest_cold_shelter.distance_m}] : [])},
+  lib:  {label:"📚 圖書館",   kind:"圖書館",   pool:e => (e.nearest_library ? [{zh:e.nearest_library.zh, lat:e.nearest_library.lat, lng:e.nearest_library.lng, distance_m:e.nearest_library.distance_m}] : [])},
 };
-const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場", hosp:"🏥 急症室", pier:"⛴️ 碼頭", cc:"👶 幼兒中心"};
+const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場", hosp:"🏥 急症室", pier:"⛴️ 碼頭", cc:"👶 幼兒中心", cold:"❄️ 避寒中心", lib:"📚 圖書館"};
 
 async function planRoute(key, dest = "mtr", origin = null, destOverride = null){
   const seq = ++planSeq;
@@ -1043,28 +1079,42 @@ document.getElementById("cmpOpen").onclick = () => {
   const pr = WEIGHTS[profile];
   const fmtD = d => d == null ? "-" : `${d.toLocaleString()} 米`;
   const row = (label, fn) => `<tr><th>${label}</th>${sel.map(e => `<td>${fn(e)}</td>`).join("")}</tr>`;
+  const ST_NAME = {PRH:"公屋",LPH:"簡約公屋",HOS:"居屋／綠置居",PRV:"私人屋苑",VLG:"鄉村"};
+  const fmtScore = e => { const p = calcScore(e);
+    return `<b style="font-size:15px;color:${scoreColor(p.total)}">${p.total}</b> / 100<br>` +
+      p.parts.filter(pt => pt.sub != null).map(pt => `${pt.label} ${pt.sub}×${(pt.w*100).toFixed(0)}%`).join(" · ") +
+      (p.parts.some(pt => pt.sub == null) ? `<div class="mini">升降機 N/A</div>` : ""); };
   document.getElementById("cmpTable").innerHTML = `<table>` +
     row("屋邨／項目", e => `<h4>${e.name_tc}</h4><div class="mini">${e.name_en || ""}</div>`) +
-    row("類型", e => e.source === "LPH" ? "簡約公屋" : "公共屋邨") +
-    row("地區", e => `${e.district_tc}（${e.region_tc || "-"}）`) +
-    row("單位數", e => (e.total_units || 0).toLocaleString()) +
-    row("升降機覆蓋率", e => { const t = e.total_units || 0; return t ? Math.round((e.elevator_units||0)/t*100) + "%" : "-"; }) +
-    row("冇升降機單位", e => (e.non_elevator_units || 0).toLocaleString()) +
-    row("平均面積", e => e.avg_area ? `${e.avg_area} ㎡` : "-") +
-    row("座數／樓層", e => `${e.blocks_count || "?"} 座｜${e.min_floor ?? "?"}–${e.max_floor ?? "?"} 樓`) +
-    row(`生活圈評分（${pr.label}）`, e => { const p = calcScore(e);
-      return `<b style="font-size:15px;color:${scoreColor(p.total)}">${p.total}</b> / 100<br>` +
-        p.parts.map(pt => `${pt.label} ${pt.sub}×${(pt.w*100).toFixed(0)}%`).join(" · "); }) +
+    row("類型", e => ST_NAME[e.source_type] || (e.source === "LPH" ? "簡約公屋" : "公共屋邨")) +
+    row("地區", e => `${e.district_tc || "-"}${e.region_tc ? `（${e.region_tc}）` : ""}`) +
+    row("單位數", e => e.total_units != null ? e.total_units.toLocaleString() : "N/A") +
+    row("升降機覆蓋率", e => { const t = e.total_units || 0; return t ? Math.round((e.elevator_units||0)/t*100) + "%" : "N/A"; }) +
+    row("冇升降機單位", e => e.non_elevator_units != null ? (e.non_elevator_units||0).toLocaleString() : "N/A") +
+    row("平均面積", e => e.avg_area ? `${e.avg_area} ㎡` : "N/A") +
+    row("座數／樓層", e => e.blocks_count || e.min_floor != null
+      ? `${e.blocks_count || "?"} 座｜${e.min_floor ?? "?"}–${e.max_floor ?? "?"} 樓`
+      : (e.hos_year ? `落成 ${e.hos_year}` : "N/A")) +
+    row(`生活圈評分（${pr.label}）`, fmtScore) +
     row("最近港鐵", e => e.nearest_mtr ? `${e.nearest_mtr.zh}<div class="mini">${fmtD(e.nearest_mtr.distance_m)}</div>` : "-") +
     row("最近小學", e => e.nearest_school ? `${e.nearest_school.zh}<div class="mini">${fmtD(e.nearest_school.distance_m)}</div>` : "-") +
     row("最近託管點", e => e.nearest_care ? `${e.nearest_care.zh}<div class="mini">${fmtD(e.nearest_care.distance_m)}</div>` : "-") +
     row("最近長者中心", e => e.nearest_elderly ? `${e.nearest_elderly.zh}<div class="mini">${fmtD(e.nearest_elderly.distance_m)}</div>` : "-") +
     row("最近社區會堂", e => e.nearest_shelter ? `${e.nearest_shelter.zh}${e.nearest_shelter.heat_shelter ? "（避暑中心）" : ""}<div class="mini">${fmtD(e.nearest_shelter.distance_m)}</div>` : "-") +
+    row("最近避寒中心", e => e.nearest_cold_shelter ? `${e.nearest_cold_shelter.zh}<div class="mini">${fmtD(e.nearest_cold_shelter.distance_m)}</div>` : "-") +
     row("最近急症醫院", e => e.nearest_ae_hospital ? `${e.nearest_ae_hospital.zh}<div class="mini">${fmtD(e.nearest_ae_hospital.distance_m)}</div>` : "-") +
+    row("最近門診（疫苗接種）", e => e.nearest_clinic ? `${e.nearest_clinic.zh}<div class="mini">${fmtD(e.nearest_clinic.distance_m)}</div>` : "-") +
     row("800m 幼稚園", e => e.kindergartens_800m != null
       ? `${e.kindergartens_800m} 間<div class="mini">最近 ${e.nearest_kg_name_tc || "-"} ${fmtD(e.nearest_kg_dist_m)}</div>` : "-") +
+    row("最近幼兒中心（0–6 歲）", e => e.nearest_childcare ? `${e.nearest_childcare.zh}<div class="mini">${fmtD(e.nearest_childcare.distance_m)}</div>` : "-") +
+    row("800m 街市", e => e.nearest_market
+      ? `${e.nearest_market.zh}<div class="mini">${fmtD(e.nearest_market.distance_m)}${e.nearest_market.count_800m ? `｜800m ${e.nearest_market.count_800m} 個` : ""}</div>` : "-") +
+    row("最近圖書館", e => e.nearest_library ? `${e.nearest_library.zh}<div class="mini">${fmtD(e.nearest_library.distance_m)}</div>` : "-") +
     row("共融遊樂場", e => e.nearest_pg_name_tc
       ? `${e.nearest_pg_name_tc}<div class="mini">${fmtD(e.nearest_pg_dist_m)}</div>` : "-") +
+    row("最近郵政局", e => e.nearest_postoffice ? `${e.nearest_postoffice.zh}<div class="mini">${fmtD(e.nearest_postoffice.distance_m)}</div>` : "-") +
+    row("最近消防局", e => e.nearest_firestation ? `${e.nearest_firestation.zh}<div class="mini">${fmtD(e.nearest_firestation.distance_m)}</div>` : "-") +
+    row("社區客廳", e => e.nearest_livingroom ? `${e.nearest_livingroom.zh}<div class="mini">${fmtD(e.nearest_livingroom.distance_m)}</div>` : "-") +
     `</table>`;
   document.getElementById("cmpPrintTime").textContent = new Date().toLocaleString("zh-HK");
   document.getElementById("cmpPrintProfile").textContent = pr.label;
@@ -1077,7 +1127,7 @@ document.getElementById("cmpPrint").onclick = () => window.print();
 
 // ---- HKO 實時天氣 × 3D 避雨路線聯動（fetch 有 try/catch，離線唔影響其他功能）----
 window.hkoWeatherState = { loaded: false, simulated: false, temp: null, uv: null, rainfallMax: 0,
-  warnings: [], warningCodes: [], isAdverse: false, reasonText: "", districtTemps: {} };
+  warnings: [], warningCodes: [], isAdverse: false, isCold: false, reasonText: "", districtTemps: {} };
 const HKO_STATION = {
   "中西區":"香港公園", "灣仔":"跑馬地", "東區":"筲箕灣", "南區":"黃竹坑",
   "油尖旺":"京士柏", "深水埗":"深水埗", "九龍城":"九龍城", "黃大仙":"黃大仙", "觀塘":"觀塘",
@@ -1116,13 +1166,15 @@ function recomputeAdverse(){
   const badCode = codes.some(c => ["WHOT","WRAIN","WTCSGNL","WTS"].includes(c));
   const hot = (st.temp != null && st.temp >= 31) || (st.uv != null && st.uv >= 8);
   const wet = st.rainfallMax > 0;
-  st.isAdverse = st.simulated || badCode || hot || wet;
+  st.isCold = codes.includes("WCOLD") || (st.temp != null && st.temp <= 12);
+  st.isAdverse = st.simulated || badCode || hot || wet || st.isCold;
   const rs = [];
   if (st.simulated) rs.push("模擬酷熱（34°C）及暴雨環境");
   else {
     if (badCode) rs.push(st.warnings.join("、"));
     if (hot) rs.push(`高溫 ${st.temp ?? "-"}°C${st.uv != null ? `／UV ${st.uv}` : ""}`);
     if (wet) rs.push(`有雨（最高 ${st.rainfallMax} mm）`);
+    if (st.isCold) rs.push(`寒冷 ${st.temp ?? "-"}°C${codes.includes("WCOLD") ? "（寒冷警告生效）" : ""}`);
   }
   st.reasonText = rs.join("；");
   updateWeatherUI();
@@ -1148,7 +1200,12 @@ function updateWeatherUI(){
   if (simBtn) simBtn.classList.toggle("on", !!st.simulated);
   const b = document.getElementById("weatherRouteBanner");
   if (!b) return;
-  if (st.isAdverse && mode !== 5){
+  if (st.isCold && currentRoute){
+    const ce = DATA.find(x => x._key === currentRoute.key);
+    b.style.display = "block";
+    b.className = "ok";
+    b.innerHTML = `❄️ <b>寒冷天氣聯動</b>：${st.reasonText}。${ce && ce.nearest_cold_shelter ? `最近避寒中心：${ce.nearest_cold_shelter.zh}（${ce.nearest_cold_shelter.distance_m}m），可按卡片「❄️ 避寒中心」規劃 3D 路線。` : "此屋邨附近冇避寒中心紀錄。"}`;
+  } else if (st.isAdverse && mode !== 5){
     b.style.display = "block";
     b.className = "rec";
     b.innerHTML = `☂️ <b>實時天氣聯動</b>：偵測到${st.reasonText || "不利天氣"}。建議為長者／學童切換至「非付費區優先（避雨／有蓋）」3D 路線。<button id="wxSwitch">一鍵切換有蓋路線</button>`;

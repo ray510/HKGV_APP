@@ -404,13 +404,19 @@ for e in data:
         e["nearest_mtr"] = {"zh": t["zh"], "en": t["en"], "lat": a["lat"], "lng": a["lng"],
                             "distance_m": t["distance_m"]}
         s = e.get("sub_scores") or {"school": 50.0, "care": 50.0, "childcare": 50.0,
-                                    "elderly_shelter": 50.0, "elevator": 100.0}
+                                    "elderly_shelter": 50.0, "elevator": None}
         s["mtr"] = smooth_score(t["distance_m"], 200, 900)
         e["sub_scores"] = s
-        e["score"] = round(0.35 * s["mtr"] + 0.25 * s.get("school", 50.0)
-                           + 0.10 * s.get("care", 50.0) + 0.05 * s.get("childcare", 50.0)
-                           + 0.10 * s.get("elderly_shelter", 50.0)
-                           + 0.15 * s.get("elevator", 100.0), 1)
+        if e.get("total_units"):
+            e["score"] = round(0.35 * s["mtr"] + 0.25 * s.get("school", 50.0)
+                               + 0.10 * s.get("care", 50.0) + 0.05 * s.get("childcare", 50.0)
+                               + 0.10 * s.get("elderly_shelter", 50.0)
+                               + 0.15 * s.get("elevator", 100.0), 1)
+        else:
+            # 居屋／私人／村屋：升降機維度 N/A → 五維重歸一化
+            e["score"] = round((0.35 * s["mtr"] + 0.25 * s.get("school", 50.0)
+                                + 0.10 * s.get("care", 50.0) + 0.05 * s.get("childcare", 50.0)
+                                + 0.10 * s.get("elderly_shelter", 50.0)) / 0.85, 1)
 
 # 預設排序：評分 ↓、單位數 ↓（與管線一致）
 data.sort(key=lambda x: (-x.get("score", 0), -(x.get("total_units") or 0)))

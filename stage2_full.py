@@ -60,6 +60,35 @@ CSDI_DATASETS = {
                         save_as="had_barrierfree_halls.json"),
 }
 
+# Master Plan v4 Phase A：生活圈數據大補完（A1–A8，全行 Part 5 通用抓取器）
+PHASE_A_DATASETS = {
+    "cold_shelters": dict(dataset_id="had_rcd_1634542283356_29001", layer=None, static=None,
+                          save_as="had_cold_shelters.json"),                      # A1 避寒中心 18
+    "rhomes": dict(dataset_id="swd_rcd_1629267205235_23064", layer=None, static=None,
+                   save_as="swd_rhomes.json"),                                    # A2 買位私營安老院 192
+    "markets": dict(dataset_id="fehd_rcd_1629965523312_76550", layer=None, static=None,
+                    save_as="fehd_markets.json"),                                 # A3 公眾街市 102
+    "libraries": dict(dataset_id="lcsd_rcd_1629267205214_44807", layer=None, static=None,
+                      save_as="lcsd_libraries.json"),                             # A4 圖書館 184
+    "clinics": dict(dataset_id="hhb_rcd_1686899580410_73354", layer=None, static=None,
+                    save_as="hhb_general_clinics.json"),                          # A5 疫苗接種門診 113
+    "livingrooms": dict(dataset_id="swd_rcd_1727429490745_32298", layer=None, static=None,
+                        save_as="swd_living_rooms.json"),                         # A6 社區客廳 9
+    "maternal": dict(dataset_id="dh_rcd_1730082456706_99489", layer=None, static=None,
+                     save_as="dh_maternal_health.json"),                          # A7 母嬰健康院 15
+    "postoffices": dict(dataset_id="hkpo_rcd_1638773445050_9581", layer=None, static=None,
+                        save_as="hkpo_post_offices.json"),                        # A8 郵政局 119
+    "firestations": dict(dataset_id="hkfsd_rcd_1634798867463_89696", layer=None, static=None,
+                         save_as="hkfsd_fire_stations.json"),                     # A8 消防局 95
+}
+# Master Plan v4 Phase B：房屋類型擴張
+HOS_DATASET = dict(dataset_id="housingauthority_rcd_1765182522170_13011", layer=None, static=None,
+                   save_as="ha_hos_estates.json")                                 # B2 居屋 245
+PRV_DATASET = dict(dataset_id="censtatd_rcd_1695182015782_79001", layer=None, static=None,
+                   save_as="censtatd_estates.json")                               # B3 普查主要屋苑 540
+VLG_DATASET = dict(dataset_id="had_rcd_1634522917609_57950", layer=None, static=None,
+                   save_as="had_villages.json")                                   # B4 鄉村分界 697
+
 
 def fetch_json(url, timeout=180):
     req = urllib.request.Request(url, headers=UA)
@@ -126,11 +155,19 @@ def compute_living_circle_metrics(mtr_d, sch_d, sch_n800, kg_n800, care_d, care_
     s_elder = round(0.30 * smooth_distance_score(elder_svc_d, 200, 1000)
                     + 0.40 * smooth_distance_score(shelter_d, 200, 1000)
                     + 0.30 * smooth_distance_score(hosp_d, 300, 1500), 1)
-    s_elev = round(elev_u / total_u * 100.0, 1) if total_u > 0 else 100.0
-    score = round(0.35 * s_mtr + 0.25 * s_sch + 0.10 * s_care
-                  + 0.05 * s_childcare + 0.10 * s_elder + 0.15 * s_elev, 1)
-    return score, {"mtr": s_mtr, "school": s_sch, "care": s_care,
-                   "childcare": s_childcare, "elderly_shelter": s_elder, "elevator": s_elev}
+    if total_u and elev_u is not None:
+        s_elev = round(elev_u / total_u * 100.0, 1)
+        score = round(0.35 * s_mtr + 0.25 * s_sch + 0.10 * s_care
+                      + 0.05 * s_childcare + 0.10 * s_elder + 0.15 * s_elev, 1)
+        subs = {"mtr": s_mtr, "school": s_sch, "care": s_care,
+                "childcare": s_childcare, "elderly_shelter": s_elder, "elevator": s_elev}
+    else:
+        # 居屋／私人／村屋冇單位級升降機數據 → 升降機維度 N/A，其餘五維重歸一化（÷0.85）
+        score = round((0.35 * s_mtr + 0.25 * s_sch + 0.10 * s_care
+                       + 0.05 * s_childcare + 0.10 * s_elder) / 0.85, 1)
+        subs = {"mtr": s_mtr, "school": s_sch, "care": s_care,
+                "childcare": s_childcare, "elderly_shelter": s_elder, "elevator": None}
+    return score, subs
 
 
 # ---------------- Part 1: PRH 18 區單位 → 屋邨級 ----------------
@@ -431,8 +468,10 @@ def nearest_mtr_precise(lat, lng, venues, coarse=5):
 
 
 # ---------------- Part 5: CSDI 新數據集（長者日間護理／社區會堂／避暑中心／無障礙設施） ----------------
-NAME_KEYS_TC = ["NameTC", "NAME_TC", "NAME_ZH", "CHI_NAME", "FACILITY_NAME_TC", "名稱", "中心名稱", "會堂名稱"]
-NAME_KEYS_EN = ["NameEN", "NAME_EN", "ENG_NAME", "FACILITY_NAME_EN"]
+NAME_KEYS_TC = ["NameTC", "NAME_TC", "NAME_ZH", "CHI_NAME", "FACILITY_NAME_TC", "名稱", "中心名稱", "會堂名稱",
+                "CLINIC_NAME_TC", "Name_TC", "VIL_CNAME", "HAD_VIL_CNAME"]
+NAME_KEYS_EN = ["NameEN", "NAME_EN", "ENG_NAME", "FACILITY_NAME_EN",
+                "CLINIC_NAME_EN", "Name_ENG", "Baby_Friendly_MCHC", "VIL_ENAME", "HAD_VIL_ENAME"]
 
 
 def pick_name(p, keys):
@@ -590,6 +629,139 @@ def build_elder_services():
     return pool
 
 
+def build_phase_a():
+    """Master Plan v4 Phase A：A1–A8 九組設施池（避寒／買位安老院／街市／圖書館／門診／客廳／母嬰／郵政／消防）。"""
+    pools = {}
+    for key, spec in PHASE_A_DATASETS.items():
+        pools[key] = parse_facilities(fetch_csdi_geojson(spec))
+        print(f"Part 8/{key}: {len(pools[key])} 點", flush=True)
+    return pools
+
+
+def _bbox_center(geometry):
+    """任意嵌套座標 → bbox 中心（錨點用）。"""
+    xs, ys = [], []
+
+    def walk(c):
+        if isinstance(c, (list, tuple)) and c:
+            if isinstance(c[0], (int, float)):
+                if len(c) >= 2 and -180 <= float(c[0]) <= 180 and -90 <= float(c[1]) <= 90:
+                    xs.append(float(c[0]))
+                    ys.append(float(c[1]))
+            else:
+                for cc in c:
+                    walk(cc)
+
+    if geometry:
+        walk(geometry.get("coordinates"))
+    if not xs:
+        return None, None
+    return (min(ys) + max(ys)) / 2, (min(xs) + max(xs)) / 2
+
+
+def build_hos():
+    """B2 居屋 245 屋苑（房委會）：PRH 鏡像格式，source_type=HOS。單位／升降機冇公開源 → N/A。"""
+    gj = fetch_csdi_geojson(HOS_DATASET)
+    out = []
+    for ft in gj.get("features", []):
+        p = ft.get("properties") or {}
+        try:
+            lat, lng = float(p.get("latitude")), float(p.get("longitude"))
+        except (TypeError, ValueError):
+            continue
+        zh = (p.get("estate_name_tc") or "").strip()
+        if not zh:
+            continue
+        nb = str(p.get("no_of_blocks") or "").strip()
+        out.append({"source": "HOS", "source_type": "HOS", "name_tc": zh,
+                    "name_en": (p.get("estate_name_en") or "").strip() or None,
+                    "district_tc": (p.get("district_name_tc") or "").strip() or None,
+                    "region_tc": (p.get("region_name_tc") or "").strip() or None,
+                    "lat": lat, "lng": lng,
+                    "total_units": None, "elevator_units": None, "non_elevator_units": None,
+                    "min_floor": None, "max_floor": None, "avg_area": None,
+                    "blocks_count": int(nb) if nb.isdigit() else None, "blocks": [],
+                    "hos_year": (p.get("year_of_completion_tc") or "").strip() or None,
+                    "hos_scheme": (p.get("sold_under_tc") or "").strip() or None})
+    print(f"Part 9 完成：{len(out)} 個居屋屋苑（HOS）", flush=True)
+    return out
+
+
+def build_private():
+    """B3 普查 2021 主要屋苑：多邊形 → bbox 中心錨點，source_type=PRV。人口／收入＝2021 普查時點。"""
+    gj = fetch_csdi_geojson(PRV_DATASET)
+    agg = {}
+    for ft in gj.get("features", []):
+        p = ft.get("properties") or {}
+        zh = (p.get("estate_chi") or "").strip()
+        en = (p.get("estate_eng") or "").strip()
+        if not zh and not en:
+            continue
+        lat, lng = _bbox_center(ft.get("geometry"))
+        if lat is None:
+            continue
+        rec = agg.setdefault(zh or en, {"zh": zh or en, "en": en or None,
+                                        "minx": lng, "maxx": lng, "miny": lat, "maxy": lat,
+                                        "pop": 0, "income": None})
+        rec["minx"], rec["maxx"] = min(rec["minx"], lng), max(rec["maxx"], lng)
+        rec["miny"], rec["maxy"] = min(rec["miny"], lat), max(rec["maxy"], lat)
+        try:
+            rec["pop"] += int(float(p.get("t_pop") or 0))
+        except (TypeError, ValueError):
+            pass
+        try:
+            inc = float(p.get("t_mmearn"))
+            if inc > 0:
+                rec["income"] = inc
+        except (TypeError, ValueError):
+            pass
+    out = []
+    for r in agg.values():
+        out.append({"source": "PRV", "source_type": "PRV", "name_tc": r["zh"], "name_en": r["en"],
+                    "district_tc": None, "region_tc": None,
+                    "lat": round((r["miny"] + r["maxy"]) / 2, 6),
+                    "lng": round((r["minx"] + r["maxx"]) / 2, 6),
+                    "total_units": None, "elevator_units": None, "non_elevator_units": None,
+                    "min_floor": None, "max_floor": None, "avg_area": None,
+                    "blocks_count": None, "blocks": [],
+                    "census_pop": r["pop"] or None, "census_income_md": r["income"],
+                    "census_note": "2021 普查時點"})
+    print(f"Part 9 完成：{len(out)} 個主要屋苑（PRV，普查 2021）", flush=True)
+    return out
+
+
+def build_villages():
+    """B4 鄉村 697（民政署鄉村分界）：多邊形 → bbox 中心，source_type=VLG。"""
+    gj = fetch_csdi_geojson(VLG_DATASET)
+    agg = {}
+    for ft in gj.get("features", []):
+        p = ft.get("properties") or {}
+        zh = (p.get("VIL_CNAME") or p.get("HAD_VIL_CNAME") or "").strip()
+        en = (p.get("VIL_ENAME") or p.get("HAD_VIL_ENAME") or "").strip()
+        dist = (p.get("HAD_DISTRICT_CNAME") or "").strip()
+        if not zh and not en:
+            continue
+        lat, lng = _bbox_center(ft.get("geometry"))
+        if lat is None:
+            continue
+        key = f"{dist}|{zh or en}"
+        rec = agg.setdefault(key, {"zh": zh or en, "en": en or None, "dist": dist,
+                                   "minx": lng, "maxx": lng, "miny": lat, "maxy": lat})
+        rec["minx"], rec["maxx"] = min(rec["minx"], lng), max(rec["maxx"], lng)
+        rec["miny"], rec["maxy"] = min(rec["miny"], lat), max(rec["maxy"], lat)
+    out = []
+    for r in agg.values():
+        out.append({"source": "VLG", "source_type": "VLG", "name_tc": r["zh"], "name_en": r["en"],
+                    "district_tc": r["dist"] or None, "region_tc": None,
+                    "lat": round((r["miny"] + r["maxy"]) / 2, 6),
+                    "lng": round((r["minx"] + r["maxx"]) / 2, 6),
+                    "total_units": None, "elevator_units": None, "non_elevator_units": None,
+                    "min_floor": None, "max_floor": None, "avg_area": None,
+                    "blocks_count": None, "blocks": []})
+    print(f"Part 9 完成：{len(out)} 條鄉村（VLG）", flush=True)
+    return out
+
+
 def main():
     prh = build_prh_estates()
     schools = build_schools()
@@ -598,8 +770,9 @@ def main():
     care = build_care()
     mtr = build_mtr_venues()
     elderly, halls = build_community()
-    elderly_all = elderly + build_elder_services()      # 345 點：DCUDECC＋DEC＋NEC＋支援隊
-    childcare = build_childcare()                       # 326 點：0–6 歲幼兒中心組合
+    phase_a = build_phase_a()                            # A1–A8 九組設施池
+    elderly_all = elderly + build_elder_services() + phase_a["rhomes"]  # A2：買位安老院併入（≈536 點）
+    childcare = build_childcare()                        # 326 點：0–6 歲幼兒中心組合
     hospitals = build_hospitals()
     ae_hospitals = [h for h in hospitals if h.get("ae")]
 
@@ -645,7 +818,31 @@ def main():
                              for (ptc, bn), b in lph_blocks.items() if ptc == r["project_tc"]),
                             key=lambda x: -x["u"])})
 
-    all_est = lph + prh
+    hos = build_hos()
+    prv = build_private()
+    vlg = build_villages()
+    # 跨類型去重：普查屋苑含晒公屋／居屋名（如「長沙灣邨」「旭埔苑」）→ 保留有單位級數據嘅原類型
+    known = {e["name_tc"] for e in lph} | {e["name_tc"] for e in prh}
+    hos = [e for e in hos if e["name_tc"] not in known]
+    known |= {e["name_tc"] for e in hos}
+    prv = [e for e in prv if e["name_tc"] not in known]
+    print(f"Part 9 去重後：HOS {len(hos)}／PRV {len(prv)}／VLG {len(vlg)}", flush=True)
+    # PRV 普查數據冇 district 欄 → 用最近嘅 PRH/LPH/HOS 屋邨官方 district 填充（顯示用途）
+    ref = [(e["lat"], e["lng"], e["district_tc"]) for e in lph + prh + hos
+           if e.get("district_tc") and e.get("lat") is not None]
+    for e in prv:
+        if e.get("district_tc"):
+            continue
+        best, bd = None, 1e18
+        for lat, lng, dist in ref:
+            d = (e["lat"] - lat) ** 2 + (e["lng"] - lng) ** 2
+            if d < bd:
+                best, bd = dist, d
+        e["district_tc"] = best
+    all_est = lph + prh + hos + prv + vlg
+    for e in all_est:
+        if "source_type" not in e:
+            e["source_type"] = e.get("source")  # PRH／LPH
     for e in all_est:
         m, mn = nearest_mtr_precise(e["lat"], e["lng"], mtr)
         s, sn = nearest_and_count(e["lat"], e["lng"], schools)
@@ -657,6 +854,14 @@ def main():
         sh, shn = nearest_and_count(e["lat"], e["lng"], halls)
         ae, aen = nearest_and_count(e["lat"], e["lng"], ae_hospitals)
         hp, hpn = nearest_and_count(e["lat"], e["lng"], hospitals)
+        cs, _ = nearest_and_count(e["lat"], e["lng"], phase_a["cold_shelters"])
+        mk, mkn = nearest_and_count(e["lat"], e["lng"], phase_a["markets"])
+        lb, lbn = nearest_and_count(e["lat"], e["lng"], phase_a["libraries"])
+        cl, _ = nearest_and_count(e["lat"], e["lng"], phase_a["clinics"])
+        lr, _ = nearest_and_count(e["lat"], e["lng"], phase_a["livingrooms"])
+        mh, _ = nearest_and_count(e["lat"], e["lng"], phase_a["maternal"])
+        po, _ = nearest_and_count(e["lat"], e["lng"], phase_a["postoffices"])
+        fs, _ = nearest_and_count(e["lat"], e["lng"], phase_a["firestations"])
         e["nearest_mtr"] = dict(m, count_800m=mn) if m else None
         e["nearest_school"] = {"zh": s["item"]["zh"], "en": s["item"].get("en"),
                                "lat": s["item"]["lat"], "lng": s["item"]["lng"],
@@ -689,6 +894,22 @@ def main():
         e["nearest_hospital"] = {"zh": hp["item"]["zh"], "lat": hp["item"]["lat"],
                                  "lng": hp["item"]["lng"], "distance_m": hp["distance_m"],
                                  "ae": bool(hp["item"].get("ae"))} if hp else None
+        e["nearest_cold_shelter"] = {"zh": cs["item"]["zh"], "lat": cs["item"]["lat"], "lng": cs["item"]["lng"],
+                                     "distance_m": cs["distance_m"]} if cs else None
+        e["nearest_market"] = {"zh": mk["item"]["zh"], "lat": mk["item"]["lat"], "lng": mk["item"]["lng"],
+                               "distance_m": mk["distance_m"], "count_800m": mkn} if mk else None
+        e["nearest_library"] = {"zh": lb["item"]["zh"], "lat": lb["item"]["lat"], "lng": lb["item"]["lng"],
+                                "distance_m": lb["distance_m"], "count_800m": lbn} if lb else None
+        e["nearest_clinic"] = {"zh": cl["item"]["zh"], "lat": cl["item"]["lat"], "lng": cl["item"]["lng"],
+                               "distance_m": cl["distance_m"]} if cl else None
+        e["nearest_livingroom"] = {"zh": lr["item"]["zh"], "lat": lr["item"]["lat"], "lng": lr["item"]["lng"],
+                                   "distance_m": lr["distance_m"]} if lr else None
+        e["nearest_maternal"] = {"zh": mh["item"]["zh"], "lat": mh["item"]["lat"], "lng": mh["item"]["lng"],
+                                 "distance_m": mh["distance_m"]} if mh else None
+        e["nearest_postoffice"] = {"zh": po["item"]["zh"], "lat": po["item"]["lat"], "lng": po["item"]["lng"],
+                                   "distance_m": po["distance_m"]} if po else None
+        e["nearest_firestation"] = {"zh": fs["item"]["zh"], "lat": fs["item"]["lat"], "lng": fs["item"]["lng"],
+                                    "distance_m": fs["distance_m"]} if fs else None
         e["score"], e["sub_scores"] = compute_living_circle_metrics(
             m["distance_m"] if m else None,
             s["distance_m"] if s else None, sn, kgn,
@@ -711,10 +932,12 @@ def main():
     top = sc[:10]
     print("\n=== 生活圈評分 v3 Top 10 ===")
     for e in top:
-        print(f'{e["score"]:>5} 分｜{e["name_tc"]}（{e["district_tc"]}）{e["total_units"]:,} 單位｜'
+        units = f'{e["total_units"]:,} 單位' if e.get("total_units") else "—"
+        elev = e["sub_scores"].get("elevator")
+        print(f'{e["score"]:>5} 分｜{e["name_tc"]}（{e.get("district_tc") or "-"}）{units}｜'
               f'港鐵 {e["nearest_mtr"]["distance_m"]}m｜小學 {e["nearest_school"]["distance_m"] if e["nearest_school"] else "-"}m｜'
               f'託管 {e["nearest_care"]["distance_m"] if e["nearest_care"] else "-"}m｜'
-              f'升降機 {e["sub_scores"]["elevator"]}%')
+              f'升降機 {elev if elev is not None else "N/A"}%')
     full = sum(1 for x in sc if x["score"] >= 99.95)
     print(f"\n滿分（≥99.95）屋邨數：{full} / {len(sc)}（v2 tier 制曾經幾十個並列 100）")
 
