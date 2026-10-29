@@ -16,6 +16,8 @@ UA = {"User-Agent": "Mozilla/5.0 (HK-OpenData-Stage2)"}
 LETTERS = ["a","b","c","d","e","f","g","h","j","k","l","m","n","p","q","r","s","t"]  # 18 區
 DIST_URL = "https://data.housingauthority.gov.hk/dataset/emms/ha_prhs_{}_en.json"
 SCHOOL_URL = "http://www.edb.gov.hk/attachment/en/student-parents/sch-info/sch-search/sch-location-info/SCH_LOC_EDB.json"
+PLAYGROUND_URL = "https://www.lcsd.gov.hk/datagovhk/facility/facility-pefac.json"
+PLAYGROUND_CACHE = os.path.join(NORM, "lcsd_playgrounds.json")
 CARE_URL = ("https://portal.csdi.gov.hk/server/services/common/swd_rcd_1727429602437_81314/MapServer/WFSServer"
             "?service=wfs&version=2.0.0&request=GetFeature&typename=csdi:SWDSBAEPS&outputFormat=GEOJSON")
 MTR_PATH = os.path.join(NORM, "mtr_venue_polygon.json")
@@ -91,17 +93,18 @@ def smooth_distance_score(dist_m, full_radius=200.0, half_life=1000.0):
     return round(max(5.0, 100.0 * math.exp(-decay * (dist_m - full_radius))), 1)
 
 
-def compute_living_circle_metrics(mtr_d, sch_d, sch_n800, care_d, care_n800,
+def compute_living_circle_metrics(mtr_d, sch_d, sch_n800, kg_n800, care_d, care_n800,
                                   elderly_d, shelter_d, elev_u, total_u):
-    """生活圈評分 v3.1：五維標準化 0~100 後加權。
-    小學 = 70% 最近距離 + 30% 800m 內選擇密度（5 間滿分）；
+    """生活圈評分 v3.2：五維標準化 0~100 後加權。
+    小學 = 60% 最近距離 + 25% 800m 小學密度（5 間滿分）+ 15% 800m 幼稚園密度（3 間滿分）；
     託管 = 80% 最近距離 + 20% 密度（3 間滿分）；
-    長者/會堂 = 長者日間護理單位與社區會堂（避暑中心）平滑分平均；
+    長者/會堂 = 40% 長者日間護理單位 + 60% 社區會堂（避暑中心）平滑分；
     升降機 = 單位級覆蓋率 ×100。
     預設（育兒家庭）= 港鐵 35% + 小學 25% + 託管 15% + 長者/會堂 10% + 升降機 15%。"""
     s_mtr = smooth_distance_score(mtr_d, 200, 900)
-    s_sch = round(0.7 * smooth_distance_score(sch_d, 150, 800)
-                  + 0.3 * min(1.0, (sch_n800 or 0) / 5.0) * 100.0, 1)
+    s_sch = round(0.6 * smooth_distance_score(sch_d, 150, 800)
+                  + 0.25 * min(1.0, (sch_n800 or 0) / 5.0) * 100.0
+                  + 0.15 * min(1.0, (kg_n800 or 0) / 3.0) * 100.0, 1)
     s_care = round(0.8 * smooth_distance_score(care_d, 200, 1200)
                    + 0.2 * min(1.0, (care_n800 or 0) / 3.0) * 100.0, 1)
     s_elder = round(0.4 * smooth_distance_score(elderly_d, 200, 1000)
@@ -250,6 +253,77 @@ def build_schools():
 
 
 # ---------------- Part 3: 課後託管點 ----------------
+def build_kindergartens():
+    """EDB 同一份學校位置 JSON：幼稚園（AM/PM/全日 分開列 → 同名同座標去重）。"""
+    d = fetch_json(SCHOOL_URL)
+    arr = d if isinstance(d, list) else d.get("data") or list(d.values())[0]
+    seen, out = set(), []
+    for s in arr:
+        cat = f'{s.get("ENGLISH CATEGORY", "")} {s.get("中文類別", "")}'
+        if "KINDERGARTEN" not in cat.upper() and "幼稚園" not in cat:
+            continue
+        try:
+            lat = float(s.get("LATITUDE") or s.get("緯度"))
+            lng = float(s.get("LONGITUDE") or s.get("經度"))
+        except (TypeError, ValueError):
+            continue
+        if not (22.0 < lat < 22.7 and 113.7 < lng < 114.6):
+            continue
+        name = s.get("中文名稱") or s.get("ENGLISH NAME")
+        key = (name, round(lat, 4), round(lng, 4))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({"zh": name, "en": s.get("ENGLISH NAME"), "lat": lat, "lng": lng})
+    print(f"Part 2b 完成：{len(out)} 間幼稚園（去重後）", flush=True)
+    return out
+
+
+def dms_to_decimal(v):
+    """LCSD 座標格式 '22-25-38'（度-分-秒）→ 十進制；已是十進制則直接回傳。"""
+    s = str(v).strip()
+    try:
+        if "-" in s:
+            parts = [float(x) for x in s.split("-")]
+            if len(parts) == 3:
+                return parts[0] + parts[1] / 60 + parts[2] / 3600
+            if len(parts) == 2:
+                return parts[0] + parts[1] / 60
+        return float(s)
+    except (TypeError, ValueError):
+        return None
+
+
+def build_playgrounds():
+    """LCSD 共融遊樂場（facility-pefac.json，約 44 個，座標為 DMS）；快取 normalized。"""
+    gj = None
+    if os.path.exists(PLAYGROUND_CACHE):
+        try:
+            with open(PLAYGROUND_CACHE, encoding="utf-8") as f:
+                gj = json.load(f)
+        except Exception:
+            gj = None
+    if gj is None:
+        try:
+            gj = fetch_json(PLAYGROUND_URL, timeout=60)
+        except Exception as e:
+            print(f"Part 2c LCSD 遊樂場抓取失敗 {type(e).__name__}，跳過", flush=True)
+            return []
+        with open(PLAYGROUND_CACHE, "w", encoding="utf-8") as f:
+            json.dump(gj, f, ensure_ascii=False)
+    out = []
+    for x in (gj if isinstance(gj, list) else []):
+        lat = dms_to_decimal(x.get("Latitude"))
+        lng = dms_to_decimal(x.get("Longitude"))
+        if lat is None or lng is None or not (22.0 < lat < 22.7 and 113.7 < lng < 114.6):
+            continue
+        out.append({"zh": x.get("Name_cn") or x.get("Name_en"),
+                    "en": x.get("Name_en"), "lat": lat, "lng": lng,
+                    "district": x.get("District_cn") or ""})
+    print(f"Part 2c 完成：{len(out)} 個 LCSD 共融遊樂場", flush=True)
+    return out
+
+
 def build_care():
     try:
         gj = fetch_json(CARE_URL)
@@ -429,6 +503,8 @@ def build_community():
 def main():
     prh = build_prh_estates()
     schools = build_schools()
+    kgs = build_kindergartens()
+    pgs = build_playgrounds()
     care = build_care()
     mtr = build_mtr_venues()
     elderly, halls = build_community()
@@ -479,6 +555,8 @@ def main():
     for e in all_est:
         m, mn = nearest_mtr_precise(e["lat"], e["lng"], mtr)
         s, sn = nearest_and_count(e["lat"], e["lng"], schools)
+        kg, kgn = nearest_and_count(e["lat"], e["lng"], kgs)
+        pg, pgn = nearest_and_count(e["lat"], e["lng"], pgs)
         c, cn = nearest_and_count(e["lat"], e["lng"], care)
         el, eln = nearest_and_count(e["lat"], e["lng"], elderly)
         sh, shn = nearest_and_count(e["lat"], e["lng"], halls)
@@ -486,6 +564,16 @@ def main():
         e["nearest_school"] = {"zh": s["item"]["zh"], "en": s["item"].get("en"),
                                "lat": s["item"]["lat"], "lng": s["item"]["lng"],
                                "distance_m": s["distance_m"], "count_800m": sn} if s else None
+        e["kindergartens_800m"] = kgn
+        e["nearest_kg_dist_m"] = kg["distance_m"] if kg else None
+        e["nearest_kg_name_tc"] = kg["item"]["zh"] if kg else None
+        e["nearest_kg_lat"] = kg["item"]["lat"] if kg else None
+        e["nearest_kg_lng"] = kg["item"]["lng"] if kg else None
+        e["playgrounds_800m"] = pgn
+        e["nearest_pg_dist_m"] = pg["distance_m"] if pg else None
+        e["nearest_pg_name_tc"] = pg["item"]["zh"] if pg else None
+        e["nearest_pg_lat"] = pg["item"]["lat"] if pg else None
+        e["nearest_pg_lng"] = pg["item"]["lng"] if pg else None
         e["nearest_care"] = {"zh": c["item"]["zh"], "lat": c["item"]["lat"], "lng": c["item"]["lng"],
                              "distance_m": c["distance_m"], "count_800m": cn} if c else None
         e["nearest_elderly"] = {"zh": el["item"]["zh"], "en": el["item"].get("en"),
@@ -498,7 +586,7 @@ def main():
                                 "accessible": sh["item"].get("accessible")} if sh else None
         e["score"], e["sub_scores"] = compute_living_circle_metrics(
             m["distance_m"] if m else None,
-            s["distance_m"] if s else None, sn,
+            s["distance_m"] if s else None, sn, kgn,
             c["distance_m"] if c else None, cn,
             el["distance_m"] if el else None,
             sh["distance_m"] if sh else None,

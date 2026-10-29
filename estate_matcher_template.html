@@ -16,6 +16,16 @@
   .sub{font-size:11.5px;color:var(--muted);margin:0 0 4px}
   .statbar{font-size:11.5px;color:var(--accent);background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:6px 9px;margin:8px 0 12px}
   .statbar b{font-size:12.5px}
+  .wxRow{display:flex;gap:6px;align-items:center;margin:-4px 0 10px}
+  .wxPill{font-size:11px;padding:3px 9px;border-radius:12px;background:#eef7f2;border:1px solid #cde7d9;color:#0f7a4a;white-space:nowrap}
+  .wxPill.warn{background:#fdf3e7;border-color:#f3d9b0;color:#b45309}
+  .wxSim{font-size:10.5px;padding:3px 8px;border:1px dashed var(--line);border-radius:12px;background:#fff;color:var(--muted);cursor:pointer;white-space:nowrap}
+  .wxSim:hover{border-color:#b45309;color:#b45309}
+  .wxSim.on{border-color:#b45309;color:#b45309;background:#fdf3e7}
+  #weatherRouteBanner{display:none;margin:0 0 8px;padding:8px 10px;border-radius:8px;font-size:11.5px;line-height:1.7}
+  #weatherRouteBanner.rec{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+  #weatherRouteBanner.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857}
+  #weatherRouteBanner button{margin-left:6px;border:0;border-radius:6px;padding:4px 10px;font-size:11.5px;background:#b45309;color:#fff;cursor:pointer}
   .panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
   .panel b.t{font-size:12.5px;color:var(--accent);display:block;margin-bottom:8px}
   label.chk{display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0;cursor:pointer}
@@ -129,6 +139,10 @@
     <h1>屋邨智配・3D 無障礙生活圈</h1>
     <p class="sub">全港公屋 × 簡約公屋智能配對｜CSDI 三維行人路線實測出行</p>
     <div class="statbar" id="statbar"></div>
+    <div class="wxRow">
+      <span id="wxPill" class="wxPill">🌤️ 天氣載入中…</span>
+      <button id="wxSim" class="wxSim" title="模擬惡劣天氣，測試避雨路線聯動（評審演示用）">🧪 模擬酷熱/暴雨</button>
+    </div>
 
     <div class="panel" id="aiPanel">
       <b class="t">🤖 AI 選樓顧問（廣東話）</b>
@@ -203,6 +217,7 @@
 
     <div class="panel">
       <b class="t">② 路線模式（地政總署 3D 行人路線 API）</b>
+      <div id="weatherRouteBanner"></div>
       <div class="modes" id="modes">
         <button data-m="2" class="on">2 · 無障礙路徑</button>
         <button data-m="1">1 · 最短路徑</button>
@@ -288,8 +303,9 @@ function subs(e){
   const t = e.total_units||0;              // 舊數據 fallback：同管線公式
   return {
     mtr: smoothScore(dist2(e,"mtr"),200,900),
-    school: Math.round((0.7*smoothScore(dist2(e,"sch"),150,800)
-      + 0.3*Math.min(1,(e.density_800m?.schools??0)/5)*100)*10)/10,
+    school: Math.round((0.6*smoothScore(dist2(e,"sch"),150,800)
+      + 0.25*Math.min(1,(e.density_800m?.schools??0)/5)*100
+      + 0.15*Math.min(1,(e.kindergartens_800m??0)/3)*100)*10)/10,
     care: Math.round((0.8*smoothScore(dist2(e,"care"),200,1200)
       + 0.2*Math.min(1,(e.density_800m?.cares??0)/3)*100)*10)/10,
     elderly_shelter: Math.round((0.4*smoothScore(dist2(e,"eld"),200,1000)
@@ -300,7 +316,7 @@ function subs(e){
 // 4 個 Persona 權重矩陣（港鐵／小學／託管／長者會堂／升降機），對應建議書 §5
 const WEIGHTS = {
   family:  {mtr:.35, school:.25, care:.15, elder:.10, elev:.15, label:"育兒家庭",
-            hint:"港鐵 35% ＋ 小學 25% ＋ 託管 15% ＋ 長者/會堂 10% ＋ 升降機 15%"},
+            hint:"港鐵 35% ＋ 小學 25%（含 800m 幼稚園密度）＋ 託管 15% ＋ 長者/會堂 10% ＋ 升降機 15%"},
   elder:   {mtr:.25, school:0,   care:0,   elder:.30, elev:.45, label:"長者安居",
             hint:"升降機 45% ＋ 長者中心/避暑會堂 30% ＋ 港鐵 25%"},
   commute: {mtr:.75, school:0,   care:0,   elder:0,   elev:.25, label:"極速通勤",
@@ -418,7 +434,7 @@ function render(){
     const nBlk = (e.blocks||[]).length;
     const blkBtn = nBlk ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
     const el = document.createElement("div"); el.className = "card";
-    const dests = ["mtr","sch","care","eld","shel"].filter(d => e.lat != null && DEST[d].pool(e).length);
+    const dests = ["mtr","sch","care","eld","shel","kg","pg"].filter(d => e.lat != null && DEST[d].pool(e).length);
     const routeBtns = dests.length
       ? `<div class="dchips">` + dests.map(d =>
           `<button class="dchip" data-p="${e._key}" data-d="${d}" data-lb="${DEST[d].label}">${DEST[d].label}</button>`).join("") + `</div>`
@@ -454,6 +470,10 @@ function render(){
         ${m ? `<span class="pill">🚇 ${m.zh} ${m.distance_m}m</span>` : ""}
         ${e.nearest_elderly ? `<span class="pill">👵 長者中心 ${e.nearest_elderly.distance_m}m</span>` : ""}
         ${e.nearest_shelter ? `<span class="pill">🌡️ 會堂 ${e.nearest_shelter.distance_m}m${e.nearest_shelter.heat_shelter ? "（避暑）" : ""}</span>` : ""}
+      </div>
+      <div class="row">
+        ${e.kindergartens_800m != null ? `<span class="pill">🧒 800m 幼稚園 ${e.kindergartens_800m} 間${e.nearest_kg_name_tc ? `（最近 ${e.nearest_kg_dist_m}m）` : ""}</span>` : ""}
+        ${e.nearest_pg_name_tc ? `<span class="pill">🎠 ${e.nearest_pg_name_tc} ${e.nearest_pg_dist_m}m</span>` : ""}
       </div>
       ${routeBtns}${chainBtns}${addCmpBtn}${blkBtn}`;
     box.appendChild(el);
@@ -557,6 +577,7 @@ document.querySelectorAll("#modes button").forEach(b => b.onclick = () => {
   mode = +b.dataset.m;
   document.querySelectorAll("#modes button").forEach(x => x.classList.remove("on"));
   b.classList.add("on");
+  updateWeatherUI();   // 天氣 banner 跟隨模式（避雨 mode 5 確認態）
   // 轉換模式後即刻用新模式重新規劃當前路線（保留座級起點／路線鏈）
   if (changed && currentRoute){
     if (currentRoute.chain) planChain(currentRoute.key, currentRoute.chain);
@@ -678,8 +699,11 @@ const DEST = {
   care: {label:"🎒 託管",    kind:"託管點",   pool:e => [e.nearest_care].filter(Boolean)},
   eld:  {label:"👵 長者中心", kind:"長者中心", pool:e => [e.nearest_elderly].filter(Boolean)},
   shel: {label:"🌡️ 會堂",    kind:"社區會堂", pool:e => [e.nearest_shelter].filter(Boolean)},
+  kg:   {label:"👶 幼稚園",  kind:"幼稚園",   pool:e => (e.nearest_kgs||[]).map(k => ({zh:k.n, lat:k.lat, lng:k.lng, distance_m:k.d}))},
+  pg:   {label:"🎠 遊樂場",  kind:"共融遊樂場", pool:e => (e.nearest_pg_name_tc && e.nearest_pg_lat != null
+          ? [{zh:e.nearest_pg_name_tc, lat:e.nearest_pg_lat, lng:e.nearest_pg_lng, distance_m:e.nearest_pg_dist_m}] : [])},
 };
-const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂"};
+const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場"};
 
 async function planRoute(key, dest = "mtr", origin = null){
   const seq = ++planSeq;
@@ -775,6 +799,7 @@ async function planRoute(key, dest = "mtr", origin = null){
        模式 ${usedMode}（${MODE_LABELS[usedMode]}）｜全程步行約 <b>${Math.round(dist)} 米</b>｜${path.length} 個路徑點｜高度 ${Math.min(...zs).toFixed(1)}m – ${Math.max(...zs).toFixed(1)}m（高差 ${(Math.max(...zs)-Math.min(...zs)).toFixed(1)}m）${disclaim}${calib}`;
     document.getElementById("steps").innerHTML = steps.slice(0,25).map(s=>`<li>${s}</li>`).join("")
       + (steps.length>25 ? `<li>… 共 ${steps.length} 步</li>` : "");
+    updateWeatherUI();
     panel.scrollIntoView({behavior:"smooth"});
   } catch (err) {
     document.getElementById("elevWrap").style.display = "none";
@@ -873,6 +898,7 @@ async function planChain(key, type){
     bindElevHover();
     currentRoute = {key, dest: "chain", chain: type, c: used.c, a: used.a, o: null};
     try { history.replaceState(null, "", `#estate=${encodeURIComponent(e.name_tc)}&mode=${mode}&chain=${type}`); } catch(_){}
+    updateWeatherUI();
     panel.scrollIntoView({behavior: "smooth"});
   } catch (err) {
     if (seq === planSeq){
@@ -976,6 +1002,10 @@ document.getElementById("cmpOpen").onclick = () => {
     row("最近託管點", e => e.nearest_care ? `${e.nearest_care.zh}<div class="mini">${fmtD(e.nearest_care.distance_m)}</div>` : "-") +
     row("最近長者中心", e => e.nearest_elderly ? `${e.nearest_elderly.zh}<div class="mini">${fmtD(e.nearest_elderly.distance_m)}</div>` : "-") +
     row("最近社區會堂", e => e.nearest_shelter ? `${e.nearest_shelter.zh}${e.nearest_shelter.heat_shelter ? "（避暑中心）" : ""}<div class="mini">${fmtD(e.nearest_shelter.distance_m)}</div>` : "-") +
+    row("800m 幼稚園", e => e.kindergartens_800m != null
+      ? `${e.kindergartens_800m} 間<div class="mini">最近 ${e.nearest_kg_name_tc || "-"} ${fmtD(e.nearest_kg_dist_m)}</div>` : "-") +
+    row("共融遊樂場", e => e.nearest_pg_name_tc
+      ? `${e.nearest_pg_name_tc}<div class="mini">${fmtD(e.nearest_pg_dist_m)}</div>` : "-") +
     `</table>`;
   document.getElementById("cmpPrintTime").textContent = new Date().toLocaleString("zh-HK");
   document.getElementById("cmpPrintProfile").textContent = pr.label;
@@ -985,6 +1015,107 @@ document.getElementById("cmpClear").onclick = () => { compareSet.length = 0; ren
 document.getElementById("cmpClose").onclick = () => document.getElementById("cmpModal").style.display = "none";
 document.getElementById("cmpModal").addEventListener("click", ev => { if (ev.target.id === "cmpModal") ev.target.style.display = "none"; });
 document.getElementById("cmpPrint").onclick = () => window.print();
+
+// ---- HKO 實時天氣 × 3D 避雨路線聯動（fetch 有 try/catch，離線唔影響其他功能）----
+window.hkoWeatherState = { loaded: false, simulated: false, temp: null, uv: null, rainfallMax: 0,
+  warnings: [], warningCodes: [], isAdverse: false, reasonText: "", districtTemps: {} };
+const HKO_STATION = {
+  "中西區":"香港公園", "灣仔":"跑馬地", "東區":"筲箕灣", "南區":"黃竹坑",
+  "油尖旺":"京士柏", "深水埗":"深水埗", "九龍城":"九龍城", "黃大仙":"黃大仙", "觀塘":"觀塘",
+  "葵青":"青衣", "荃灣":"荃灣可觀", "屯門":"屯門", "元朗":"元朗公園", "北區":"上水",
+  "大埔":"大埔", "沙田":"沙田", "西貢":"將軍澳", "離島":"赤鱲角"
+};
+
+async function fetchHkoWeather(){
+  const st = window.hkoWeatherState;
+  try {
+    const [r1, r2] = await Promise.all([
+      fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc").then(r => r.json()),
+      fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc").then(r => r.json()),
+    ]);
+    st.loaded = true;
+    const temps = r1?.temperature?.data || [];
+    const hko = temps.find(t => t.place === "香港天文台");
+    st.temp = hko ? hko.value : (temps[0]?.value ?? null);
+    st.uv = r1?.uvindex?.data?.[0]?.value ?? null;
+    const rains = r1?.rainfall?.data || [];
+    st.rainfallMax = Math.max(0, ...rains.map(x => Number(x.max) || 0));
+    st.districtTemps = Object.fromEntries(temps.map(t => [t.place, t.value]));
+    const warns = Object.values(r2 || {}).filter(w => w && w.warningStatementCode);
+    st.warningCodes = warns.map(w => w.warningStatementCode);
+    st.warnings = warns.map(w => w.warningStatement || w.warningStatementCode);
+    recomputeAdverse();
+  } catch (e) {
+    st.loaded = false;
+    updateWeatherUI();   // 離線：靜默降級，不影響篩選與 3D 路線
+  }
+}
+
+function recomputeAdverse(){
+  const st = window.hkoWeatherState;
+  const codes = st.warningCodes || [];
+  const badCode = codes.some(c => ["WHOT","WRAIN","WTCSGNL","WTS"].includes(c));
+  const hot = (st.temp != null && st.temp >= 31) || (st.uv != null && st.uv >= 8);
+  const wet = st.rainfallMax > 0;
+  st.isAdverse = st.simulated || badCode || hot || wet;
+  const rs = [];
+  if (st.simulated) rs.push("模擬酷熱（34°C）及暴雨環境");
+  else {
+    if (badCode) rs.push(st.warnings.join("、"));
+    if (hot) rs.push(`高溫 ${st.temp ?? "-"}°C${st.uv != null ? `／UV ${st.uv}` : ""}`);
+    if (wet) rs.push(`有雨（最高 ${st.rainfallMax} mm）`);
+  }
+  st.reasonText = rs.join("；");
+  updateWeatherUI();
+}
+
+function updateWeatherUI(){
+  const st = window.hkoWeatherState;
+  const pill = document.getElementById("wxPill");
+  if (pill){
+    const icon = st.simulated ? "🧪" : (st.isAdverse ? (st.rainfallMax > 0 ? "🌧️" : "🌡️") : "🌤️");
+    let txt = `${icon} ${st.temp != null ? st.temp + "°C" : "—"}${st.isAdverse ? " · 天氣警示" : ""}`;
+    if (currentRoute){
+      const ce = DATA.find(x => x._key === currentRoute.key);
+      const stn = ce ? HKO_STATION[ce.district_tc] : null;
+      const dt = stn ? st.districtTemps[stn] : null;
+      if (dt != null) txt += `｜${ce.district_tc} ${dt}°C`;
+    }
+    pill.textContent = txt;
+    pill.title = st.isAdverse ? st.reasonText : "香港天文台實時天氣（rhrread／warnsum）";
+    pill.classList.toggle("warn", !!st.isAdverse);
+  }
+  const simBtn = document.getElementById("wxSim");
+  if (simBtn) simBtn.classList.toggle("on", !!st.simulated);
+  const b = document.getElementById("weatherRouteBanner");
+  if (!b) return;
+  if (st.isAdverse && mode !== 5){
+    b.style.display = "block";
+    b.className = "rec";
+    b.innerHTML = `☂️ <b>實時天氣聯動</b>：偵測到${st.reasonText || "不利天氣"}。建議為長者／學童切換至「非付費區優先（避雨／有蓋）」3D 路線。<button id="wxSwitch">一鍵切換有蓋路線</button>`;
+    const sw = document.getElementById("wxSwitch");
+    if (sw) sw.onclick = () => { const btn = document.querySelector('#modes button[data-m="5"]'); if (btn) btn.click(); };
+  } else if (st.isAdverse && mode === 5){
+    b.style.display = "block";
+    b.className = "ok";
+    b.innerHTML = `✅ 已啟用「避雨／有蓋遮蔭」3D 路線模式，減少日曬雨淋。`;
+  } else {
+    b.style.display = "none";
+    b.className = "";
+  }
+}
+
+document.getElementById("wxSim").onclick = () => {
+  const st = window.hkoWeatherState;
+  st.simulated = !st.simulated;
+  if (st.simulated){
+    st.temp = 34; st.rainfallMax = 15;
+    st.warningCodes = ["WHOT", "WRAIN"];
+    st.warnings = ["酷熱天氣警告（模擬）", "黃色暴雨警告信號（模擬）"];
+  }
+  recomputeAdverse();
+};
+fetchHkoWeather();
 
 // ---- AI 選樓顧問（廣東話規則引擎原型；正式版用 LLM 函數調用）----
 // 設計原則：AI 只做「參數解析與解釋」，配對邏輯為確定性計算，零幻覺（對應建議書 §5 AI 安全設計）

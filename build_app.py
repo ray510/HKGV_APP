@@ -20,11 +20,25 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 TPL = os.path.join(BASE, "estate_matcher_template.html")
 SRC = os.path.join(BASE, "data", "normalized", "all_estates_enriched.json")
 SCHOOL_CACHE = os.path.join(BASE, "data", "normalized", "edb_schools.json")
+KG_CACHE = os.path.join(BASE, "data", "normalized", "edb_kindergartens.json")
 OSM_CACHE = os.path.join(BASE, "data", "normalized", "osm_block_coords.json")
 GENERIC_BLOCK = re.compile(r"^\s*(第\s*[0-9一二兩三四五六七八九十]+\s*座|BLOCK\s*\d+)\s*$", re.I)
 OUT = os.path.join(BASE, "index.html")   # GitHub Pages 根路徑直接開 app
 K_NEAREST = 3
 sys.path.insert(0, BASE)
+
+
+def load_kindergartens():
+    """EDB 幼稚園池（快取 normalized；無則調 stage2 同款邏輯下載）。"""
+    if os.path.exists(KG_CACHE):
+        with open(KG_CACHE, encoding="utf-8") as f:
+            return json.load(f)
+    from stage2_full import build_kindergartens
+    kgs = build_kindergartens()
+    with open(KG_CACHE, "w", encoding="utf-8") as f:
+        json.dump(kgs, f, ensure_ascii=False)
+    print(f"  幼稚園池快取 → {os.path.relpath(KG_CACHE, BASE)}")
+    return kgs
 
 
 def load_schools():
@@ -185,6 +199,7 @@ with open(SRC, encoding="utf-8") as f:
 from stage2_full import build_mtr_venues
 venues = build_mtr_venues()
 schools = load_schools()
+kgs = load_kindergartens()
 
 # OSM 座級定位（首跑約 10 分鐘，快取後即時）
 ensure_block_coords(data)
@@ -197,6 +212,14 @@ for e in data:
         continue
     e["mtr_candidates"] = top_k_mtr(e["lat"], e["lng"], venues)
     e["school_candidates"] = top_k(e["lat"], e["lng"], schools)
+    # 最近 2 間幼稚園（1500m 內，供 3D 路線目的地）
+    e["nearest_kgs"] = [k for k in top_k(e["lat"], e["lng"], kgs, k=2) if k["distance_m"] <= 1500]
+    for k in e["nearest_kgs"]:
+        k["n"] = k.pop("zh")
+        k["d"] = k.pop("distance_m")
+        k.pop("en", None)
+        k["lat"] = round(k["lat"], 5)
+        k["lng"] = round(k["lng"], 5)
     n_mtr += 1
     n_sch += 1
     # 以邊界最近點同步修正 nearest_mtr ＋ 重算 s_mtr ＋ score（與管線公式一致）
