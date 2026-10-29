@@ -56,7 +56,8 @@
   #elevWrap b.t{font-size:12px;color:var(--accent);display:block;margin-bottom:4px}
   #elev{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:4px 2px 0}
   #elev svg{display:block;width:100%;height:auto}
-  .lands-attr{position:absolute;left:6px;bottom:6px;z-index:800;background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:5px;padding:2px 7px;font-size:10px;color:#374151;pointer-events:none}
+  .lands-attr{position:absolute;left:6px;bottom:6px;z-index:800;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:5px;padding:3px 8px 3px 6px;font-size:10px;color:#374151;pointer-events:none;display:flex;align-items:center;gap:6px}
+  .lands-attr img{height:16px;width:auto;display:block}
   .chips{display:flex;flex-wrap:wrap;gap:5px}
   .chip{font-size:11px;padding:4px 8px;border:1px solid var(--line);background:#fff;border-radius:12px;cursor:pointer;color:#374151;text-align:left}
   .chip:hover{border-color:#7c3aed;color:#7c3aed}
@@ -324,9 +325,10 @@ const map = L.map("map").setView([22.37, 114.10], 10);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {attribution: "© OpenStreetMap 貢獻者", maxZoom: 19}).addTo(map);
 
-// 合規：地圖表面清晰顯示地政總署版權（CSDI 參賽要求）
+// 合規：地圖表面清晰顯示地政總署標誌及版權聲明（CSDI 3D 行人路線 API 使用條款要求）
 const landsAttr = L.DomUtil.create("div", "lands-attr", map.getContainer());
-landsAttr.textContent = "Map from Lands Department © 地政總署｜3D 路線：CSDI 三維行人路線搜尋 API";
+landsAttr.innerHTML = '<img src="__LAND_SVG__" alt="地政總署 Lands Department 標誌">' +
+  '<span>Map from Lands Department © 地政總署｜3D 路線：CSDI 三維行人路線搜尋 API</span>';
 
 const markers = {};
 DATA.forEach(e => {

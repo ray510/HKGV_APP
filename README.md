@@ -85,6 +85,8 @@ python -m http.server 8642
 ├── csdi_awards_2026_proposal.md     ← CSDI Awards 2026 參賽建議書（10 頁內）
 │
 │ ── 原型（前端）──
+├── assets/
+│   └── landsd_logo_sm.svg           ← 地政總署官方標誌（landsd.gov.hk，build 時 base64 內嵌）
 ├── index.html                       ← ★ 最終成品：單檔原型（build 產出，勿手改；GitHub Pages 根頁）
 ├── estate_matcher_template.html     ← 原型模板（__DATA__ 佔位符）
 ├── build_app.py                     ← build 腳本：注入數據 + 計算港鐵候選站
@@ -294,6 +296,7 @@ python -m http.server 8642
 
 - 數據來源：香港特區政府 DATA.GOV.HK / CSDI Portal，版權屬各有關部門（房屋局、房委會、地政總署、教育局、社會福利署）。
 - 地圖底圖 © [OpenStreetMap](https://www.openstreetmap.org/copyright) 貢獻者；路線服務由地政總署提供。
+- **地圖表面版權聲明（CSDI《3D Pedestrian Route Search API》使用條款要求）**：地圖左下角固定顯示**地政總署官方標誌**（`assets/landsd_logo_sm.svg`，來源 landsd.gov.hk，build 時 base64 內嵌保持單檔）＋「**Map from Lands Department © 地政總署**」字樣＋3D 路線 API 出處，公開展示／參賽均符合要求。
 - 本專案為參賽開發原型，**非政府官方應用**；評分卡為開發者自訂指標，不構成任何揀樓／置業建議。
 - 揀樓決定請以房屋局及房委會官方公布為準。
 

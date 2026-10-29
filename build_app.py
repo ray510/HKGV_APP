@@ -171,6 +171,14 @@ def top_k(lat, lng, pool, k=K_NEAREST):
 
 with open(TPL, encoding="utf-8") as f:
     tpl = f.read()
+
+# 地政總署標誌（官方 SVG）base64 內嵌 —— CSDI 3D 行人路線 API 合規要求（標誌＋版權聲明）
+LOGO = os.path.join(BASE, "assets", "landsd_logo_sm.svg")
+import base64
+with open(LOGO, "rb") as f:
+    svg_b64 = base64.b64encode(f.read()).decode()
+tpl = tpl.replace("__LAND_SVG__", "data:image/svg+xml;base64," + svg_b64)
+
 with open(SRC, encoding="utf-8") as f:
     data = json.load(f)
 
