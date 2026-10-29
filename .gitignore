@@ -15,3 +15,5 @@ csdi_portal_scan*.py
 csdi_roadmap_winners.json
 csdi_portal_stats.json
 csdi_portal_scan4.py
+csdi_building_check*.py
+csdi_block_coverage.py
