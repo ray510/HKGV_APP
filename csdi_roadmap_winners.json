@@ -1,0 +1,60 @@
+{
+  "a_and_e_waiting": [
+    {
+      "title_tc": "按醫院劃分的急症室等候時間",
+      "title_en": "Accident and Emergency Waiting Time by Hospital",
+      "id": "fhb_rcd_1636947932221_94410",
+      "updated": "2025-10-13T00:00:00Z",
+      "urls": {
+        "FeatureServer": "https://portal.csdi.gov.hk/server/rest/services/common/fhb_rcd_1636947932221_94410/FeatureServer",
+        "WFS": "https://portal.csdi.gov.hk/server/services/common/fhb_rcd_1636947932221_94410/MapServer/WFSServer?service=wfs&request=GetCapabilities",
+        "WMS": "https://portal.csdi.gov.hk/server/services/common/fhb_rcd_1636947932221_94410/MapServer/WMSServer?service=wms&request=GetCapabilities",
+        "geojson": "https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id=fhb_rcd_1636947932221_94410&format=geojson&layer_name=geotagging"
+      },
+      "abstract": "This dataset contains the A&E waiting time and Geolocation of the hospitals under the Hospital Authority."
+    },
+    {
+      "title_tc": "按醫院劃分的急症室就診人次",
+      "title_en": "Number of Accident and Emergency Attendances by Hospital",
+      "id": "fhb_rcd_1636367371824_60543",
+      "updated": "2025-12-12T00:00:00Z",
+      "urls": {
+        "FeatureServer": "https://portal.csdi.gov.hk/server/rest/services/common/fhb_rcd_1636367371824_60543/FeatureServer",
+        "WFS": "https://portal.csdi.gov.hk/server/services/common/fhb_rcd_1636367371824_60543/MapServer/WFSServer?service=wfs&request=GetCapabilities",
+        "WMS": "https://portal.csdi.gov.hk/server/services/common/fhb_rcd_1636367371824_60543/MapServer/WMSServer?service=wms&request=GetCapabilities",
+        "geojson": "https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id=fhb_rcd_1636367371824_60543&format=geojson&layer_name=geotagging"
+      },
+      "abstract": "This dataset contains the service throughput of A&E attendances and Geolocation of the hospitals under the Hospital Authority."
+    }
+  ],
+  "elderly_homes": [
+    {
+      "title_tc": "香港安老院位置",
+      "title_en": "Location of Residential Care Homes for the Elderly in Hong Kong",
+      "id": "swd_rcd_1633511356628_23572",
+      "updated": "2026-10-25T00:00:00Z",
+      "urls": {
+        "FeatureServer": "https://portal.csdi.gov.hk/server/rest/services/common/swd_rcd_1633511356628_23572/FeatureServer",
+        "WFS": "https://portal.csdi.gov.hk/server/services/common/swd_rcd_1633511356628_23572/MapServer/WFSServer?service=wfs&request=GetCapabilities",
+        "WMS": "https://portal.csdi.gov.hk/server/services/common/swd_rcd_1633511356628_23572/MapServer/WMSServer?service=wms&request=GetCapabilities",
+        "geojson": "https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id=swd_rcd_1633511356628_23572&format=geojson&layer_name=BIRCHE"
+      },
+      "abstract": "Spatial Locations of Residential Care Homes for the Elderly in Hong Kong"
+    }
+  ],
+  "public_piers": [
+    {
+      "title_tc": "公眾碼頭",
+      "title_en": "Public Piers",
+      "id": "cedd_rcd_1696844622988_9055",
+      "updated": "2024-01-18T00:00:00Z",
+      "urls": {
+        "FeatureServer": "https://portal.csdi.gov.hk/server/rest/services/common/cedd_rcd_1696844622988_9055/FeatureServer",
+        "WFS": "https://portal.csdi.gov.hk/server/services/common/cedd_rcd_1696844622988_9055/MapServer/WFSServer?service=wfs&request=GetCapabilities",
+        "WMS": "https://portal.csdi.gov.hk/server/services/common/cedd_rcd_1696844622988_9055/MapServer/WMSServer?service=wms&request=GetCapabilities",
+        "geojson": "https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id=cedd_rcd_1696844622988_9055&format=geojson&layer_name=PMIS_point"
+      },
+      "abstract": "Public Piers maintained by CEDD"
+    }
+  ]
+}

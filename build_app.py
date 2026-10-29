@@ -21,6 +21,7 @@ TPL = os.path.join(BASE, "estate_matcher_template.html")
 SRC = os.path.join(BASE, "data", "normalized", "all_estates_enriched.json")
 SCHOOL_CACHE = os.path.join(BASE, "data", "normalized", "edb_schools.json")
 KG_CACHE = os.path.join(BASE, "data", "normalized", "edb_kindergartens.json")
+HOSPITAL_SRC = os.path.join(BASE, "data", "raw", "osm_hospitals.json")
 OSM_CACHE = os.path.join(BASE, "data", "normalized", "osm_block_coords.json")
 GENERIC_BLOCK = re.compile(r"^\s*(第\s*[0-9一二兩三四五六七八九十]+\s*座|BLOCK\s*\d+)\s*$", re.I)
 OUT = os.path.join(BASE, "index.html")   # GitHub Pages 根路徑直接開 app
@@ -39,6 +40,15 @@ def load_kindergartens():
         json.dump(kgs, f, ensure_ascii=False)
     print(f"  幼稚園池快取 → {os.path.relpath(KG_CACHE, BASE)}")
     return kgs
+
+
+def load_ae_hospitals():
+    """OSM 醫院快取（stage2 抓取）；只取 emergency=yes 急症醫院。"""
+    if not os.path.exists(HOSPITAL_SRC):
+        return []
+    with open(HOSPITAL_SRC, encoding="utf-8") as f:
+        arr = json.load(f)
+    return [h for h in arr if h.get("ae")]
 
 
 def load_schools():
@@ -200,6 +210,7 @@ from stage2_full import build_mtr_venues
 venues = build_mtr_venues()
 schools = load_schools()
 kgs = load_kindergartens()
+ae_hosp = load_ae_hospitals()
 
 # OSM 座級定位（首跑約 10 分鐘，快取後即時）
 ensure_block_coords(data)
@@ -224,6 +235,13 @@ for e in data:
         k.pop("en", None)
         k["lat"] = round(k["lat"], 5)
         k["lng"] = round(k["lng"], 5)
+    # 5km 內全部急症醫院（供逐間揀；上限 12，冇就最近 3 間）
+    hosp_ranked = sorted(
+        ({"n": h["zh"], "lat": round(h["lat"], 5), "lng": round(h["lng"], 5),
+          "d": int(haversine(e["lat"], e["lng"], h["lat"], h["lng"]))} for h in ae_hosp),
+        key=lambda x: x["d"])
+    near_h = [h for h in hosp_ranked if h["d"] <= 5000][:12]
+    e["ae_hospitals"] = near_h if near_h else hosp_ranked[:3]
     n_mtr += 1
     n_sch += 1
     # 以邊界最近點同步修正 nearest_mtr ＋ 重算 s_mtr ＋ score（與管線公式一致）

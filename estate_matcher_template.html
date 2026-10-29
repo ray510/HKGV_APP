@@ -455,10 +455,11 @@ function render(){
     const dests = ["mtr","sch","care","eld","shel","kg","pg","hosp"].filter(d => e.lat != null && DEST[d].pool(e).length);
     const routeBtns = dests.length
       ? `<div class="dchips">` + dests.map(d => {
-          const cnt = d === "kg" ? ` ${DEST[d].pool(e).length}` : "";
+          const cnt = (d === "kg" || d === "hosp") ? ` ${DEST[d].pool(e).length}` : "";
           return `<button class="dchip" data-p="${e._key}" data-d="${d}" data-lb="${DEST[d].label}">${DEST[d].label}${cnt}</button>`;
         }).join("") + `</div>`
       : "";
+    // chip 數量：幼稚園／急症醫院顯示可選數目
     const canChainChild = e.lat != null && DEST.mtr.pool(e).length && (e.nearest_care || e.nearest_school);
     const canChainElder = e.lat != null && DEST.mtr.pool(e).length && (e.nearest_elderly || e.nearest_shelter);
     const chainBtns = (canChainChild || canChainElder)
@@ -500,8 +501,9 @@ function render(){
     box.appendChild(el);
   });
   box.querySelectorAll(".dchip").forEach(btn => btn.onclick = () => {
-    if (btn.dataset.d === "kg") openKgPicker(btn.dataset.p);   // 幼稚園：先揀邊間
-    else planRoute(btn.dataset.p, btn.dataset.d);
+    const d = btn.dataset.d;
+    if (d === "kg" || d === "hosp") openDestPicker(btn.dataset.p, d);   // 先揀邊間
+    else planRoute(btn.dataset.p, d);
   });
   box.querySelectorAll(".go.chain").forEach(btn => btn.onclick = () => planChain(btn.dataset.p, btn.dataset.c));
   box.querySelectorAll(".addCmp").forEach(btn => btn.onclick = () => {
@@ -716,20 +718,22 @@ function bindElevHover(){
   });
 }
 
-// ---- 幼稚園選擇器（800m 內全部，逐間揀去規劃 3D 路線）----
-function openKgPicker(key){
+// ---- 目的地選擇器（幼稚園：800m 全部；急症醫院：5km 全部，逐間揀去規劃 3D 路線）----
+function openDestPicker(key, kind){
   const e = DATA.find(x => x._key === key);
-  const list = (e.nearest_kgs || []).slice().sort((a, b) => a.d - b.d);
-  document.getElementById("kgTitle").textContent =
-    `👶 ${e.name_tc}：800m 內幼稚園（${list.length} 間）`;
+  const isKg = kind === "kg";
+  const list = (isKg ? (e.nearest_kgs || []) : (e.ae_hospitals || [])).slice().sort((a, b) => a.d - b.d);
+  document.getElementById("kgTitle").textContent = isKg
+    ? `👶 ${e.name_tc}：800m 內幼稚園（${list.length} 間）`
+    : `🏥 ${e.name_tc}：5km 內急症醫院（${list.length} 間）`;
   const box = document.getElementById("kgList");
   box.innerHTML = list.length
     ? list.map((k, i) => `<button class="kgRow" data-i="${i}"><b>${k.n}</b><span>${k.d} 米</span></button>`).join("")
-    : `<div class="hint">此屋邨 800m 內冇幼稚園記錄。</div>`;
+    : `<div class="hint">附近冇記錄。</div>`;
   box.querySelectorAll(".kgRow").forEach(b => b.onclick = () => {
     const k = list[+b.dataset.i];
     document.getElementById("kgModal").style.display = "none";
-    planRoute(key, "kg", null, {zh: k.n, lat: k.lat, lng: k.lng, distance_m: k.d});
+    planRoute(key, kind, null, {zh: k.n, lat: k.lat, lng: k.lng, distance_m: k.d});
   });
   document.getElementById("kgModal").style.display = "flex";
 }
@@ -748,7 +752,7 @@ const DEST = {
   kg:   {label:"👶 幼稚園",  kind:"幼稚園",   pool:e => (e.nearest_kgs||[]).map(k => ({zh:k.n, lat:k.lat, lng:k.lng, distance_m:k.d}))},
   pg:   {label:"🎠 遊樂場",  kind:"共融遊樂場", pool:e => (e.nearest_pg_name_tc && e.nearest_pg_lat != null
           ? [{zh:e.nearest_pg_name_tc, lat:e.nearest_pg_lat, lng:e.nearest_pg_lng, distance_m:e.nearest_pg_dist_m}] : [])},
-  hosp: {label:"🏥 急症室",  kind:"急症醫院", pool:e => [e.nearest_ae_hospital].filter(Boolean)},
+  hosp: {label:"🏥 急症室",  kind:"急症醫院", pool:e => (e.ae_hospitals||[]).map(h => ({zh:h.n, lat:h.lat, lng:h.lng, distance_m:h.d}))},
 };
 const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場", hosp:"🏥 急症室"};
 
