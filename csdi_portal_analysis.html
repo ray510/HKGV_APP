@@ -511,6 +511,47 @@
     其餘（LandsD 同意書系列／認可鄉村／pland 統計區／休憩用地）係 file-download 冇 live count，要用 file-api geojson 落檔先數到。
     ② 全部候選及實測數： <code>rea_analysis/housing_sweep.json</code>／<code>housing_wfs_counts.json</code>（掃描 verify_housing_wfs.py）。</div>
 
+  <!-- ============ 13c 全目錄覆蓋審計 ============ -->
+  <h2 class="sec"><span class="tag">⑬c</span>★ 全目錄覆蓋審計——仲有無相關資料？（2026-10-29 18:50 實測）</h2>
+  <p class="lead">三輪掃描（⑪ 排行 194／⑫ 第二輪 132／⑬b 房屋 75）合併後覆蓋 ≈680 個獨立數據集；未掃過剩 <b>479 條</b>。
+    對剩餘部分再過一次廣譜關鍵字（行人／公園／交通／復康／天氣／安全／數碼共融…）→ <b>117 條相關</b>（頂部 20 條已逐一 WFS hits 實測）；
+    其餘 ≈362 條屬行政／工程／牌照／歷年選舉／基建管線類，對項目冇直接用。<b>結論：目錄已掃到冇大肉，主要遺珠係下面 9 組。</b></p>
+
+  <table>
+    <tr><th style="width:16%">組</th><th style="width:44%">數據集（rcd id｜WFS 實測）</th><th>點用</th></tr>
+    <tr><td><b>① 有蓋步行網絡三件套</b>（路政署）</td>
+      <td><b>行人天橋 1,199</b>（<code>hyd_rcd_1632360512481_74705</code>）＋<b>行人隧道 573</b>（<code>…_1632360845029_59241</code>）＋<b>行人通道上蓋 344</b>（<code>…_1632360364210_72608</code>）＝<b>2,116 個立體行人設施</b></td>
+      <td>「有蓋／無障礙步行網絡密度」新評分素材——465,892 段 3D 行人路網之外嘅<b>立體層</b>；雨天/酷熱出行韌性故事</td></tr>
+    <tr><td><b>② 極端天氣風險</b></td>
+      <td>水浸黑點 4（<code>dsd_rcd_1728891975004_392</code>）＋<b>香港暑熱指數 10 站</b>（<code>hko_rcd_1787711252202_42844</code>）＋山泥傾瀉歷史位置 <b>113,166</b>（1924-2022，<code>cedd_rcd_1636520697377_96152</code>）</td>
+      <td>HKHI 升級酷熱聯動（而家只用氣溫/雨量，暑熱指數更科學）；水浸黑點做 ❄️🏠 天氣 banner 對稱位；山泥歷史做斜坡背景</td></tr>
+    <tr><td><b>③ 復康組合</b>（殘疾 Persona）</td>
+      <td><b>殘疾人士院舍 351</b>（<code>swd_rcd_1633510906906_92310</code>）＋綜合社區康復中心＋日間社區康復中心＋社區復康網絡＋殘疾暫託／緊急住宿 3 集</td>
+      <td>復康維度由零專門源變完整網絡——殘疾人士 Persona 嘅「院舍/復康中心 800m」pill</td></tr>
+    <tr><td><b>④ 進修鏈</b></td>
+      <td><b>自修室 194</b>（<code>edb_rcd_1633320468580_185</code>，教育局官方）</td>
+      <td>A4 圖書館嘅完美拍檔——返學鏈「自修室 800m」pill（考生 Persona）</td></tr>
+    <tr><td><b>⑤ 數碼共融</b></td>
+      <td><b>WiFi 熱點 5,024</b>（<code>ofca_rcd_1632191339349_48637</code>）＋「友智識」數碼共融支援點（<code>dpo_rcd_1729485267557_62693</code>）</td>
+      <td>基層/長者上網支援——數碼共融敘事直場（配合村屋 3D 路線故事）</td></tr>
+    <tr><td><b>⑥ 過路安全＋步行友好</b></td>
+      <td>路口交通黑點 62（<code>td_rcd_1638947917303_26860</code>）＋行人專用街道 8（<code>td_rcd_1697081765097_37742</code>）</td>
+      <td>過路安全子項（長者/小童 Persona 加分位）</td></tr>
+    <tr><td><b>⑦ 交通錨點補充</b></td>
+      <td><b>電車站 117</b>（<code>td_rcd_1638875413253_59498</code>）＋山頂纜車站＋智慧燈柱交通探測器／AI 影像交通數據（賽後實時層）</td>
+      <td>港島錨點必備（港鐵/小巴/巴士/渡輪之後嘅缺口）；實時層留賽後</td></tr>
+    <tr><td><b>⑧ 社區健康/家庭</b></td>
+      <td>緩跑徑/健身徑 110＋戶外健身設施＋健步行徑＋兒童遊戲室 42＋單車泊位 24＋登革熱誘蚊器分區 <b>3,913</b> 多邊形（<code>fehd_rcd_1629966670823_4638</code>）</td>
+      <td>長者健體／家庭 Persona pill；誘蚊器指數做夏天衛生風險 overlay</td></tr>
+    <tr><td><b>⑨ 住房類型再補一刀</b></td>
+      <td>青年宿舍 7 個項目地址（<code>hyab_rcd_1696383918573_24213</code>，民政及青年事務局）</td>
+      <td>青年資助住房——source_type 可加 YTH（第六種類型，量少但故事完整）</td></tr>
+  </table>
+
+  <div class="note"><b>注意</b>：①「共融遊樂設施」42（<code>lcsd_rcd_1670385374031_89486</code>）同現用 <code>lcsd_playgrounds.json</code>（44 個）極可能同源——接入前先做去重核對。
+    ② 選區分界 2023 版（<code>reo_rcd_1634528082461_24797</code>）可做地圖 overlay（賽後）。
+    ③ 審計產物：<code>rea_analysis/coverage_audit.py</code> → <code>coverage_audit.json</code>（117 條全列＋部門分佈）。</div>
+
   <div class="note">⚠️ 如實聲明位：私人樓／村屋<b>冇單位級公開數據</b>（私隱），升降機覆蓋／平均面積／樓層呢啲欄位只對公屋簡屋有效——
     前端按 source_type 條件顯示，唔好硬補估算。普查屋苑統計係 2021 時點。居屋「補地價」狀態唔喺數據內。</div>
 
@@ -526,6 +567,7 @@
   實測日期 2026-10-29｜掃描腳本 csdi_portal_scan.py／scan2/3/4｜全量目錄 data/csdi_catalog.json（1,159 條）｜
   REA 逆向＋全量 XML：csdi_portal_analysis ⑩、rea_analysis/（grab_all.py + 證據包）、data/csdi_catalog_full.json + csdi_metadata_xml.zip｜
   第⑬b節：rea_analysis/housing_sweep.py + verify_housing_wfs.py（WFS resultType=hits 實測）｜
+  第⑬c節：rea_analysis/coverage_audit.py（479 條未掃剩量覆蓋審計）｜
   《屋邨智配・3D 無障礙生活圈》CSDI Awards 2026 調研產物
 </footer>
 </body>

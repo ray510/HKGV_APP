@@ -14,7 +14,7 @@
 
 用法：python build_app.py
 """
-import json, math, os, re, sys, time, urllib.parse, urllib.request
+import json, math, os, re, sys, time, urllib.error, urllib.parse, urllib.request
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 TPL = os.path.join(BASE, "estate_matcher_template.html")
@@ -208,6 +208,11 @@ def ensure_prv_blocks(data):
                 with urllib.request.urlopen(req, timeout=60) as r:
                     got = json.loads(r.read().decode("utf-8", "replace"))
                 break
+            except urllib.error.HTTPError as ex:
+                if ex.code in (403, 429) and attempt < 2:
+                    time.sleep(15 * (attempt + 1))   # 節流：長退避
+                elif attempt < 2:
+                    time.sleep(2 * (attempt + 1))
             except Exception:
                 if attempt < 2:
                     time.sleep(2 * (attempt + 1))
@@ -253,6 +258,55 @@ def ensure_prv_blocks(data):
     return n_prv
 
 
+def _landsd_name_query(batch, cache):
+    """LandsD BuildingNameTC IN 批量查詢 → 寫入 cache。
+    成批失敗（403／WAF 對某啲名敏感，如 '(BRO)'、單字）就拆單名隔離重試；
+    負快取只喺查詢「成功」但冇結果時記（節流失敗唔記，留待下次重試）。"""
+    where = "BuildingNameTC IN (" + ",".join("'" + n.replace("'", "''") + "'" for n in batch) + ")"
+    qs = urllib.parse.urlencode({
+        "where": where,
+        "outFields": "BuildingNameTC,BuildingBlockType,Storeys,TopHeight",
+        "returnCentroid": "true", "returnGeometry": "false",
+        "outSR": "4326", "f": "json"})
+    got = None
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(LANDSD_QUERY + "?" + qs,
+                                         headers={"User-Agent": "HKGV-prototype/1.0 (CSDI Awards 2026)"})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                got = json.loads(r.read().decode("utf-8", "replace"))
+            break
+        except urllib.error.HTTPError as ex:
+            if ex.code in (403, 429) and attempt < 2:
+                time.sleep(15 * (attempt + 1))   # 節流：長退避
+            elif attempt < 2:
+                time.sleep(2 * (attempt + 1))
+        except Exception:
+            if attempt < 2:
+                time.sleep(2 * (attempt + 1))
+    if got is None or "error" in got:
+        # 成批失敗 → 拆單名隔離（找出觸發 WAF 嘅名，其餘照樣命中）
+        if len(batch) > 1:
+            for n in batch:
+                _landsd_name_query([n], cache)
+            return
+        if len(batch) == 1:
+            print(f"    LandsD 單名仍失敗：{batch[0][:20]}（跳過，下次 build 重試）", flush=True)
+        return   # 失敗：唔做負快取
+    for ft in got.get("features", []):
+        a = ft.get("attributes") or {}
+        c = ft.get("centroid") or {}
+        nm = (a.get("BuildingNameTC") or "").strip()
+        if not nm or c.get("x") is None:
+            continue
+        cache.setdefault(nm, []).append({
+            "lat": round(c["y"], 5), "lng": round(c["x"], 5),
+            "t": a.get("BuildingBlockType") or "",
+            "s": a.get("Storeys"), "h": a.get("TopHeight")})
+    for n in batch:
+        cache.setdefault(n, [])   # 負快取：查詢成功但冇結果先記
+
+
 def ensure_landsd_block_coords(data):
     """官方座級定位（主要來源）：地政總署「建築物」數據集（2026-10-22 更新）。
     BuildingNameTC 逐座名＋BuildingBlockType（Tower/Podium）＋Storeys/TopHeight，
@@ -268,37 +322,8 @@ def ensure_landsd_block_coords(data):
     if todo:
         print(f"  LandsD 座級：{len(todo)} 個新座名待查（分 {len(todo)//25 + 1} 批）…", flush=True)
         for i in range(0, len(todo), 25):
-            batch = todo[i:i+25]
-            where = "BuildingNameTC IN (" + ",".join("'" + n.replace("'", "''") + "'" for n in batch) + ")"
-            qs = urllib.parse.urlencode({
-                "where": where,
-                "outFields": "BuildingNameTC,BuildingBlockType,Storeys,TopHeight",
-                "returnCentroid": "true", "returnGeometry": "false",
-                "outSR": "4326", "f": "json"})
-            got = None
-            for attempt in range(3):
-                try:
-                    req = urllib.request.Request(LANDSD_QUERY + "?" + qs,
-                                                 headers={"User-Agent": "HKGV-prototype/1.0 (CSDI Awards 2026)"})
-                    with urllib.request.urlopen(req, timeout=60) as r:
-                        got = json.loads(r.read().decode("utf-8", "replace"))
-                    break
-                except Exception:
-                    if attempt < 2:
-                        time.sleep(2 * (attempt + 1))
-            if not got or "error" in (got or {}):
-                continue
-            for ft in got.get("features", []):
-                a = ft.get("attributes") or {}
-                c = ft.get("centroid") or {}
-                nm = (a.get("BuildingNameTC") or "").strip()
-                if not nm or c.get("x") is None:
-                    continue
-                cache.setdefault(nm, []).append({
-                    "lat": round(c["y"], 5), "lng": round(c["x"], 5),
-                    "t": a.get("BuildingBlockType") or "",
-                    "s": a.get("Storeys"), "h": a.get("TopHeight")})
-            time.sleep(0.3)
+            _landsd_name_query(todo[i:i+25], cache)
+            time.sleep(0.6)
         with open(LANDSD_CACHE, "w", encoding="utf-8") as f:
             json.dump(cache, f, ensure_ascii=False)
     n_hit = 0
@@ -321,6 +346,46 @@ def ensure_landsd_block_coords(data):
             if best.get("h") is not None:
                 b["h"] = round(float(best["h"]), 1)
             n_hit += 1
+    # 第二 pass：仍冇座標嘅座試「邨名＋座名」串接（LandsD 對新居屋命名如「山麗苑松山閣」）
+    todo2 = {}
+    for e in data:
+        if e.get("lat") is None:
+            continue
+        for b in e.get("blocks", []):
+            if b.get("lat") is not None or not (b.get("n") or "").strip():
+                continue
+            combo = (e["name_tc"] + b["n"]).strip()
+            if combo not in cache and combo not in todo2:
+                todo2[combo] = True
+    if todo2:
+        combos = sorted(todo2)
+        print(f"  LandsD 座級（串接名 fallback）：{len(combos)} 個待查…", flush=True)
+        for i in range(0, len(combos), 25):
+            _landsd_name_query(combos[i:i+25], cache)
+            time.sleep(0.6)
+        with open(LANDSD_CACHE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False)
+        for e in data:
+            if e.get("lat") is None:
+                continue
+            for b in e.get("blocks", []):
+                if b.get("lat") is not None or not (b.get("n") or "").strip():
+                    continue
+                cands = cache.get((e["name_tc"] + b["n"]).strip())
+                if not cands:
+                    continue
+                ranked = sorted(
+                    ((haversine(e["lat"], e["lng"], c["lat"], c["lng"]), c) for c in cands),
+                    key=lambda x: (x[1].get("t") != "Tower", x[0]))
+                dist, best = ranked[0]
+                if dist > 800:
+                    continue
+                b["lat"], b["lng"] = best["lat"], best["lng"]
+                if best.get("s") is not None:
+                    b["s"] = best["s"]
+                if best.get("h") is not None:
+                    b["h"] = round(float(best["h"]), 1)
+                n_hit += 1
     print(f"  LandsD 座級座標：套用 {n_hit} 座（官方，快取 {os.path.relpath(LANDSD_CACHE, BASE)}）", flush=True)
     return n_hit
 
