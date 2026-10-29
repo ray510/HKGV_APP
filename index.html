@@ -381,10 +381,26 @@ function setProfile(p){
 }
 
 // ---- 統計列 ----
+const ST_NAME = {PRH:"公屋",LPH:"簡約公屋",HOS:"居屋",PRV:"私人",VLG:"鄉村"};
+const stCounts = {};
+DATA.forEach(e => { const k = e.source_type || e.source; stCounts[k] = (stCounts[k]||0)+1; });
 const nUnits = DATA.reduce((a,e)=>a+(e.total_units||0),0);
-const nPrh = DATA.filter(e=>e.source==="PRH").length, nLph = DATA.length-nPrh;
+const stSummary = Object.entries(ST_NAME).filter(([k])=>stCounts[k]).map(([k])=>`${ST_NAME[k]} ${stCounts[k]}`).join("＋");
 document.getElementById("statbar").innerHTML =
-  `<b>${DATA.length}</b> 個屋邨／項目（公屋 ${nPrh} ＋ 簡約公屋 ${nLph}）· <b>${nUnits.toLocaleString()}</b> 個單位<br>數據：房屋局・房委會・教育局・社署・地政總署`;
+  `<b>${DATA.length}</b> 個屋邨／項目（${stSummary}）· 公屋簡屋合共 <b>${nUnits.toLocaleString()}</b> 個單位<br>數據：房屋局・房委會・統計處・教育局・社署・地政總署・機電署`;
+
+// 地圖 popup 共用：單位數只對有數據類型顯示；居屋顯示落成年份、私人顯示普查人口
+function popupHtml(e, withProfile){
+  const stn = ST_NAME[e.source_type || e.source] || "";
+  const units = e.total_units != null ? `｜${e.total_units.toLocaleString()} 個單位`
+    : e.source_type === "HOS" ? (e.hos_year ? `｜居屋 ${e.hos_year} 落成` : "｜居屋屋苑")
+    : e.source_type === "PRV" ? (e.census_pop ? `｜人口 ${e.census_pop.toLocaleString()}（2021 普查）` : "｜私人屋苑")
+    : e.source_type === "VLG" ? "｜鄉村（村級錨點）" : "";
+  const mm = e.nearest_mtr;
+  return `<b>${e.name_tc}</b>${stn ? `（${stn}）` : ""}<br>` +
+    `${e.district_tc || "-"}${units}｜生活圈${withProfile ? `（${WEIGHTS[profile].label}）` : ""} <b>${withProfile ? scoreOf(e) : e.score}</b> 分<br>` +
+    (mm ? `最近港鐵：${mm.zh} 約 ${mm.distance_m} 米` : "暫無港鐵數據");
+}
 
 // ---- 地圖 ----
 const map = L.map("map").setView([22.37, 114.10], 10);
@@ -403,10 +419,7 @@ DATA.forEach(e => {
   markers[e._key] = L.circleMarker([e.lat, e.lng], {
     radius: 5 + Math.min(9, (e.total_units||0)/1800),
     color: c, fillColor: c, fillOpacity: .7, weight: 2
-  }).addTo(map).bindPopup(
-    `<b>${e.name_tc}</b>${e.source==="LPH"?"（簡約公屋）":""}<br>` +
-    `${e.district_tc}｜${(e.total_units||0).toLocaleString()} 個單位｜生活圈 <b>${e.score}</b> 分<br>` +
-    (e.nearest_mtr ? `最近港鐵：${e.nearest_mtr.zh} 約 ${e.nearest_mtr.distance_m} 米` : "暫無港鐵數據"));
+  }).addTo(map).bindPopup(popupHtml(e, false));
 });
 
 const legend = L.control({position: "bottomright"});
@@ -560,10 +573,7 @@ function render(){
     const on = matched.has(e._key);
     mk.setStyle(on ? {color: sc, fillColor: sc, opacity: 1, fillOpacity: .7, weight: 2}
                    : {color: sc, fillColor: sc, opacity: .15, fillOpacity: .06, weight: 1});
-    const mm = e.nearest_mtr;
-    mk.setPopupContent(`<b>${e.name_tc}</b>${e.source==="LPH"?"（簡約公屋）":""}<br>` +
-      `${e.district_tc}｜${(e.total_units||0).toLocaleString()} 個單位｜生活圈（${WEIGHTS[profile].label}）<b>${scoreOf(e)}</b> 分<br>` +
-      (mm ? `最近港鐵：${mm.zh} 約 ${mm.distance_m} 米` : "暫無港鐵數據"));
+    mk.setPopupContent(popupHtml(e, true));
   });
 
   // 比較列
