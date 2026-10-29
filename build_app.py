@@ -27,6 +27,8 @@ LANDSD_CACHE = os.path.join(BASE, "data", "normalized", "landsd_block_coords.jso
 CSDI_BLOCK_CACHE = os.path.join(BASE, "data", "normalized", "csdi_block_coords.json")
 FERRY_CACHE = os.path.join(BASE, "data", "normalized", "ferry_piers.json")
 EMSD_BLOCK_LIFTS = os.path.join(BASE, "data", "normalized", "emsd_block_lifts.json")
+PRV_BLOCK_CACHE = os.path.join(BASE, "data", "normalized", "prv_blocks.json")
+CENSUS_POLY = os.path.join(BASE, "data", "normalized", "censtatd_estate_polygons.json")
 LANDSD_QUERY = ("https://portal.csdi.gov.hk/server/rest/services/common/"
                 "landsd_rcd_1637211194312_35158/FeatureServer/0/query")
 GENERIC_BLOCK = re.compile(r"^\s*(第\s*[0-9一二兩三四五六七八九十]+\s*座|BLOCK\s*\d+)\s*$", re.I)
@@ -150,6 +152,105 @@ def attach_emsd_lifts(data):
                 n += 1
     print(f"  🛗 EMSD 升降機覆核：{n} 座有數據", flush=True)
     return n
+
+
+def _point_in_ring(lat, lng, ring):
+    """Ray casting：ring=[(x,y),...]。"""
+    inside = False
+    j = len(ring) - 1
+    for i in range(len(ring)):
+        xi, yi = ring[i][0], ring[i][1]
+        xj, yj = ring[j][0], ring[j][1]
+        if ((yi > lat) != (yj > lat)) and (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
+def _point_in_rings(lat, lng, rings):
+    return any(_point_in_ring(lat, lng, ring) for ring in rings if len(ring) >= 3)
+
+
+def ensure_prv_blocks(data):
+    """私人屋苑（PRV）座別發現：普查數據冇座名 → 地政「建築物」每邨 bbox 一查
+    （Tower＋BuildingNameTC 非空 → 逐座 centroid＋層數／樓高）。
+    過濾：座 centroid 落喺普查分界多邊形內（point-in-polygon，精確防抓隔籬屋苑）；
+    冇多邊形時 fallback 距邨中心 ≤450m。快取 prv_blocks.json（key=source|name_tc）。"""
+    cache = {}
+    if os.path.exists(PRV_BLOCK_CACHE):
+        with open(PRV_BLOCK_CACHE, encoding="utf-8") as f:
+            cache = json.load(f)
+    polys = {}
+    if os.path.exists(CENSUS_POLY):
+        with open(CENSUS_POLY, encoding="utf-8") as f:
+            polys = json.load(f)
+    todo = [e for e in data
+            if e.get("source_type") == "PRV" and e.get("lat") is not None and not e.get("blocks")
+            and (e["source"] + "|" + e["name_tc"]) not in cache]
+    if todo:
+        print(f"  PRV 座別發現：{len(todo)} 個私人屋苑待查（每邨 1 bbox 查詢，多邊形過濾）…", flush=True)
+    for idx, e in enumerate(todo):
+        key = e["source"] + "|" + e["name_tc"]
+        rings = polys.get(e["name_tc"], [])
+        bbox = f"{e['lng'] - 0.005},{e['lat'] - 0.0038},{e['lng'] + 0.005},{e['lat'] + 0.0038}"
+        qs = urllib.parse.urlencode({
+            "where": "BuildingBlockType='Tower' AND BuildingNameTC IS NOT NULL",
+            "geometry": bbox, "geometryType": "esriGeometryEnvelope", "inSR": "4326",
+            "spatialRel": "esriSpatialRelIntersects",
+            "outFields": "BuildingNameTC,Storeys,TopHeight",
+            "returnCentroid": "true", "returnGeometry": "false",
+            "outSR": "4326", "f": "json", "resultRecordCount": "80"})
+        got = None
+        for attempt in range(3):
+            try:
+                req = urllib.request.Request(LANDSD_QUERY + "?" + qs,
+                                             headers={"User-Agent": "HKGV-prototype/1.0 (CSDI Awards 2026)"})
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    got = json.loads(r.read().decode("utf-8", "replace"))
+                break
+            except Exception:
+                if attempt < 2:
+                    time.sleep(2 * (attempt + 1))
+        blocks, seen = [], set()
+        for ft in (got or {}).get("features", []):
+            a = ft.get("attributes") or {}
+            c = ft.get("centroid") or {}
+            nm = (a.get("BuildingNameTC") or "").strip()
+            if not nm or c.get("x") is None or nm in seen:
+                continue
+            if rings:
+                if not _point_in_rings(c["y"], c["x"], rings):
+                    continue
+            elif haversine(e["lat"], e["lng"], c["y"], c["x"]) > 450:
+                continue
+            seen.add(nm)
+            blocks.append({"n": nm, "u": None, "e": None, "f1": None, "f2": None, "a": None,
+                           "lat": round(c["y"], 5), "lng": round(c["x"], 5),
+                           "s": a.get("Storeys"),
+                           "h": round(float(a["TopHeight"]), 1) if a.get("TopHeight") is not None else None})
+        blocks.sort(key=lambda b: b["n"])
+        cache[key] = blocks[:80]
+        e["blocks"] = cache[key]
+        e["blocks_count"] = e.get("blocks_count") or (len(cache[key]) or None)
+        if (idx + 1) % 40 == 0:
+            print(f"    … {idx + 1}/{len(todo)}", flush=True)
+        time.sleep(0.25)
+    if todo:
+        with open(PRV_BLOCK_CACHE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False)
+    # 已快取嘅套用
+    n_applied = 0
+    for e in data:
+        if e.get("source_type") != "PRV" or e.get("blocks"):
+            continue
+        cached = cache.get(e["source"] + "|" + e["name_tc"])
+        if cached:
+            e["blocks"] = cached
+            e["blocks_count"] = e.get("blocks_count") or (len(cached) or None)
+            n_applied += 1
+    n_prv = sum(1 for e in data if e.get("source_type") == "PRV" and e.get("blocks"))
+    print(f"  PRV 座別發現：{n_prv} 個私人屋苑有座別明細（新查 {len(todo)}，快取套用 {n_applied}）", flush=True)
+    return n_prv
 
 
 def ensure_landsd_block_coords(data):
@@ -361,6 +462,8 @@ ae_hosp = load_ae_hospitals()
 # 座級定位三層 fallback：CSDI bbox 實測 → LandsD 按名查 → OSM
 ensure_csdi_block_coords(data)
 ensure_landsd_block_coords(data)
+# 私人屋苑座別發現（普查冇座名 → LandsD bbox 查）
+ensure_prv_blocks(data)
 ensure_block_coords(data)
 
 # 離島錨點：最近渡輪碼頭

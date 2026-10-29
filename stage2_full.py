@@ -683,6 +683,8 @@ def build_hos():
         nb = str(p.get("no_of_blocks") or "").strip()
         flats = _parse_int_loose(p.get("no_of_flats_tc") or p.get("no_of_flats_en"))
         saleable = (p.get("saleable_area_m2") or "").strip() or None
+        # 座別明細：name_of_blocks_tc 係空格分隔座名（如「松山閣 榕山閣 …」）→ blocks[]（u/e 冇公開數據 → N/A）
+        blk_names = [x for x in re.split(r"[\s、,，]+", (p.get("name_of_blocks_tc") or "").strip()) if x]
         out.append({"source": "HOS", "source_type": "HOS", "name_tc": zh,
                     "name_en": (p.get("estate_name_en") or "").strip() or None,
                     "district_tc": (p.get("district_name_tc") or "").strip() or None,
@@ -690,17 +692,19 @@ def build_hos():
                     "lat": lat, "lng": lng,
                     "total_units": flats, "elevator_units": None, "non_elevator_units": None,
                     "min_floor": None, "max_floor": None, "avg_area": None,
-                    "blocks_count": int(nb) if nb.isdigit() else None, "blocks": [],
+                    "blocks_count": int(nb) if nb.isdigit() else None,
+                    "blocks": [{"n": n, "u": None, "e": None, "f1": None, "f2": None, "a": None}
+                               for n in blk_names],
                     "hos_year": (p.get("year_of_completion_tc") or "").strip() or None,
                     "hos_scheme": (p.get("sold_under_tc") or "").strip() or None,
-                    "hos_area_range": saleable,
-                    "hos_blocks": (p.get("name_of_blocks_tc") or "").strip() or None})
+                    "hos_area_range": saleable})
     print(f"Part 9 完成：{len(out)} 個居屋屋苑（HOS，有單位數 {sum(1 for x in out if x['total_units'])}）", flush=True)
     return out
 
 
 def build_private():
-    """B3 普查 2021 主要屋苑：多邊形 → bbox 中心錨點，source_type=PRV。人口／收入＝2021 普查時點。"""
+    """B3 普查 2021 主要屋苑：多邊形 → bbox 中心錨點，source_type=PRV。人口／收入＝2021 普查時點。
+    另存分界多邊形（censtatd_estate_polygons.json）供 build_app point-in-polygon 座別過濾。"""
     gj = fetch_csdi_geojson(PRV_DATASET)
     agg = {}
     for ft in gj.get("features", []):
@@ -709,14 +713,32 @@ def build_private():
         en = (p.get("estate_eng") or "").strip()
         if not zh and not en:
             continue
-        lat, lng = _bbox_center(ft.get("geometry"))
-        if lat is None:
+        g = ft.get("geometry") or {}
+        rings = []
+
+        def walk(c):
+            if isinstance(c, (list, tuple)) and c:
+                if isinstance(c[0], (int, float)):
+                    if len(c) >= 2 and -180 <= float(c[0]) <= 180 and -90 <= float(c[1]) <= 90:
+                        xs.append(float(c[0]))
+                        ys.append(float(c[1]))
+                else:
+                    # Polygon ring / MultiPolygon part：座標對串
+                    if len(c) >= 2 and isinstance(c[0], (list, tuple)) and isinstance(c[0][0], (int, float)):
+                        rings.append([(float(x), float(y)) for x, y in c if isinstance(x, (int, float)) and isinstance(y, (int, float))])
+                    for cc in c:
+                        walk(cc)
+
+        xs, ys = [], []
+        walk(g.get("coordinates"))
+        if not xs:
             continue
         rec = agg.setdefault(zh or en, {"zh": zh or en, "en": en or None,
-                                        "minx": lng, "maxx": lng, "miny": lat, "maxy": lat,
-                                        "pop": 0, "income": None})
-        rec["minx"], rec["maxx"] = min(rec["minx"], lng), max(rec["maxx"], lng)
-        rec["miny"], rec["maxy"] = min(rec["miny"], lat), max(rec["maxy"], lat)
+                                        "minx": min(xs), "maxx": max(xs), "miny": min(ys), "maxy": max(ys),
+                                        "pop": 0, "income": None, "rings": []})
+        rec["minx"], rec["maxx"] = min(rec["minx"], min(xs)), max(rec["maxx"], max(xs))
+        rec["miny"], rec["maxy"] = min(rec["miny"], min(ys)), max(rec["maxy"], max(ys))
+        rec["rings"].extend(rings)
         try:
             rec["pop"] += int(float(p.get("t_pop") or 0))
         except (TypeError, ValueError):
@@ -727,6 +749,9 @@ def build_private():
                 rec["income"] = inc
         except (TypeError, ValueError):
             pass
+    # 分界多邊形快取（point-in-polygon 用）
+    with open(os.path.join(NORM, "censtatd_estate_polygons.json"), "w", encoding="utf-8") as f:
+        json.dump({k: v["rings"] for k, v in agg.items() if v["rings"]}, f, ensure_ascii=False)
     out = []
     for r in agg.values():
         out.append({"source": "PRV", "source_type": "PRV", "name_tc": r["zh"], "name_en": r["en"],
@@ -738,7 +763,7 @@ def build_private():
                     "blocks_count": None, "blocks": [],
                     "census_pop": r["pop"] or None, "census_income_md": r["income"],
                     "census_note": "2021 普查時點"})
-    print(f"Part 9 完成：{len(out)} 個主要屋苑（PRV，普查 2021）", flush=True)
+    print(f"Part 9 完成：{len(out)} 個主要屋苑（PRV，普查 2021；多邊形 {sum(len(v['rings']) for v in agg.values())} 條 ring）", flush=True)
     return out
 
 
@@ -833,11 +858,16 @@ def main():
     hos = build_hos()
     prv = build_private()
     vlg = build_villages()
-    # 跨類型去重：普查屋苑含晒公屋／居屋名（如「長沙灣邨」「旭埔苑」）→ 保留有單位級數據嘅原類型
+    # 跨類型去重：普查屋苑含晒公屋／居屋名（如「長沙灣邨」「旭埔苑」）→ 保留有單位級數據嘅原類型；
+    # 另 strip-paren 處理變體名（「黃大仙下（１）邨」→「黃大仙下邨」）
+    def _dedup_variants(n):
+        return re.sub(r"[（(][^）)]*[）)]", "", n).strip()
     known = {e["name_tc"] for e in lph} | {e["name_tc"] for e in prh}
-    hos = [e for e in hos if e["name_tc"] not in known]
+    known_variants = {_dedup_variants(n) for n in known}
+    hos = [e for e in hos if e["name_tc"] not in known and _dedup_variants(e["name_tc"]) not in known_variants]
     known |= {e["name_tc"] for e in hos}
-    prv = [e for e in prv if e["name_tc"] not in known]
+    known_variants |= {_dedup_variants(n) for n in known}
+    prv = [e for e in prv if e["name_tc"] not in known and _dedup_variants(e["name_tc"]) not in known_variants]
     print(f"Part 9 去重後：HOS {len(hos)}／PRV {len(prv)}／VLG {len(vlg)}", flush=True)
     # PRV 普查數據冇 district 欄 → 用最近嘅 PRH/LPH/HOS 屋邨官方 district 填充（顯示用途）
     ref = [(e["lat"], e["lng"], e["district_tc"]) for e in lph + prh + hos

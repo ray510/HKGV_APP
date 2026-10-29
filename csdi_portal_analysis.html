@@ -431,6 +431,86 @@
       <td>🏠 公屋／🏘️ 簡約公屋／🔑 居屋／🏢 私人樓／🌄 村屋 五色徽章；篩選器加「房屋類型」multi-select；評分模型唔使改（全部係「由呢度出發嘅生活圈」）</td></tr>
   </table>
 
+  <!-- ============ 13b 房屋類型擴張深度版 ============ -->
+  <h2 class="sec"><span class="tag">⑬b</span>★ 房屋類型擴張——深度版：全量目錄再掃描，補齊數據類型（2026-10-29 16:45 實測）</h2>
+  <p class="lead">針對「第⑬節只有錨點源、數據類型唔夠完整」：用 REA 全量目錄（1,159 條）以 12 組關鍵字徹底重掃
+    （居屋／綠置居／租置／成交／私人住宅／村／鄉村／寮屋／建屋牌照／物業市場統計／售價指數／組裝合成…）
+    → 命中 <b>75 個房屋相關數據集</b>，逐個用 <b>WFS GetFeature resultType=hits</b> 實測記錄量
+    （唔使落全量數據——CSDI 嘅 FeatureServer <code>returnCountOnly</code> 一律 400，<code>resultType=hits</code> 係可靠替代，已驗證 BD 51,354 吻合）。</p>
+
+  <div class="note"><b>四層框架</b>：每類房屋嘅數據唔止一個錨點，而係四層——
+    <b>L1 錨點</b>（地圖位置）／<b>L2 屬性深化</b>（卡片欄位）／<b>L3 市場交易</b>（價格參考）／<b>L4 環境規劃</b>（周邊背景）。v4.0 已落地嘅係 L1；下面係其餘三層嘅全清單。</div>
+
+  <table>
+    <tr><th style="width:9%">層</th><th style="width:33%">數據集（rcd id｜WFS 實測記錄量）</th><th>點用／故事</th></tr>
+    <tr><td rowspan="4" style="vertical-align:top"><b>居屋<br>HOS<br>＋綠置居<br>＋租置</b><br><span style="color:#0a7">15 個集</span></td>
+      <td><b>L1 錨點</b>：居屋屋苑 245（<code>…_13011</code>｜<b>245</b>）✅ v4.0 已接</td>
+      <td>三語名＋18 區＋落成年份＋座數＋單位數（<code>no_of_flats_tc</code>）＋實用面積範圍——v4.0 已全接入</td></tr>
+    <tr><td><b>L3 成交記錄（居屋）2018–2024 六年</b>：<code>…_1489/…_565/…_51756/…_4146/…_1579/…_82488</code>｜<b>4,431＋4,904＋7,142＋9,494＋9,627＋7,871＝43,469 宗</b></td>
+      <td>以<b>銷售計劃年份</b>分集——「2024」集就係最新（ASP 實測去 <b>2025-08-18</b>，持續累積）；欄位齊：Date_of_ASP＋成交價＋實用面積＋座/單位——<b>按年成交價趨勢</b>＋每屋苑成交列表（HOS 第一市場故事）</td></tr>
+    <tr><td><b>L3 成交記錄（綠置居）2018–2024</b>：<code>…_31462/…_98260/…_21959/…_30749/…_94735/…_7270</code>｜<b>19,683 宗</b>＋重售青富苑蝶翠苑 <b>184</b>＋未售出 <b>256</b>（<code>…_93343/…_22882</code>）</td>
+      <td>綠置居係「公屋→居屋」階梯——成交價明顯平過居屋，階梯故事有數據支撐</td></tr>
+    <tr><td><b>L3 租置計劃成交</b>：<code>housingauthority_rcd_1765183018922_87382</code>（第⑬節<b>漏咗</b>）｜<b>157,523 宗，1998-04 → 2026-09-22</b>（2025 年 1,182 宗、2026 年頭 9 個月 723 宗——<b>年年更新，全 CSDI 最新房屋成交源</b>）</td>
+      <td>欄位最齊：成交價＋<b>折扣率</b>＋每平方米價＋<b>lat/lng</b>＋樓層＋信用等級——有座標<b>唔使配對直接上圖</b>；「最近成交」卡首選源；40 條租置邨＝「有得買嘅公屋」過渡類型</td></tr>
+    <tr><td><b>L4 屋邨環境/配套</b>：休憩用地（已落成 <code>…_16932</code>＋規劃中 <code>…_62653</code>）＋屋邨大型樹 <code>…_44090</code>＋商場 <code>…_74012</code>／工廠大廈 <code>…_37074</code>＋房委/房協建設計劃 <code>…_16907/…_43745</code></td>
+      <td>休憩用地可做綠化 pill；商場/工廠大廈＝屋邨社區配套；建設計劃＝未來供應預告</td></tr>
+
+    <tr><td rowspan="5" style="vertical-align:top"><b>私人樓<br>PRV</b><br><span style="color:#0a7">48 個集</span></td>
+      <td><b>L1 錨點</b>：普查主要屋苑 540（<code>…_79001</code>）＋屋宇署樓宇 51,354（<code>…_19764</code>）✅ v4.0 已接｜<b>新發現</b>：2021 普查<b>樓市片區及樓宇組群</b>分界 <code>censtatd_rcd_1728978338390_76872</code></td>
+      <td>「樓宇組群」比 540 主要屋苑<b>更細</b>——單幢樓/細屋苑都有統計分界，可做 v4.1 私人樓錨點加密</td></tr>
+    <tr><td><b>L2 屬性</b>：屋宇署施工同意書新建樓宇 <b>2,238</b>（<code>…_33875</code>）＋拆卸同意書 <b>1,454</b>＋已拆卸 <b>608</b>＋佔用許可證 <code>…_397</code>＋<b>組裝合成（MiC）私人樓宇 40</b>（<code>bd_rcd_1728441651251_2444</code>）＋私人大廈電腦資料庫 <b>768</b>（<code>had_rcd_1665042670005_49262</code>）</td>
+      <td>施工流水＝正在起嘅樓（v4.1 可標「興建中」）；MiC 40 棟＝建築創新故事；私人大廈庫有大廈立案法團/年份資料</td></tr>
+    <tr><td><b>L3 市場（RVD 差餉物業估價署全套）</b>：售價指數<b>按月 1,251 行</b>／按季 417／按年 102（<code>rvd_rcd_1664941057544_51900/…_57445/…_39903</code>）＋各區總存量落成空置 <code>…_14075</code>＋按樓齡分類存量 <code>…_43292</code>＋按地區存量 <code>…_23025</code>＋洋房 <code>…_11573</code>＋落成預測 <code>…_57845/…_10722</code>＋估價冊 <code>…_47171</code></td>
+      <td>「較受歡迎屋苑售價指數」按月 1,251 行——私人樓<b>價格趨勢卡</b>官方源（對應居屋成交卡）；樓齡存量可校驗屋宇署樓齡 pill</td></tr>
+    <tr><td><b>L4 供應/規劃（LandsD 同意書全套）</b>：批出預售樓花（住宅 <code>landsd_rcd_1637303511514_65978</code>）＋待批 <code>…_21369</code>＋被取消 <code>…_2878</code>＋被拒/撤回 <code>…_69555</code>＋轉讓同意書 <code>…_55900/…_13490/…_65413</code>＋公契批核 <code>…_21736</code>（file-download，無 live count）</td>
+      <td>預售樓花同意書＝<b>新供應預告</b>（「呢區 2027 年前有幾多新盤」）——建議書「數據全面性」強素材</td></tr>
+    <tr><td><b>L4 環境</b>：沿岸低窪或當風住宅地區 <b>26</b>（<code>dsd_rcd_1728893209259_45363</code>）＋政府產業署住宅物業 4 集（出售/出租/合約，量極少 1–4）</td>
+      <td>低窪當風地區＝氣候韌性角度（颱風/暴雨時邊啲私人樓最受影響——無障礙出行更脆弱）</td></tr>
+
+    <tr><td rowspan="4" style="vertical-align:top"><b>村屋<br>VLG</b><br><span style="color:#0a7">13 個集</span></td>
+      <td><b>L1 錨點</b>：鄉村/墟鎮分界 <b>697 條村 × 3 個選舉週期版本</b>（2019-2022 <code>…_93029</code>／2023-2026 <code>…_57950</code> ✅／2027-2030 <code>…_40217</code>｜每版都 697）</td>
+      <td>三版連續維護（2027 版已備）——官方長期承諾證據，建議書可引；v4.0 已用 2023-2026 版</td></tr>
+    <tr><td><b>L2 屬性（村屋級數量官方源）</b>：<b>建屋牌照 30,794</b>（<code>landsd_rcd_1637219494395_29819</code>）＋地政建築物 342,233（項目已用）＋地方名稱 <b>2,706</b>（<code>…_89752</code>）</td>
+      <td>第⑬節話「村屋屋級冇源」——<b>建屋牌照就係</b>：新界小型屋宇/豁免管制屋宇逐個牌照有座標，村內「幾多間屋」可以官方計</td></tr>
+    <tr><td><b>L3</b>：❌ 冇交易源——村屋成交喺土地註冊處（CSDI 只有 CSV 地址冇成交價）</td>
+      <td>如實聲明：村屋冇官方成交價數據集，唔好硬補</td></tr>
+    <tr><td><b>L4 環境/可達性</b>：<b>緊急車輛通道（新界豁免管制屋宇）32</b>（<code>landsd_rcd_1637726285729_75898</code>）＋<b>認可鄉村範圍</b>（<code>…_56018</code>）＋市區寮屋區 3（<code>plb_rcd_1638236574515_94226</code>）＋村落統計區界線（pland 2001/2006/2011/2016＋2021 單元區 <code>…_65050</code>）</td>
+      <td>緊急車輛通道＝村屋<b>消防/救護可達性</b>——無障礙敘事直場；認可鄉村範圍＝原居村民語境；村落統計區可補村級人口</td></tr>
+
+    <tr><td rowspan="2" style="vertical-align:top"><b>橫向<br>（三類共用）</b></td>
+      <td><b>土地用途網格 GEOTIFF 2018–2025 八年</b>（<code>pland_rcd_1634024370851_27769</code> 等 8 集，規劃署）</td>
+      <td>住宅用地變遷圖層（賽後擴展：邊度由農地變屋地）——每類房屋都可用</td></tr>
+    <tr><td><b>三維行人道路網 465,892 段</b>（<code>landsd_rcd_1637222018065_52265</code>）＋小規劃統計區（2021 <code>pland_rcd_1634022783366_65050</code>＋FGDB <code>…_55577</code>）＋已評級歷史建築（<code>wb_rcd_1639040388709_10687</code>）</td>
+      <td>行人路網＝項目用緊嘅 CSDI 3D 路線 API 底層——可拎做<b>離線可達性/路網密度分析</b>（每邨幾多米有蓋行人路）；歷史建築做文化 pill</td></tr>
+  </table>
+
+  <table>
+    <tr><th style="width:34%">第⑬節 vs 深度版——漏咗啲乜</th><th>影響</th></tr>
+    <tr><td>居屋成交記錄只當「加分位」，冇提<b>七年 43,469＋19,683 宗</b>嘅量級</td>
+      <td>夠做完整「最近成交＋按年趨勢」功能，唔係單一參考卡</td></tr>
+    <tr><td><b>租置計劃</b>（公屋→居屋過渡類型）完全漏咗</td>
+      <td>40 條租置邨係第六種房屋類型語境（source_type 可加 TPS 或併入 HOS）</td></tr>
+    <tr><td>村屋「屋級冇源」判斷錯——<b>建屋牌照 30,794</b> 就係官方屋級源</td>
+      <td>村屋可以由「村錨點」升級到「屋級數量」屬性</td></tr>
+    <tr><td>私人樓只提樓齡 pill，漏咗 <b>RVD 售價指數</b>（按月 1,251 行）同<b>預售樓花同意書</b>（新供應）</td>
+      <td>私人樓由「錨點＋人口」升級到「有價格+有供應預告」嘅完整敘事</td></tr>
+    <tr><td>漏咗<b>樓市片區/樓宇組群</b>（比 540 主要屋苑更細嘅普查分界）</td>
+      <td>私人樓錨點可以加密到單幢樓級</td></tr>
+    <tr><td>漏咗橫向層：土地用途網格（8 年）、<b>三維行人道路網 465,892 段</b>、緊急車輛通道、歷史建築</td>
+      <td>3D 行人路網可做離線分析底圖；緊急車輛通道＝村屋救護故事</td></tr>
+  </table>
+
+  <div class="note"><b>時效補充（2026-10-29 18:30 實測 Date_of_ASP／assignment_date）</b>：成交記錄以「銷售計劃年份」分集，
+    CSDI 冇獨立 2025/2026 集（居屋2025 轉讓契未開批，HA 出集慣例係首批准轉讓契先上）——但「2024」集<b>持續累積更新</b>：
+    HOS 2024 ASP 去 <b>2025-08-18</b>、GSH 2024 去 <b>2026-01-07</b>；<b>租置集係全 CSDI 最新成交源</b>（157,523 宗、1998→2026-09-22）。
+    注意：呢啲係 HA 第一市場（新樓出售/租置出售）嘅轉讓契記錄；居屋<b>第二市場</b>自由市場成交喺土地註冊處，CSDI 冇——參考卡要如實標明「第一市場成交」。</div>
+
+  <div class="note"><b>技術筆記</b>：① CSDI FeatureServer <code>returnCountOnly=true</code> 一律 400「Query with count request failed」，
+    <code>returnIdsOnly</code> 亦拒——正確做法係 <b>WFS 2.0 <code>GetFeature&amp;resultType=hits</code></b>（回 <code>numberMatched</code>，唔使落 feature），
+    typename 由 <code>FeatureServer?f=json</code> 嘅 layer name 推（<code>csdi:{LAYER}</code>）；54/75 個集即時驗證成功，
+    其餘（LandsD 同意書系列／認可鄉村／pland 統計區／休憩用地）係 file-download 冇 live count，要用 file-api geojson 落檔先數到。
+    ② 全部候選及實測數： <code>rea_analysis/housing_sweep.json</code>／<code>housing_wfs_counts.json</code>（掃描 verify_housing_wfs.py）。</div>
+
   <div class="note">⚠️ 如實聲明位：私人樓／村屋<b>冇單位級公開數據</b>（私隱），升降機覆蓋／平均面積／樓層呢啲欄位只對公屋簡屋有效——
     前端按 source_type 條件顯示，唔好硬補估算。普查屋苑統計係 2021 時點。居屋「補地價」狀態唔喺數據內。</div>
 
@@ -445,6 +525,7 @@
 <footer>
   實測日期 2026-10-29｜掃描腳本 csdi_portal_scan.py／scan2/3/4｜全量目錄 data/csdi_catalog.json（1,159 條）｜
   REA 逆向＋全量 XML：csdi_portal_analysis ⑩、rea_analysis/（grab_all.py + 證據包）、data/csdi_catalog_full.json + csdi_metadata_xml.zip｜
+  第⑬b節：rea_analysis/housing_sweep.py + verify_housing_wfs.py（WFS resultType=hits 實測）｜
   《屋邨智配・3D 無障礙生活圈》CSDI Awards 2026 調研產物
 </footer>
 </body>

@@ -525,7 +525,6 @@ function render(){
              : `<span class="pill bad">✗ ${e.non_elevator_units} 個單位冇升降機</span>`}
         ${e.lat == null ? '<span class="pill noc">暫無座標，未能規劃路線</span>' : ""}
       </div>` : (e.lat == null ? `<div class="row"><span class="pill noc">暫無座標，未能規劃路線</span></div>` : "")}
-      ${e.hos_blocks ? `<div class="d" style="font-size:11px;margin:-4px 0 6px">座：${e.hos_blocks}</div>` : ""}
       <div class="row">
         ${m ? `<span class="pill">🚇 ${m.zh} ${m.distance_m}m</span>` : ""}
         ${e.nearest_elderly ? `<span class="pill">👵 長者中心 ${e.nearest_elderly.distance_m}m</span>` : ""}
@@ -599,17 +598,20 @@ function toggleBlocks(key, btn){
     return;
   }
   const rows = (e.blocks||[]).map(b => {
-    const pct = b.u ? Math.round(b.e / b.u * 100) : 0;
-    const cls = pct >= 100 ? "good" : (pct > 0 ? "" : "bad");
+    const hasU = b.u != null;
+    const pct = hasU && b.u ? Math.round(b.e / b.u * 100) : null;
+    const cls = pct == null ? "" : (pct >= 100 ? "good" : (pct > 0 ? "" : "bad"));
     const coord = b.lat != null;
-    const hgt = (b.s != null ? `${b.s} 層` : "?") + (b.h != null ? `／${b.h}m` : "");
+    const hgt = (b.s != null ? `${b.s} 層` : "—") + (b.h != null ? `／${b.h}m` : "");
     const emsd = b.emsd_lifts != null ? `<span style="color:#0f9d8a;font-weight:600">${b.emsd_lifts} 部</span>` : "<span style='color:#9ca3af'>—</span>";
-    return `<tr><td>${b.n}</td><td>${b.u}</td><td><span class="pill ${cls}">${pct}%</span></td><td>${emsd}</td>` +
-      `<td>${b.f1 ?? "?"}–${b.f2 ?? "?"}</td><td>${b.a ?? "?"} ㎡</td><td>${hgt}</td>` +
+    return `<tr><td>${b.n}</td><td>${hasU ? b.u : "—"}</td><td>${pct == null ? "<span style='color:#9ca3af'>—</span>" : `<span class="pill ${cls}">${pct}%</span>`}</td><td>${emsd}</td>` +
+      `<td>${b.f1 != null ? `${b.f1}–${b.f2}` : "—"}</td><td>${b.a != null ? `${b.a} ㎡` : "—"}</td><td>${hgt}</td>` +
       (coord ? `<td><button class="blkGo" data-n="${b.n}">🚶 由呢座出發</button></td>` : "<td></td>") + `</tr>`;
   }).join("");
+  const blkTypeNote = e.source_type === "HOS" ? "居屋座名來自房委會屋苑資料；" :
+    e.source_type === "PRV" ? "私人屋苑座名由地政總署「建築物」多邊形發現（Tower＋有名）；" : "";
   boxEl.innerHTML = `<table class="blkT"><tr><th>座</th><th>單位</th><th>有𨋢</th><th>EMSD 升降機</th><th>樓層</th><th>均面</th><th>樓高</th><th>路線</th></tr>${rows}</table>` +
-    `<div class="hint">有𨋢 %＝該座有升降機服務嘅單位比例；EMSD 升降機＝機電署註冊升降機部數（覆核用，含商場等附屬設施）；樓高來自地政總署「建築物」；座級位置：官方多邊形中心（LandsD），未覆蓋以 OSM 補。</div>`;
+    `<div class="hint">${blkTypeNote}「—」＝冇公開數據（如實 N/A）；有𨋢 %＝該座有升降機服務嘅單位比例（只對公屋／簡屋）；EMSD＝機電署註冊升降機部數；樓高／座級位置來自地政總署「建築物」多邊形。</div>`;
   boxEl.style.display = "block";
   btn.textContent = "▲ 收起座別明細";
   boxEl.querySelectorAll(".blkGo").forEach(g => g.onclick = () => {
