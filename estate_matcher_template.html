@@ -79,6 +79,14 @@
   .blkT th,.blkT td{border:1px solid var(--line);padding:3px 6px;text-align:left;white-space:nowrap}
   .blkT th{background:var(--soft);font-weight:600}
   .blkGo{border:0;background:var(--accent);color:#fff;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer}
+  .dchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+  .dchip{flex:1 1 auto;padding:6px 8px;font-size:11.5px;border:1px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;color:#374151;white-space:nowrap}
+  .dchip:hover{border-color:var(--accent);color:var(--accent)}
+  .dchip:disabled{opacity:.5;cursor:wait}
+  .go.chain{background:linear-gradient(90deg,#b45309,#d97706);font-size:12px}
+  .go.chain.alt2{background:linear-gradient(90deg,#7c3aed,#a855f7)}
+  .wp{width:22px;height:22px;border-radius:50%;background:#b45309;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  #elev svg{cursor:crosshair}
   #cmpTray{position:sticky;bottom:0;z-index:10;background:#fff;border:1.5px solid #7c3aed;border-radius:10px;padding:8px 10px;display:none;gap:6px;align-items:center;font-size:12px;margin-top:10px;box-shadow:0 -2px 10px rgba(124,58,237,.12)}
   #cmpTray b{color:#7c3aed}
   #cmpTray button{border:0;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer}
@@ -270,11 +278,13 @@ const compareSet = [];        // 比較籃（最多 3 個屋邨 key）
 const blkLayers = {};         // 座別釘圖層（key = 屋邨 key）
 const dist2 = (e,k) => k==="mtr" ? (e.nearest_mtr?.distance_m ?? null)
                     : k==="sch" ? (e.nearest_school?.distance_m ?? null)
+                    : k==="eld" ? (e.nearest_elderly?.distance_m ?? null)
+                    : k==="shel" ? (e.nearest_shelter?.distance_m ?? null)
                     : (e.nearest_care?.distance_m ?? null);
 const smoothScore = (d, d0, hl) => d == null ? 50
   : (d <= d0 ? 100 : Math.max(5, 100 * Math.exp(-Math.log(2)/hl*(d-d0))));
 function subs(e){
-  if (e.sub_scores) return e.sub_scores;   // 管線 v3 輸出
+  if (e.sub_scores) return e.sub_scores;   // 管線 v3.1 輸出
   const t = e.total_units||0;              // 舊數據 fallback：同管線公式
   return {
     mtr: smoothScore(dist2(e,"mtr"),200,900),
@@ -282,27 +292,31 @@ function subs(e){
       + 0.3*Math.min(1,(e.density_800m?.schools??0)/5)*100)*10)/10,
     care: Math.round((0.8*smoothScore(dist2(e,"care"),200,1200)
       + 0.2*Math.min(1,(e.density_800m?.cares??0)/3)*100)*10)/10,
+    elderly_shelter: Math.round((0.4*smoothScore(dist2(e,"eld"),200,1000)
+      + 0.6*smoothScore(dist2(e,"shel"),200,1000))*10)/10,
     elevator: t ? Math.round((e.elevator_units||0)/t*1000)/10 : 100
   };
 }
-// 4 個 Persona 權重矩陣（港鐵／小學／託管／升降機），對應建議書 §5
+// 4 個 Persona 權重矩陣（港鐵／小學／託管／長者會堂／升降機），對應建議書 §5
 const WEIGHTS = {
-  family:  {mtr:.35, school:.30, care:.20, elev:.15, label:"育兒家庭",
-            hint:"港鐵 35% ＋ 小學 30% ＋ 託管 20% ＋ 升降機 15%（平滑衰減＋800m 選擇密度）"},
-  elder:   {mtr:.25, school:0,   care:0,   elev:.75, label:"長者安居",
-            hint:"升降機覆蓋 75% ＋ 港鐵 25%（接入醫管局急症室＋民政署避暑中心後，將拆分出醫療社區維度）"},
-  commute: {mtr:.70, school:0,   care:0,   elev:.30, label:"極速通勤",
-            hint:"港鐵 70% ＋ 升降機 30%"},
-  balanced:{mtr:.40, school:.20, care:.15, elev:.25, label:"均衡社區",
-            hint:"港鐵 40% ＋ 小學 20% ＋ 託管 15% ＋ 升降機 25%"}
+  family:  {mtr:.35, school:.25, care:.15, elder:.10, elev:.15, label:"育兒家庭",
+            hint:"港鐵 35% ＋ 小學 25% ＋ 託管 15% ＋ 長者/會堂 10% ＋ 升降機 15%"},
+  elder:   {mtr:.25, school:0,   care:0,   elder:.30, elev:.45, label:"長者安居",
+            hint:"升降機 45% ＋ 長者中心/避暑會堂 30% ＋ 港鐵 25%"},
+  commute: {mtr:.75, school:0,   care:0,   elder:0,   elev:.25, label:"極速通勤",
+            hint:"港鐵 75% ＋ 升降機 25%"},
+  balanced:{mtr:.20, school:.20, care:.20, elder:.20, elev:.20, label:"全齡均衡",
+            hint:"五維各 20%（全齡共融）"}
 };
-const DIM_LABEL = {mtr:"🚇 港鐵", school:"🏫 小學", care:"👶 託管", elev:"🛗 升降機"};
-const DIM_COLOR = {mtr:"#0b6e99", school:"#0f9d8a", care:"#7c3aed", elev:"#b45309"};
+const DIM_LABEL = {mtr:"🚇 港鐵", school:"🏫 小學", care:"👶 託管", elder:"👵 長者/會堂", elev:"🛗 升降機"};
+const DIM_COLOR = {mtr:"#0b6e99", school:"#0f9d8a", care:"#7c3aed", elder:"#0d9488", elev:"#b45309"};
 function calcScore(e, p = profile){
   const w = WEIGHTS[p], s = subs(e);
-  const total = Math.round((w.mtr*s.mtr + w.school*s.school + w.care*s.care + w.elev*s.elevator)*10)/10;
-  const parts = ["mtr","school","care","elev"]
-    .map(k => ({k, label: DIM_LABEL[k], sub: s[k==="elev"?"elevator":k], w: w[k]}))
+  const total = Math.round((w.mtr*s.mtr + w.school*s.school + w.care*s.care
+    + w.elder*s.elderly_shelter + w.elev*s.elevator)*10)/10;
+  const parts = ["mtr","school","care","elder","elev"]
+    .map(k => ({k, label: DIM_LABEL[k],
+      sub: k === "elev" ? s.elevator : (k === "elder" ? s.elderly_shelter : s[k]), w: w[k]}))
     .filter(p => p.w > 0);
   return {total, parts};
 }
@@ -404,12 +418,17 @@ function render(){
     const nBlk = (e.blocks||[]).length;
     const blkBtn = nBlk ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
     const el = document.createElement("div"); el.className = "card";
-    const canMtr = e.lat != null && (e.mtr_candidates||[]).length;
-    const canSch = e.lat != null && (e.school_candidates||[]).length;
-    const routeBtns = (canMtr || canSch)
+    const dests = ["mtr","sch","care","eld","shel"].filter(d => e.lat != null && DEST[d].pool(e).length);
+    const routeBtns = dests.length
+      ? `<div class="dchips">` + dests.map(d =>
+          `<button class="dchip" data-p="${e._key}" data-d="${d}" data-lb="${DEST[d].label}">${DEST[d].label}</button>`).join("") + `</div>`
+      : "";
+    const canChainChild = e.lat != null && DEST.mtr.pool(e).length && (e.nearest_care || e.nearest_school);
+    const canChainElder = e.lat != null && DEST.mtr.pool(e).length && (e.nearest_elderly || e.nearest_shelter);
+    const chainBtns = (canChainChild || canChainElder)
       ? `<div class="gorow">` +
-        (canMtr ? `<button class="go" data-p="${e._key}" data-d="mtr">🚶 去港鐵站</button>` : "") +
-        (canSch ? `<button class="go alt" data-p="${e._key}" data-d="sch">🎒 去小學</button>` : "") +
+        (canChainChild ? `<button class="go chain" data-p="${e._key}" data-c="child">🔗 育兒返工鏈</button>` : "") +
+        (canChainElder ? `<button class="go chain alt2" data-p="${e._key}" data-c="elder">🔗 護老返工鏈</button>` : "") +
         `</div>`
       : "";
     el.innerHTML = `
@@ -431,10 +450,16 @@ function render(){
              : `<span class="pill bad">✗ ${e.non_elevator_units} 個單位冇升降機</span>`}
         ${e.lat == null ? '<span class="pill noc">暫無座標，未能規劃路線</span>' : ""}
       </div>
-      ${routeBtns}${addCmpBtn}${blkBtn}`;
+      <div class="row">
+        ${m ? `<span class="pill">🚇 ${m.zh} ${m.distance_m}m</span>` : ""}
+        ${e.nearest_elderly ? `<span class="pill">👵 長者中心 ${e.nearest_elderly.distance_m}m</span>` : ""}
+        ${e.nearest_shelter ? `<span class="pill">🌡️ 會堂 ${e.nearest_shelter.distance_m}m${e.nearest_shelter.heat_shelter ? "（避暑）" : ""}</span>` : ""}
+      </div>
+      ${routeBtns}${chainBtns}${addCmpBtn}${blkBtn}`;
     box.appendChild(el);
   });
-  box.querySelectorAll(".go").forEach(btn => btn.onclick = () => planRoute(btn.dataset.p, btn.dataset.d));
+  box.querySelectorAll(".dchip").forEach(btn => btn.onclick = () => planRoute(btn.dataset.p, btn.dataset.d));
+  box.querySelectorAll(".go.chain").forEach(btn => btn.onclick = () => planChain(btn.dataset.p, btn.dataset.c));
   box.querySelectorAll(".addCmp").forEach(btn => btn.onclick = () => {
     const k = btn.dataset.c, i = compareSet.indexOf(k);
     if (i >= 0) compareSet.splice(i, 1);
@@ -532,8 +557,11 @@ document.querySelectorAll("#modes button").forEach(b => b.onclick = () => {
   mode = +b.dataset.m;
   document.querySelectorAll("#modes button").forEach(x => x.classList.remove("on"));
   b.classList.add("on");
-  // 轉換模式後即刻用新模式重新規劃當前路線（保留座級起點）
-  if (changed && currentRoute) planRoute(currentRoute.key, currentRoute.dest, currentRoute.o);
+  // 轉換模式後即刻用新模式重新規劃當前路線（保留座級起點／路線鏈）
+  if (changed && currentRoute){
+    if (currentRoute.chain) planChain(currentRoute.key, currentRoute.chain);
+    else planRoute(currentRoute.key, currentRoute.dest, currentRoute.o);
+  }
 });
 
 // ---- 3D 路線（CSDI Enhanced Pedestrian Route）----
@@ -584,12 +612,13 @@ function failReason(err){
 }
 
 // 垂直高程剖面 SVG：path 每點 = [x, y, z, m]，m 係累計距離（米）、z 係海拔（米）
+let elevCtx = null;   // {pts:[m,z,lat,lng], m0, m1, W, H, P} — 供 hover 聯動
 function elevationSVG(path){
   const pts = [];
   const n = path.length, stride = Math.max(1, Math.floor(n / 160));
-  for (let i = 0; i < n; i += stride) pts.push([path[i][3], path[i][2]]);
+  for (let i = 0; i < n; i += stride) pts.push([path[i][3], path[i][2], path[i][1], path[i][0]]);
   const last = path[n - 1];
-  pts.push([last[3], last[2]]);
+  pts.push([last[3], last[2], last[1], last[0]]);
   const W = 340, H = 96, P = 16;
   const m0 = pts[0][0], m1 = pts[pts.length - 1][0];
   const zs = pts.map(p => p[1]);
@@ -599,6 +628,7 @@ function elevationSVG(path){
   const lo = zmin - zpad, hi = zmax + zpad;
   const X = m => P + (m - m0) / span * (W - 2 * P);
   const Y = z => H - P - (z - lo) / (hi - lo) * (H - 2 * P);
+  elevCtx = {pts, m0, m1, W, H, P};
   const line = pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1)).join("");
   const area = line + ` L${X(m1).toFixed(1)},${(H - P).toFixed(1)} L${X(m0).toFixed(1)},${(H - P).toFixed(1)} Z`;
   let ground = "";
@@ -609,25 +639,55 @@ function elevationSVG(path){
   }
   const dots = `<circle cx="${X(m0).toFixed(1)}" cy="${Y(zs[0]).toFixed(1)}" r="3" fill="#c2410c"/>` +
                `<circle cx="${X(m1).toFixed(1)}" cy="${Y(zs[zs.length-1]).toFixed(1)}" r="3" fill="#1d4ed8"/>`;
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="路線垂直高程剖面圖">
+  return `<svg id="elevSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="路線垂直高程剖面圖">
     <path d="${area}" fill="#dbeafe" stroke="none" opacity=".9"></path>
     <path d="${line}" fill="none" stroke="#0b6e99" stroke-width="2"></path>
     ${ground}${dots}
     <text x="${P}" y="${10}" font-size="8.5" fill="#374151">最高 ${zmax.toFixed(1)}m</text>
-    <text x="${P}" y="${H - 4}" font-size="8.5" fill="#374151">最低 ${zmin.toFixed(1)}m｜全程 ${Math.round(span)} 米</text>
+    <text x="${P}" y="${H - 4}" font-size="8.5" fill="#374151">最低 ${zmin.toFixed(1)}m｜全程 ${Math.round(span)} 米｜滑鼠移動可同步地圖</text>
   </svg>`;
 }
 
-const DEST_LABEL = {mtr: "🚶 去港鐵站", sch: "🎒 去小學"};
+// 剖面 ↔ 地圖雙向聯動：hover 剖面圖 → 地圖光點沿路線移動
+function bindElevHover(){
+  const svg = document.getElementById("elevSvg");
+  if (!svg || !elevCtx || !routeLayer) return;
+  let mk = null;
+  svg.addEventListener("mousemove", ev => {
+    const rect = svg.getBoundingClientRect();
+    const xPix = (ev.clientX - rect.left) / rect.width * elevCtx.W;
+    const ratio = Math.max(0, Math.min(1, (xPix - elevCtx.P) / (elevCtx.W - 2 * elevCtx.P)));
+    const m = elevCtx.m0 + ratio * (elevCtx.m1 - elevCtx.m0);
+    let best = elevCtx.pts[0];
+    for (const p of elevCtx.pts) if (Math.abs(p[0] - m) < Math.abs(best[0] - m)) best = p;
+    if (!mk){
+      mk = L.circleMarker([best[2], best[3]], {radius: 6, color: "#f59e0b", weight: 3,
+        fillColor: "#fde68a", fillOpacity: 1}).addTo(routeLayer);
+    } else mk.setLatLng([best[2], best[3]]);
+  });
+  svg.addEventListener("mouseleave", () => {
+    if (mk && routeLayer) routeLayer.removeLayer(mk);
+    mk = null;
+  });
+}
+
+// 目的地配置：mtr 有 3 站雙錨點 fallback，其餘單點
+const DEST = {
+  mtr:  {label:"🚇 港鐵",    kind:"港鐵站",   pool:e => (e.mtr_candidates?.length ? e.mtr_candidates : [e.nearest_mtr].filter(Boolean))},
+  sch:  {label:"🏫 小學",    kind:"小學",     pool:e => (e.school_candidates?.length ? e.school_candidates : [e.nearest_school].filter(Boolean))},
+  care: {label:"🎒 託管",    kind:"託管點",   pool:e => [e.nearest_care].filter(Boolean)},
+  eld:  {label:"👵 長者中心", kind:"長者中心", pool:e => [e.nearest_elderly].filter(Boolean)},
+  shel: {label:"🌡️ 會堂",    kind:"社區會堂", pool:e => [e.nearest_shelter].filter(Boolean)},
+};
+const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂"};
 
 async function planRoute(key, dest = "mtr", origin = null){
   const seq = ++planSeq;
   const e = DATA.find(x => x._key === key);
-  const kind = dest === "sch" ? "小學" : "港鐵站";
-  const pool = dest === "sch" ? (e.school_candidates || []) : (e.mtr_candidates || []);
-  const cands = pool.length ? pool
-                : (dest === "sch" ? [e.nearest_school] : [e.nearest_mtr]).filter(Boolean);
-  const btn = document.querySelector(`.go[data-p="${CSS.escape(key)}"][data-d="${dest}"]`);
+  const cfg = DEST[dest] || DEST.mtr;
+  const kind = cfg.kind;
+  const cands = cfg.pool(e);
+  const btn = document.querySelector(`[data-p="${CSS.escape(key)}"][data-d="${dest}"]`);
   const panel = document.getElementById("routePanel");
   const attempts = [];
   let done = null, usedMode = mode, note = "";
@@ -696,6 +756,7 @@ async function planRoute(key, dest = "mtr", origin = null){
     try { history.replaceState(null, "", `#estate=${encodeURIComponent(e.name_tc)}&mode=${usedMode}&dest=${dest}`); } catch(_){}
     document.getElementById("elevWrap").style.display = "block";
     document.getElementById("elev").innerHTML = elevationSVG(path);
+    bindElevHover();
     const disclaim = dest === "sch" ? `<br><span style="color:#6b7280">返學路線以最近小學估算，實際派位學校以教育局為準。</span>` : "";
     // 改善四：2D 預估 vs 3D 實測校準 —— Naismith 等效距離（爬升 1m ≈ 平地 8m；無障礙模式多為斜道，係數減半 4m）
     let calib = "";
@@ -732,7 +793,97 @@ async function planRoute(key, dest = "mtr", origin = null){
       document.getElementById("steps").innerHTML = "";
     }
   } finally {
-    if (btn && seq === planSeq) { btn.disabled = false; btn.textContent = DEST_LABEL[dest]; }
+    if (btn && seq === planSeq) { btn.disabled = false; btn.textContent = btn.dataset.lb || DEST_LABEL[dest]; }
+  }
+}
+
+// ---- 多段路線鏈（順路接送一條龍）：屋邨 → 中轉設施 → 港鐵 ----
+async function planChain(key, type){
+  const seq = ++planSeq;
+  const e = DATA.find(x => x._key === key);
+  const mtrPool = DEST.mtr.pool(e);
+  const mtrA = mtrPool[0]?.anchors?.[0] || mtrPool[0];
+  const mid = type === "child" ? (e.nearest_care || e.nearest_school)
+                              : (e.nearest_elderly || e.nearest_shelter);
+  if (e.lat == null || !mtrA || !mid || mid.lat == null) return;
+  const btn = document.querySelector(`.go.chain[data-p="${CSS.escape(key)}"][data-c="${type}"]`);
+  const panel = document.getElementById("routePanel");
+  panel.style.display = "block";
+  document.getElementById("steps").innerHTML = "";
+  document.getElementById("routeStats").innerHTML = "規劃多段路線中…（3 個停靠點）";
+  document.getElementById("elevWrap").style.display = "none";
+  if (cmpLayer){ map.removeLayer(cmpLayer); cmpLayer = null; }
+  document.getElementById("cmpBox").style.display = "none";
+  if (btn) btn.disabled = true;
+  try {
+    // 站 × 錨點組合同樣 fallback（多段路線任何一段 snap 唔到都會整體失敗）
+    const combos = [];
+    mtrPool.forEach((c, vi) => {
+      const pts = c.anchors?.length ? c.anchors : [c];
+      pts.forEach(a => combos.push({c, a, vi}));
+    });
+    let j = null, used = null;
+    const errs = [];
+    for (const {c, a, vi} of combos){
+      const stops = `${e.lng},${e.lat};${mid.lng},${mid.lat};${a.lng},${a.lat}`;
+      const qs = new URLSearchParams({stops, f:"json", returnZ:"true", outSR:"4326",
+        travelMode: String(mode), directionsLanguage: "zh-HK", directionsStyleName: "NA Campus",
+        directionsLengthUnits: "esriNAUMeters"});
+      try {
+        const r = await fetch(`${API}?${qs}`);
+        const jj = await r.json();
+        if (jj.error) throw new Error((jj.error.details || []).join(" ") || jj.error.message);
+        j = jj; used = {c, a, vi};
+        break;
+      } catch (err) {
+        errs.push(`第 ${vi+1} 近站 ${c.zh}${a.kind ? "（" + (a.kind === "boundary" ? "邊界點" : "站體中心") + "）" : ""}：${failReason(err)}`);
+      }
+    }
+    if (!j){
+      const err = new Error("多段路線組合全部失敗");
+      err.attempts = errs;
+      throw err;
+    }
+    if (seq !== planSeq) return;
+    const path = j.routes.features[0].geometry.paths[0];
+    const ll = path.map(pt => [pt[1], pt[0]]);
+    const zs = path.map(pt => pt[2]);
+    const dist = path[path.length - 1][3];
+    let up = 0;
+    for (let i = 1; i < zs.length; i++){ const dz = zs[i] - zs[i-1]; if (dz > 0) up += dz; }
+    if (routeLayer) map.removeLayer(routeLayer);
+    const numIcon = n => L.divIcon({className: "", html: `<div class="wp">${n}</div>`, iconSize: [22,22], iconAnchor: [11,11]});
+    routeLayer = L.layerGroup([
+      L.polyline(ll, {color: "#b45309", weight: 5, opacity: .85}),
+      L.marker([e.lat, e.lng], {icon: numIcon(1)}).bindPopup(`<b>起點</b> ${e.name_tc}`),
+      L.marker([mid.lat, mid.lng], {icon: numIcon(2)}).bindPopup(`<b>途經</b> ${mid.zh}`),
+      L.marker([used.a.lat, used.a.lng], {icon: numIcon(3)}).bindPopup(`<b>終點</b> ${used.c.zh}`)
+    ]).addTo(map);
+    map.fitBounds(L.polyline(ll).getBounds().pad(.2));
+    const legTexts = [];
+    (j.directions || []).forEach(d => (d.features || []).forEach(f => legTexts.push(f.attributes.text)));
+    const title = type === "child" ? "🔗 育兒返工鏈" : "🔗 護老返工鏈";
+    document.getElementById("routeStats").innerHTML =
+      `<b>${e.name_tc}</b> → ${mid.zh} → ${used.c.zh}｜${title}<br>` +
+      `全程步行約 <b>${Math.round(dist)} 米</b>｜${path.length} 個路徑點｜垂直爬升 +${up.toFixed(1)}m｜高度 ${Math.min(...zs).toFixed(1)}–${Math.max(...zs).toFixed(1)}m`;
+    document.getElementById("steps").innerHTML = legTexts.slice(0, 40).map(s => `<li>${s}</li>`).join("") +
+      (legTexts.length > 40 ? `<li>… 共 ${legTexts.length} 步</li>` : "");
+    document.getElementById("elevWrap").style.display = "block";
+    document.getElementById("elev").innerHTML = elevationSVG(path);
+    bindElevHover();
+    currentRoute = {key, dest: "chain", chain: type, c: used.c, a: used.a, o: null};
+    try { history.replaceState(null, "", `#estate=${encodeURIComponent(e.name_tc)}&mode=${mode}&chain=${type}`); } catch(_){}
+    panel.scrollIntoView({behavior: "smooth"});
+  } catch (err) {
+    if (seq === planSeq){
+      const tries = (err.attempts || []).map(a => `· ${a}`).join("<br>");
+      document.getElementById("routeStats").innerHTML =
+        `<div class="err"><b>${e.name_tc}</b>：多段路線規劃失敗 — ${err.message || err}` +
+        (tries ? `<br>${tries}` : "") +
+        `<br>建議改用單一目的地（例如先撳「🚇 港鐵」），或轉「最短路徑」模式。</div>`;
+    }
+  } finally {
+    if (btn && seq === planSeq) btn.disabled = false;
   }
 }
 
@@ -823,6 +974,8 @@ document.getElementById("cmpOpen").onclick = () => {
     row("最近港鐵", e => e.nearest_mtr ? `${e.nearest_mtr.zh}<div class="mini">${fmtD(e.nearest_mtr.distance_m)}</div>` : "-") +
     row("最近小學", e => e.nearest_school ? `${e.nearest_school.zh}<div class="mini">${fmtD(e.nearest_school.distance_m)}</div>` : "-") +
     row("最近託管點", e => e.nearest_care ? `${e.nearest_care.zh}<div class="mini">${fmtD(e.nearest_care.distance_m)}</div>` : "-") +
+    row("最近長者中心", e => e.nearest_elderly ? `${e.nearest_elderly.zh}<div class="mini">${fmtD(e.nearest_elderly.distance_m)}</div>` : "-") +
+    row("最近社區會堂", e => e.nearest_shelter ? `${e.nearest_shelter.zh}${e.nearest_shelter.heat_shelter ? "（避暑中心）" : ""}<div class="mini">${fmtD(e.nearest_shelter.distance_m)}</div>` : "-") +
     `</table>`;
   document.getElementById("cmpPrintTime").textContent = new Date().toLocaleString("zh-HK");
   document.getElementById("cmpPrintProfile").textContent = pr.label;
@@ -933,8 +1086,12 @@ if (!SHOW_AI_ADVISOR) document.getElementById("aiPanel").style.display = "none";
     mode = md;
     document.querySelectorAll("#modes button").forEach(x => x.classList.toggle("on", +x.dataset.m === md));
   }
-  const dest = h.get("dest") === "sch" ? "sch" : "mtr";
-  setTimeout(() => planRoute(e._key, dest), 400);  // 等地圖初始化完成
+  const dest = ["sch","care","eld","shel"].includes(h.get("dest")) ? h.get("dest") : "mtr";
+  const chain = h.get("chain");
+  setTimeout(() => {
+    if (chain === "child" || chain === "elder") planChain(e._key, chain);
+    else planRoute(e._key, dest);
+  }, 400);  // 等地圖初始化完成
 })();
 
 render();

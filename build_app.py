@@ -205,11 +205,13 @@ for e in data:
         a = t["anchors"][0]
         e["nearest_mtr"] = {"zh": t["zh"], "en": t["en"], "lat": a["lat"], "lng": a["lng"],
                             "distance_m": t["distance_m"]}
-        s = e.get("sub_scores") or {"school": 50.0, "care": 50.0, "elevator": 100.0}
+        s = e.get("sub_scores") or {"school": 50.0, "care": 50.0,
+                                    "elderly_shelter": 50.0, "elevator": 100.0}
         s["mtr"] = smooth_score(t["distance_m"], 200, 900)
         e["sub_scores"] = s
-        e["score"] = round(0.35 * s["mtr"] + 0.30 * s.get("school", 50.0)
-                           + 0.20 * s.get("care", 50.0) + 0.15 * s.get("elevator", 100.0), 1)
+        e["score"] = round(0.35 * s["mtr"] + 0.25 * s.get("school", 50.0)
+                           + 0.15 * s.get("care", 50.0) + 0.10 * s.get("elderly_shelter", 50.0)
+                           + 0.15 * s.get("elevator", 100.0), 1)
 
 # 預設排序：評分 ↓、單位數 ↓（與管線一致）
 data.sort(key=lambda x: (-x.get("score", 0), -(x.get("total_units") or 0)))

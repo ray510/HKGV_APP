@@ -20,6 +20,31 @@ CARE_URL = ("https://portal.csdi.gov.hk/server/services/common/swd_rcd_172742960
             "?service=wfs&version=2.0.0&request=GetFeature&typename=csdi:SWDSBAEPS&outputFormat=GEOJSON")
 MTR_PATH = os.path.join(NORM, "mtr_venue_polygon.json")
 MTR_FALLBACK = os.path.join(BASE, "data", "raw", "mtr_venue_polygon.json")
+RAW = os.path.join(BASE, "data", "raw")
+
+# 3 個 2026/27 新屋邨：房委會單位檔無座標、ES Locator 未收錄 → 手動補（外部提供之約略位置）
+NEW_ESTATE_COORDS_PATCH = {
+    "古雋邨": {"lat": 22.5068, "lng": 114.0992,
+               "note_tc": "古洞北新發展區（港鐵古洞站預計 2027 通車，現以鄰近站計算）"},
+    "華富北邨": {"lat": 22.2540, "lng": 114.1365,
+                 "note_tc": "薄扶林華景街（華富邨重建接收屋邨）"},
+    "曉茵邨": {"lat": 22.3154, "lng": 114.2331,
+               "note_tc": "觀塘秀茂坪曉明街（行人天橋連接曉光街）"},
+}
+
+# CSDI 新數據集（2026-10 民政署欄位改名 → 動態鍵名解析）
+CSDI_DATASETS = {
+    "elderly": dict(dataset_id="swd_rcd_1633501860637_42476", layer="DCUDECC",
+                    static="https://static.csdi.gov.hk/csdi-webpage/download/common/145157f813ced72d715daece518d7f4df60ba7dd87413fb955628ae3b162aeb6",
+                    save_as="swd_elderly_dcu.json"),
+    "halls": dict(dataset_id="had_rcd_1634531497753_36049", layer="CHCC",
+                  static="https://static.csdi.gov.hk/csdi-webpage/download/common/bf7100a5efea99aaf9ba42ef9bb7e01730990f1b99d2e34986051c786a125c96",
+                  save_as="had_community_halls.json"),
+    "shelters": dict(dataset_id="had_rcd_1634542411218_91745", layer=None, static=None,
+                     save_as="had_heat_shelters.json"),
+    "barrierfree": dict(dataset_id="had_rcd_1635393119641_62162", layer=None, static=None,
+                        save_as="had_barrierfree_halls.json"),
+}
 
 
 def fetch_json(url, timeout=180):
@@ -66,19 +91,26 @@ def smooth_distance_score(dist_m, full_radius=200.0, half_life=1000.0):
     return round(max(5.0, 100.0 * math.exp(-decay * (dist_m - full_radius))), 1)
 
 
-def compute_living_circle_metrics(mtr_d, sch_d, sch_n800, care_d, care_n800, elev_u, total_u):
-    """生活圈評分 v3：各維度標準化 0~100 後加權。
+def compute_living_circle_metrics(mtr_d, sch_d, sch_n800, care_d, care_n800,
+                                  elderly_d, shelter_d, elev_u, total_u):
+    """生活圈評分 v3.1：五維標準化 0~100 後加權。
     小學 = 70% 最近距離 + 30% 800m 內選擇密度（5 間滿分）；
     託管 = 80% 最近距離 + 20% 密度（3 間滿分）；
-    升降機 = 單位級覆蓋率 ×100。預設（育兒家庭）= 港鐵 35% + 小學 30% + 託管 20% + 升降機 15%。"""
+    長者/會堂 = 長者日間護理單位與社區會堂（避暑中心）平滑分平均；
+    升降機 = 單位級覆蓋率 ×100。
+    預設（育兒家庭）= 港鐵 35% + 小學 25% + 託管 15% + 長者/會堂 10% + 升降機 15%。"""
     s_mtr = smooth_distance_score(mtr_d, 200, 900)
     s_sch = round(0.7 * smooth_distance_score(sch_d, 150, 800)
                   + 0.3 * min(1.0, (sch_n800 or 0) / 5.0) * 100.0, 1)
     s_care = round(0.8 * smooth_distance_score(care_d, 200, 1200)
                    + 0.2 * min(1.0, (care_n800 or 0) / 3.0) * 100.0, 1)
+    s_elder = round(0.4 * smooth_distance_score(elderly_d, 200, 1000)
+                    + 0.6 * smooth_distance_score(shelter_d, 200, 1000), 1)
     s_elev = round(elev_u / total_u * 100.0, 1) if total_u > 0 else 100.0
-    score = round(0.35 * s_mtr + 0.30 * s_sch + 0.20 * s_care + 0.15 * s_elev, 1)
-    return score, {"mtr": s_mtr, "school": s_sch, "care": s_care, "elevator": s_elev}
+    score = round(0.35 * s_mtr + 0.25 * s_sch + 0.15 * s_care
+                  + 0.10 * s_elder + 0.15 * s_elev, 1)
+    return score, {"mtr": s_mtr, "school": s_sch, "care": s_care,
+                   "elderly_shelter": s_elder, "elevator": s_elev}
 
 
 # ---------------- Part 1: PRH 18 區單位 → 屋邨級 ----------------
@@ -182,6 +214,14 @@ def build_prh_estates():
             "avg_area": round(sum(ar) / len(ar), 2) if ar else None,
             "blocks": blocks})
     out.sort(key=lambda x: -x["total_units"])
+    # 3 個新屋邨補座標（房委會單位檔無 estate_map_latitude）
+    for e in out:
+        if e["lat"] is None:
+            patch = NEW_ESTATE_COORDS_PATCH.get(e["name_tc"])
+            if patch:
+                e["lat"], e["lng"] = patch["lat"], patch["lng"]
+                e["coords_note"] = patch["note_tc"]
+                print(f"  座標補全：{e['name_tc']} → {patch['lat']}, {patch['lng']}", flush=True)
     print(f"Part 1 完成：{len(out)} 個屋邨 / {sum(x['total_units'] for x in out):,} 個單位 / "
           f"{sum(len(x['blocks']) for x in out)} 座", flush=True)
     return out
@@ -299,11 +339,99 @@ def nearest_mtr_precise(lat, lng, venues, coarse=5):
              "distance_m": int(best[2])}, cnt) if best else (None, cnt)
 
 
+# ---------------- Part 5: CSDI 新數據集（長者日間護理／社區會堂／避暑中心／無障礙設施） ----------------
+NAME_KEYS_TC = ["NameTC", "NAME_TC", "NAME_ZH", "CHI_NAME", "FACILITY_NAME_TC", "名稱", "中心名稱", "會堂名稱"]
+NAME_KEYS_EN = ["NameEN", "NAME_EN", "ENG_NAME", "FACILITY_NAME_EN"]
+
+
+def pick_name(p, keys):
+    for k in keys:
+        v = p.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return None
+
+
+def fetch_csdi_geojson(spec):
+    """file-api（已知 layer）→ FeatureServer（f=geojson, outSR=4326）→ static fallback；成功即存 raw。"""
+    did, layer = spec["dataset_id"], spec.get("layer")
+    urls = []
+    if layer:
+        urls.append(f"https://portal.csdi.gov.hk/csdi-webpage/file-api?dataset_id={did}&format=geojson&layer_name={layer}")
+    urls.append(f"https://portal.csdi.gov.hk/server/rest/services/common/{did}/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson")
+    if spec.get("static"):
+        urls.append(spec["static"])
+    for u in urls:
+        try:
+            gj = fetch_json(u, timeout=90)
+            if isinstance(gj, dict) and gj.get("features"):
+                with open(os.path.join(RAW, spec["save_as"]), "w", encoding="utf-8") as f:
+                    json.dump(gj, f, ensure_ascii=False)
+                return gj
+        except Exception:
+            continue
+    print(f"    CSDI {did} 全部來源失敗", flush=True)
+    return {"features": []}
+
+
+def parse_facilities(gj, accessible=False):
+    """動態鍵名解析（兼容 2026-10 民政署欄位改名）；座標統一 WGS84（outSR=4326 / file-api 已轉）。"""
+    out = []
+    for ft in gj.get("features", []):
+        p = ft.get("properties") or {}
+        zh = pick_name(p, NAME_KEYS_TC) or pick_name(p, NAME_KEYS_EN)
+        en = pick_name(p, NAME_KEYS_EN) or zh
+        g = ft.get("geometry") or {}
+        lat = lng = None
+        c = g.get("coordinates")
+        if g.get("type") == "Point" and c and len(c) >= 2:
+            x, y = float(c[0]), float(c[1])
+            if -180 <= x <= 180 and -90 <= y <= 90:      # WGS84 直接可用
+                lng, lat = x, y
+            elif x > 800000 and y > 800000:              # HK1980 網格（罕見）→ 交由屬性 Latitude/Longitude
+                lat = lng = None
+        if lat is None:
+            try:
+                lat, lng = float(p.get("Latitude")), float(p.get("Longitude"))
+            except (TypeError, ValueError):
+                pass
+        if not zh or lat is None:
+            continue
+        item = {"zh": zh, "en": en, "lat": lat, "lng": lng,
+                "district": p.get("DistrictTC") or p.get("DistrictEN") or ""}
+        if accessible:
+            item["accessible"] = any(
+                str(p.get(k, "")).strip().upper() not in ("", "N", "NO", "否", "沒有", "無")
+                for k in ("AccessibleLiftTC", "AccessibleToiletTC", "AccessibleEntranceExitTC", "AccessibleCarparkTC"))
+        out.append(item)
+    return out
+
+
+def build_community():
+    """長者日間護理單位 + 社區會堂（合併避暑中心／無障礙設施標記）。"""
+    elderly = parse_facilities(fetch_csdi_geojson(CSDI_DATASETS["elderly"]))
+    halls = parse_facilities(fetch_csdi_geojson(CSDI_DATASETS["halls"]))
+    shelters = parse_facilities(fetch_csdi_geojson(CSDI_DATASETS["shelters"]))
+    barrier = parse_facilities(fetch_csdi_geojson(CSDI_DATASETS["barrierfree"]), accessible=True)
+    shelter_names = {f["zh"] for f in shelters}
+    acc_map = {f["zh"]: f.get("accessible") for f in barrier}
+    n_shelter_hit = 0
+    for h in halls:
+        h["heat_shelter"] = h["zh"] in shelter_names
+        if h["heat_shelter"]:
+            n_shelter_hit += 1
+        h["accessible"] = acc_map.get(h["zh"])
+    print(f"Part 5 完成：{len(elderly)} 個長者日間護理單位 / {len(halls)} 個社區會堂"
+          f"（{n_shelter_hit} 個避暑中心配對、{len(barrier)} 個無障礙設施記錄）", flush=True)
+    return elderly, halls
+
+
 def main():
     prh = build_prh_estates()
     schools = build_schools()
     care = build_care()
     mtr = build_mtr_venues()
+    elderly, halls = build_community()
 
     # 託管點池快取（供 build_app.py／日後前端密度展示用）
     with open(os.path.join(NORM, "swd_care_points.json"), "w", encoding="utf-8") as f:
@@ -352,15 +480,28 @@ def main():
         m, mn = nearest_mtr_precise(e["lat"], e["lng"], mtr)
         s, sn = nearest_and_count(e["lat"], e["lng"], schools)
         c, cn = nearest_and_count(e["lat"], e["lng"], care)
-        e["nearest_mtr"] = m
+        el, eln = nearest_and_count(e["lat"], e["lng"], elderly)
+        sh, shn = nearest_and_count(e["lat"], e["lng"], halls)
+        e["nearest_mtr"] = dict(m, count_800m=mn) if m else None
         e["nearest_school"] = {"zh": s["item"]["zh"], "en": s["item"].get("en"),
                                "lat": s["item"]["lat"], "lng": s["item"]["lng"],
-                               "distance_m": s["distance_m"]} if s else None
-        e["nearest_care"] = {"zh": c["item"]["zh"], "distance_m": c["distance_m"]} if c else None
+                               "distance_m": s["distance_m"], "count_800m": sn} if s else None
+        e["nearest_care"] = {"zh": c["item"]["zh"], "lat": c["item"]["lat"], "lng": c["item"]["lng"],
+                             "distance_m": c["distance_m"], "count_800m": cn} if c else None
+        e["nearest_elderly"] = {"zh": el["item"]["zh"], "en": el["item"].get("en"),
+                                "lat": el["item"]["lat"], "lng": el["item"]["lng"],
+                                "distance_m": el["distance_m"], "count_800m": eln} if el else None
+        e["nearest_shelter"] = {"zh": sh["item"]["zh"], "en": sh["item"].get("en"),
+                                "lat": sh["item"]["lat"], "lng": sh["item"]["lng"],
+                                "distance_m": sh["distance_m"], "count_800m": shn,
+                                "heat_shelter": bool(sh["item"].get("heat_shelter")),
+                                "accessible": sh["item"].get("accessible")} if sh else None
         e["score"], e["sub_scores"] = compute_living_circle_metrics(
             m["distance_m"] if m else None,
             s["distance_m"] if s else None, sn,
             c["distance_m"] if c else None, cn,
+            el["distance_m"] if el else None,
+            sh["distance_m"] if sh else None,
             e["elevator_units"], e["total_units"])
         e["density_800m"] = {"schools": sn, "cares": cn}
     all_est.sort(key=lambda x: (-x["score"], -(x["total_units"] or 0)))
