@@ -1,0 +1,57 @@
+{
+  "run_at": "2026-10-28",
+  "sources": {
+    "lph": "https://data.hb.gov.hk/dataset/lph/hb_lphs_en.json",
+    "estates": "https://www.housingauthority.gov.hk/datagovhk/prh-estates.json"
+  },
+  "lph": {
+    "total_units": 28951,
+    "total_projects": 10,
+    "elevator_raw_values": [
+      "N",
+      "Y"
+    ],
+    "sample_project": [
+      "CHOI HING ROAD LPH",
+      "彩興路簡約公屋",
+      "KWUN TONG",
+      "觀塘",
+      "URBAN",
+      "市區",
+      22.331,
+      114.216,
+      2290,
+      2290,
+      0,
+      2,
+      1.0,
+      18.0,
+      18.53
+    ],
+    "raw_file": "C:\\Users\\kbl\\WorkBuddy AI\\2026-10-28-14-48-21\\data\\raw\\lph_units.json"
+  },
+  "estates": {
+    "total_estates": 245,
+    "by_region": {
+      "九龍": 84,
+      "新界": 135,
+      "香港島": 26
+    },
+    "raw_file": "C:\\Users\\kbl\\WorkBuddy AI\\2026-10-28-14-48-21\\data\\raw\\prh_estates.json"
+  },
+  "stage_1_5": {
+    "next_datasets": [
+      {
+        "name": "學校位置及資料",
+        "ckan_id": "hk-edb-schinfo-school-location-and-information",
+        "csdi": "edb_rcd_1629267205213_6391 (資助小學) 等，走 CSDI WFS GeoJSON"
+      },
+      {
+        "name": "在校課後託管服務計劃",
+        "ckan_id": "hk-swd-ycb-sba",
+        "csdi": "swd_rcd_1727429602437_81314，走 CSDI WFS GeoJSON"
+      }
+    ],
+    "note": "兩者需要 CSDI WFS 服務 URL + 圖層 ID；Stage 1.5 接入後可算『15 分鐘生活圈』。"
+  }
+}

@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>屋邨智配・3D 無障礙生活圈</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{--ink:#1f2933;--muted:#6b7280;--accent:#0b6e99;--accent2:#0f9d8a;--line:#e5e7eb;--soft:#eef4f8;--warn:#b45309}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:"PingFang HK","Microsoft YaHei",-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);font-size:14px}
+  #app{display:flex;height:100%}
+  #side{width:390px;min-width:330px;overflow-y:auto;background:#fbfcfd;border-right:1px solid var(--line);padding:16px}
+  #map{flex:1;height:100%}
+  h1{font-size:17px;margin:0 0 2px}
+  .sub{font-size:11.5px;color:var(--muted);margin:0 0 4px}
+  .statbar{font-size:11.5px;color:var(--accent);background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:6px 9px;margin:8px 0 12px}
+  .statbar b{font-size:12.5px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+  .panel b.t{font-size:12.5px;color:var(--accent);display:block;margin-bottom:8px}
+  label.chk{display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0;cursor:pointer}
+  label.chk span.k{width:74px;flex:none;color:#374151}
+  select,input[type=text]{width:100%;padding:6px 8px;font-size:13px;border:1px solid var(--line);border-radius:6px;background:#fff}
+  input[type=text]{flex:1}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .modes{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .modes button{flex:1 1 45%;padding:7px 6px;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer}
+  .modes button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+  .card h3{margin:0;font-size:14.5px;display:flex;align-items:center;gap:7px}
+  .badge{flex:none;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;letter-spacing:.5px}
+  .badge.prh{background:#e3eff7;color:#0b6e99}
+  .badge.lph{background:#f3e8ff;color:#7c3aed}
+  .card .d{font-size:12px;color:var(--muted);margin:2px 0 8px}
+  .scorewrap{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+  .score{flex:none;width:52px;height:52px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
+  .score b{font-size:18px;line-height:1}
+  .score i{font-style:normal;font-size:9px;opacity:.85}
+  .brk{flex:1;font-size:11px;color:#374151}
+  .brk .bar{height:5px;background:#eef1f4;border-radius:3px;margin:2px 0 5px;overflow:hidden}
+  .brk .bar i{display:block;height:100%;border-radius:3px}
+  .row{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;margin:4px 0}
+  .pill{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  .pill.good{border-color:#bfe3da;background:#effaf7;color:#0f7a6a}
+  .pill.bad{border-color:#f3d9b0;background:#fdf6ec;color:var(--warn)}
+  .pill.noc{border-color:#e5e7eb;background:#f9fafb;color:var(--muted)}
+  .gorow{display:flex;gap:6px;margin-top:8px}
+  .go{flex:1;padding:8px 4px;font-size:12.5px;border:0;border-radius:7px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;cursor:pointer}
+  .go.alt{background:linear-gradient(90deg,#7c3aed,#a855f7)}
+  .go:disabled{opacity:.5;cursor:wait}
+  .hint{font-size:11.5px;color:var(--muted);margin:8px 0 0}
+  #steps{max-height:220px;overflow-y:auto;font-size:12px}
+  #steps li{margin:3px 0;color:#374151}
+  .err{background:#fdf2f2;border:1px solid #f5c6c6;color:#a12626;border-radius:8px;padding:10px;font-size:12px;margin-top:10px}
+  #elevWrap{margin-top:8px;display:none}
+  #elevWrap b.t{font-size:12px;color:var(--accent);display:block;margin-bottom:4px}
+  #elev{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:4px 2px 0}
+  #elev svg{display:block;width:100%;height:auto}
+  .lands-attr{position:absolute;left:6px;bottom:6px;z-index:800;background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:5px;padding:2px 7px;font-size:10px;color:#374151;pointer-events:none}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font-size:11px;padding:4px 8px;border:1px solid var(--line);background:#fff;border-radius:12px;cursor:pointer;color:#374151;text-align:left}
+  .chip:hover{border-color:#7c3aed;color:#7c3aed}
+  .aiBtn{flex:none;padding:6px 12px;font-size:12.5px;border:0;border-radius:6px;background:#7c3aed;color:#fff;cursor:pointer}
+  .aiBtn:disabled{opacity:.5;cursor:wait}
+  .resetBtn{border:1px solid var(--line);background:#fff;color:var(--muted);font-size:11.5px;padding:3px 10px;border-radius:6px;cursor:pointer}
+  .resetBtn:hover{border-color:#b45309;color:#b45309}
+  #aiResult{margin-top:8px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:7px;padding:7px 9px;font-size:11.5px;color:#4c1d95;line-height:1.8;display:none}
+  #aiResult b{color:#6d28d9;background:#ede9fe;border-radius:4px;padding:0 4px}
+  .cmpBtn{width:100%;margin-top:8px;padding:8px;font-size:12.5px;border:1px dashed var(--accent);background:#f0f7fb;color:var(--accent);border-radius:7px;cursor:pointer}
+  .cmpBtn:disabled{opacity:.5;cursor:wait}
+  #cmpBox{margin-top:8px;background:#f0f7fb;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.9;color:#374151;display:none}
+  #cmpBox b{color:var(--accent)}
+  .addCmp{margin-top:6px;width:100%;padding:5px;font-size:11.5px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;color:#374151}
+  .addCmp.on{border-color:#7c3aed;color:#7c3aed;background:#f5f3ff;font-weight:700}
+  #cmpTray{position:sticky;bottom:0;z-index:10;background:#fff;border:1.5px solid #7c3aed;border-radius:10px;padding:8px 10px;display:none;gap:6px;align-items:center;font-size:12px;margin-top:10px;box-shadow:0 -2px 10px rgba(124,58,237,.12)}
+  #cmpTray b{color:#7c3aed}
+  #cmpTray button{border:0;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer}
+  #cmpOpen{background:#7c3aed;color:#fff}
+  #cmpClear{background:#f3f4f6;color:#374151}
+  #cmpModal{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1200;display:none;align-items:flex-start;justify-content:center;padding:24px;overflow:auto}
+  .cmpCard{background:#fff;border-radius:12px;max-width:920px;width:100%;padding:18px}
+  .cmpHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+  .cmpHead b{font-size:15px}
+  .cmpHead button{border:0;border-radius:6px;padding:7px 12px;font-size:12.5px;cursor:pointer}
+  #cmpPrint{background:#7c3aed;color:#fff}
+  #cmpClose{background:#f3f4f6;color:#374151}
+  #cmpTable{width:100%;border-collapse:collapse;font-size:12px}
+  #cmpTable th,#cmpTable td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  #cmpTable th{background:var(--soft);white-space:nowrap;font-weight:600;color:#374151;width:130px}
+  #cmpTable td h4{margin:0 0 4px;font-size:13.5px}
+  #cmpTable .mini{font-size:11px;color:var(--muted)}
+  .cmpFoot{font-size:10.5px;color:var(--muted);line-height:1.6;margin:10px 0 0}
+  .printOnly{display:none}
+  @media print{
+    #app{display:none !important}
+    #cmpModal{display:block !important;position:static;background:#fff;padding:0;overflow:visible}
+    .cmpCard{max-width:none;padding:0;border-radius:0}
+    .cmpHead button{display:none}
+    .printOnly{display:block;margin-bottom:10px}
+    .printOnly h2{margin:0 0 2px;font-size:18px}
+    .printOnly .meta{font-size:11px;color:#374151}
+  }
+  .stat-line{font-size:12.5px;margin:6px 0;color:#374151}
+  .stat-line b{color:var(--accent)}
+  .leaflet-container{font-size:12px}
+  .footer-note{font-size:10.5px;color:var(--muted);line-height:1.5;margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+  .legend{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.7}
+  .legend .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <h1>屋邨智配・3D 無障礙生活圈</h1>
+    <p class="sub">全港公屋 × 簡約公屋智能配對｜CSDI 三維行人路線實測出行</p>
+    <div class="statbar" id="statbar"></div>
+
+    <div class="panel">
+      <b class="t">🤖 AI 選樓顧問（廣東話）</b>
+      <div class="chips" id="aiExamples">
+        <button class="chip">一家四口，有坐輪椅嘅長者同讀小二嘅小朋友，想近港鐵</button>
+        <button class="chip">兩公婆推BB車，想要30平方米以上嘅簡約公屋</button>
+        <button class="chip">想搵觀塘有𨋢嘅公屋，落雨唔想擔遮</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input type="text" id="aiInput" placeholder="用廣東話講你嘅家庭需要…">
+        <button class="aiBtn" id="aiGo">分析</button>
+      </div>
+      <div class="hint" style="margin-top:6px">原型用確定性規則解析（零幻覺、可溯源）；正式版將採用 LLM 函數調用。</div>
+      <div id="aiResult"></div>
+    </div>
+
+    <div class="panel">
+      <b class="t">👥 生活圈評分視角</b>
+      <div class="modes" id="profiles">
+        <button data-p="family" class="on">👨‍👩‍👧 育兒家庭</button>
+        <button data-p="elder">👵 長者安居</button>
+        <button data-p="commute">🚇 極速通勤</button>
+        <button data-p="balanced">⚖️ 均衡社區</button>
+      </div>
+      <div class="hint" id="profileHint"></div>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <b class="t" style="margin:0">① 篩選條件</b>
+        <button class="resetBtn" id="resetFilters" title="清除所有篩選條件（包括 AI 顧問套用嘅條件）">↺ 重設</button>
+      </div>
+      <input type="text" id="q" placeholder="搜尋屋邨名稱（中／英文）…">
+      <div class="grid2" style="margin-top:8px">
+        <label class="chk"><span class="k">類型</span>
+          <select id="etype">
+            <option value="">全部</option>
+            <option value="PRH">公屋（房委會）</option>
+            <option value="LPH">簡約公屋</option>
+          </select></label>
+        <label class="chk"><span class="k">地區</span>
+          <select id="district"><option value="">全部</option></select></label>
+      </div>
+      <label class="chk"><span class="k">去港鐵站</span>
+        <select id="walk">
+          <option value="">不限</option>
+          <option value="500">≤ 500 米</option>
+          <option value="1000">≤ 1 公里</option>
+          <option value="2000">≤ 2 公里</option>
+        </select></label>
+      <div class="grid2">
+        <label class="chk"><span class="k">最低評分</span>
+          <select id="minscore">
+            <option value="">不限</option>
+            <option value="90">≥ 90 分</option>
+            <option value="80">≥ 80 分</option>
+            <option value="60">≥ 60 分</option>
+            <option value="40">≥ 40 分</option>
+          </select></label>
+        <label class="chk"><span class="k">排序</span>
+          <select id="sortby">
+            <option value="score">綜合評分 ↓</option>
+            <option value="units">單位數 ↓</option>
+            <option value="mtr">港鐵距離 ↑</option>
+            <option value="sch">🎒 小學距離 ↑</option>
+            <option value="name">名稱</option>
+          </select></label>
+      </div>
+      <label class="chk"><input type="checkbox" id="needLift"> <span>全幢必須有升降機（長者／輪椅／BB 車）</span></label>
+      <div class="hint" id="count"></div>
+    </div>
+
+    <div class="panel">
+      <b class="t">② 路線模式（地政總署 3D 行人路線 API）</b>
+      <div class="modes" id="modes">
+        <button data-m="2" class="on">2 · 無障礙路徑</button>
+        <button data-m="1">1 · 最短路徑</button>
+        <button data-m="5">5 · 非付費區優先</button>
+        <button data-m="4">4 · 行樓梯健身</button>
+      </div>
+      <div class="hint">已顯示路線時轉換模式，會即刻用新模式自動重新規劃。</div>
+    </div>
+
+    <div class="panel" id="routePanel" style="display:none">
+      <b class="t">③ 路線結果</b>
+      <div class="stat-line" id="routeStats"></div>
+      <div id="elevWrap"><b class="t">⛰ 垂直高程剖面（米）— 2D 地圖睇唔到嘅第三維</b><div id="elev"></div></div>
+      <button class="cmpBtn" id="cmpGo">⚡ 一鍵對比：最短 vs 無障礙 vs 避雨</button>
+      <div id="cmpBox"></div>
+      <ol id="steps"></ol>
+    </div>
+
+    <div id="results"></div>
+
+    <div id="cmpTray">
+      <span id="cmpTrayTxt"></span>
+      <span style="flex:1"></span>
+      <button id="cmpOpen">📊 並排比較</button>
+      <button id="cmpClear">清空</button>
+    </div>
+
+    <p class="footer-note">
+      路線服務：地政總署「三維行人路線搜尋 API」（CSDI）｜房屋數據：房屋局「簡約公屋」、房委會公共租住房屋單位資料（DATA.GOV.HK）｜學校位置：教育局｜在校課後託管：社會福利署（CSDI WFS）｜底圖 © OpenStreetMap 貢獻者。<br>
+      生活圈評分＝港鐵可達性（0–45）＋小學可達性（0–35）＋託管可達性（0–20），公式公開透明。本頁為參賽開發原型，非政府官方應用。
+    </p>
+  </div>
+  <div id="map"></div>
+</div>
+
+<div id="cmpModal">
+  <div class="cmpCard">
+    <div class="cmpHead">
+      <b>📊 屋邨並排比較 — 揀樓評估</b>
+      <span>
+        <button id="cmpPrint">🖨️ 列印社工／家庭評估報告</button>
+        <button id="cmpClose">✕ 關閉</button>
+      </span>
+    </div>
+    <div class="printOnly">
+      <h2>屋邨智配・3D 無障礙生活圈 — 揀樓評估報告</h2>
+      <div class="meta">生成時間：<span id="cmpPrintTime"></span>｜評分視角：<span id="cmpPrintProfile"></span></div>
+    </div>
+    <div id="cmpTable"></div>
+    <p class="cmpFoot">評分按當前「生活圈評分視角」即時計算，距離為直線估算；3D 實測步行路線請喺主畫面逐個屋邨規劃。數據來源：房屋局・房委會・教育局・社會福利署・地政總署（DATA.GOV.HK / CSDI）。本報告由開發原型生成，僅供參考；揀樓決定請以房屋局及房委會官方公布為準。</p>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const DATA = __DATA__;
+
+const API = "https://mapapi.hkmapservice.gov.hk/PedRoute/NAServer/route/solve";
+let mode = 2;
+const MAX_CARDS = 60;
+let aiAreaMin = 0;            // AI 顧問設定嘅平均面積門檻（㎡）
+
+// 每個屋邨嘅唯一 key（必須喺所有用 _key 嘅邏輯之前賦值）
+const keyOf = e => e.source + "|" + e.name_tc;
+DATA.forEach(e => e._key = keyOf(e));
+
+const scoreColor = s => s>=80 ? "#0f9d8a" : s>=60 ? "#0b6e99" : "#b45309";
+
+// ---- 生活圈評分 v3：平滑衰減＋800m 選擇密度＋升降機覆蓋（sub_scores 由管線輸出；JS 有同構 fallback）----
+let profile = "family";
+const compareSet = [];        // 比較籃（最多 3 個屋邨 key）
+const dist2 = (e,k) => k==="mtr" ? (e.nearest_mtr?.distance_m ?? null)
+                    : k==="sch" ? (e.nearest_school?.distance_m ?? null)
+                    : (e.nearest_care?.distance_m ?? null);
+const smoothScore = (d, d0, hl) => d == null ? 50
+  : (d <= d0 ? 100 : Math.max(5, 100 * Math.exp(-Math.log(2)/hl*(d-d0))));
+function subs(e){
+  if (e.sub_scores) return e.sub_scores;   // 管線 v3 輸出
+  const t = e.total_units||0;              // 舊數據 fallback：同管線公式
+  return {
+    mtr: smoothScore(dist2(e,"mtr"),200,900),
+    school: Math.round((0.7*smoothScore(dist2(e,"sch"),150,800)
+      + 0.3*Math.min(1,(e.density_800m?.schools??0)/5)*100)*10)/10,
+    care: Math.round((0.8*smoothScore(dist2(e,"care"),200,1200)
+      + 0.2*Math.min(1,(e.density_800m?.cares??0)/3)*100)*10)/10,
+    elevator: t ? Math.round((e.elevator_units||0)/t*1000)/10 : 100
+  };
+}
+// 4 個 Persona 權重矩陣（港鐵／小學／託管／升降機），對應建議書 §5
+const WEIGHTS = {
+  family:  {mtr:.35, school:.30, care:.20, elev:.15, label:"育兒家庭",
+            hint:"港鐵 35% ＋ 小學 30% ＋ 託管 20% ＋ 升降機 15%（平滑衰減＋800m 選擇密度）"},
+  elder:   {mtr:.25, school:0,   care:0,   elev:.75, label:"長者安居",
+            hint:"升降機覆蓋 75% ＋ 港鐵 25%（接入醫管局急症室＋民政署避暑中心後，將拆分出醫療社區維度）"},
+  commute: {mtr:.70, school:0,   care:0,   elev:.30, label:"極速通勤",
+            hint:"港鐵 70% ＋ 升降機 30%"},
+  balanced:{mtr:.40, school:.20, care:.15, elev:.25, label:"均衡社區",
+            hint:"港鐵 40% ＋ 小學 20% ＋ 託管 15% ＋ 升降機 25%"}
+};
+const DIM_LABEL = {mtr:"🚇 港鐵", school:"🏫 小學", care:"👶 託管", elev:"🛗 升降機"};
+const DIM_COLOR = {mtr:"#0b6e99", school:"#0f9d8a", care:"#7c3aed", elev:"#b45309"};
+function calcScore(e, p = profile){
+  const w = WEIGHTS[p], s = subs(e);
+  const total = Math.round((w.mtr*s.mtr + w.school*s.school + w.care*s.care + w.elev*s.elevator)*10)/10;
+  const parts = ["mtr","school","care","elev"]
+    .map(k => ({k, label: DIM_LABEL[k], sub: s[k==="elev"?"elevator":k], w: w[k]}))
+    .filter(p => p.w > 0);
+  return {total, parts};
+}
+const scoreOf = e => calcScore(e).total;
+function setProfile(p){
+  profile = p;
+  document.querySelectorAll("#profiles button").forEach(x => x.classList.toggle("on", x.dataset.p === p));
+  document.getElementById("profileHint").innerHTML = `<b>${WEIGHTS[p].label}</b>：${WEIGHTS[p].hint}`;
+  render();
+}
+
+// ---- 統計列 ----
+const nUnits = DATA.reduce((a,e)=>a+(e.total_units||0),0);
+const nPrh = DATA.filter(e=>e.source==="PRH").length, nLph = DATA.length-nPrh;
+document.getElementById("statbar").innerHTML =
+  `<b>${DATA.length}</b> 個屋邨／項目（公屋 ${nPrh} ＋ 簡約公屋 ${nLph}）· <b>${nUnits.toLocaleString()}</b> 個單位<br>數據：房屋局・房委會・教育局・社署・地政總署`;
+
+// ---- 地圖 ----
+const map = L.map("map").setView([22.37, 114.10], 10);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {attribution: "© OpenStreetMap 貢獻者", maxZoom: 19}).addTo(map);
+
+// 合規：地圖表面清晰顯示地政總署版權（CSDI 參賽要求）
+const landsAttr = L.DomUtil.create("div", "lands-attr", map.getContainer());
+landsAttr.textContent = "Map from Lands Department © 地政總署｜3D 路線：CSDI 三維行人路線搜尋 API";
+
+const markers = {};
+DATA.forEach(e => {
+  if (e.lat == null) return;
+  const c = scoreColor(e.score);
+  markers[e._key] = L.circleMarker([e.lat, e.lng], {
+    radius: 5 + Math.min(9, (e.total_units||0)/1800),
+    color: c, fillColor: c, fillOpacity: .7, weight: 2
+  }).addTo(map).bindPopup(
+    `<b>${e.name_tc}</b>${e.source==="LPH"?"（簡約公屋）":""}<br>` +
+    `${e.district_tc}｜${(e.total_units||0).toLocaleString()} 個單位｜生活圈 <b>${e.score}</b> 分<br>` +
+    (e.nearest_mtr ? `最近港鐵：${e.nearest_mtr.zh} 約 ${e.nearest_mtr.distance_m} 米` : "暫無港鐵數據"));
+});
+
+const legend = L.control({position: "bottomright"});
+legend.onAdd = () => {
+  const div = L.DomUtil.create("div", "legend");
+  div.innerHTML = `<span class="dot" style="background:#0f9d8a"></span>生活圈 ≥ 80 分<br>` +
+                  `<span class="dot" style="background:#0b6e99"></span>60–79 分<br>` +
+                  `<span class="dot" style="background:#b45309"></span>&lt; 60 分<br>` +
+                  `<span style="color:#6b7280">圓點大小＝單位數</span>`;
+  return div;
+};
+legend.addTo(map);
+
+// ---- 地區下拉 ----
+[...new Set(DATA.map(e => e.district_tc).filter(Boolean))].sort().forEach(d => {
+  const o = document.createElement("option"); o.value = d; o.textContent = d;
+  document.getElementById("district").appendChild(o);
+});
+
+// ---- 篩選 ----
+function filtered(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const etype = document.getElementById("etype").value;
+  const dist = document.getElementById("district").value;
+  const walk = document.getElementById("walk").value;
+  const minsc = document.getElementById("minscore").value;
+  const lift = document.getElementById("needLift").checked;
+  const sortby = document.getElementById("sortby").value;
+  let list = DATA.filter(e =>
+    (!q || (e.name_tc||"").toLowerCase().includes(q) || (e.name_en||"").toLowerCase().includes(q)) &&
+    (!etype || e.source === etype) &&
+    (!dist || e.district_tc === dist) &&
+    (!walk || (e.mtr_candidates||[]).some(c => c.distance_m <= +walk)) &&
+    (!minsc || scoreOf(e) >= +minsc) &&
+    (!aiAreaMin || (e.avg_area || 0) >= aiAreaMin) &&
+    (!lift || e.non_elevator_units === 0));
+  if (sortby === "units") list.sort((a,b)=>(b.total_units||0)-(a.total_units||0));
+  else if (sortby === "mtr") list.sort((a,b)=>(a.nearest_mtr?.distance_m??1e9)-(b.nearest_mtr?.distance_m??1e9));
+  else if (sortby === "sch") list.sort((a,b)=>(a.school_candidates?.[0]?.distance_m ?? a.nearest_school?.distance_m ?? 1e9)
+                                              -(b.school_candidates?.[0]?.distance_m ?? b.nearest_school?.distance_m ?? 1e9));
+  else if (sortby === "name") list.sort((a,b)=>(a.name_tc||"").localeCompare(b.name_tc||"", "zh-Hant"));
+  else list.sort((a,b)=>scoreOf(b)-scoreOf(a) || (b.total_units||0)-(a.total_units||0));
+  return list;
+}
+
+function render(){
+  const list = filtered();
+  document.getElementById("count").textContent = `符合條件：${list.length} / ${DATA.length} 個屋邨／項目` +
+    (aiAreaMin ? `｜AI 面積門檻：平均 ≥ ${aiAreaMin}㎡` : "") +
+    (list.length > MAX_CARDS ? `（只顯示評分／排序前 ${MAX_CARDS} 個，請縮小範圍看其餘）` : "");
+  const box = document.getElementById("results"); box.innerHTML = "";
+  list.slice(0, MAX_CARDS).forEach(e => {
+    const m = e.nearest_mtr, ok = e.non_elevator_units === 0;
+    const pr = calcScore(e);
+    const c = scoreColor(pr.total);
+    const brk = pr.parts.map(p =>
+      `<div>${p.label} ${p.sub} 分 × ${(p.w*100).toFixed(0)}%</div><div class="bar"><i style="width:${Math.round(p.sub)}%;background:${DIM_COLOR[p.k]}"></i></div>`).join("");
+    const addCmpBtn = `<button class="addCmp ${compareSet.includes(e._key)?"on":""}" data-c="${e._key}">${compareSet.includes(e._key)?"✓ 已加入比較":"＋ 加入比較"}</button>`;
+    const el = document.createElement("div"); el.className = "card";
+    const canMtr = e.lat != null && (e.mtr_candidates||[]).length;
+    const canSch = e.lat != null && (e.school_candidates||[]).length;
+    const routeBtns = (canMtr || canSch)
+      ? `<div class="gorow">` +
+        (canMtr ? `<button class="go" data-p="${e._key}" data-d="mtr">🚶 去港鐵站</button>` : "") +
+        (canSch ? `<button class="go alt" data-p="${e._key}" data-d="sch">🎒 去小學</button>` : "") +
+        `</div>`
+      : "";
+    el.innerHTML = `
+      <h3>${e.name_tc}
+        <span class="badge ${e.source==="LPH"?"lph":"prh"}">${e.source==="LPH"?"簡約公屋":"公屋"}</span></h3>
+      <div class="d">${e.district_tc}（${e.region_tc||"-"}）${e.name_en?"· "+e.name_en:""}</div>
+      <div class="scorewrap">
+        <div class="score" style="background:${c}"><b>${pr.total}</b><i>生活圈</i></div>
+        <div class="brk">${brk}</div>
+      </div>
+      <div class="row">
+        <span class="pill">${(e.total_units||0).toLocaleString()} 個單位</span>
+        <span class="pill">${e.blocks_count||"?"} 座</span>
+        <span class="pill">樓層 ${e.min_floor??"?"}–${e.max_floor??"?"}</span>
+        <span class="pill">平均 ${e.avg_area??"?"} m²</span>
+      </div>
+      <div class="row">
+        ${ok ? '<span class="pill good">✓ 全幢有升降機</span>'
+             : `<span class="pill bad">✗ ${e.non_elevator_units} 個單位冇升降機</span>`}
+        ${e.lat == null ? '<span class="pill noc">暫無座標，未能規劃路線</span>' : ""}
+      </div>
+      ${routeBtns}${addCmpBtn}`;
+    box.appendChild(el);
+  });
+  box.querySelectorAll(".go").forEach(btn => btn.onclick = () => planRoute(btn.dataset.p, btn.dataset.d));
+  box.querySelectorAll(".addCmp").forEach(btn => btn.onclick = () => {
+    const k = btn.dataset.c, i = compareSet.indexOf(k);
+    if (i >= 0) compareSet.splice(i, 1);
+    else { if (compareSet.length >= 3) return; compareSet.push(k); }
+    render();
+  });
+
+  // 地圖圓點同步篩選＋視角評分著色：符合條件正常顯示，唔符合淡化（唔會消失，保留全港概覽）
+  const matched = new Set(list.map(e => e._key));
+  DATA.forEach(e => {
+    const mk = markers[e._key];
+    if (!mk) return;
+    const sc = scoreColor(scoreOf(e));
+    const on = matched.has(e._key);
+    mk.setStyle(on ? {color: sc, fillColor: sc, opacity: 1, fillOpacity: .7, weight: 2}
+                   : {color: sc, fillColor: sc, opacity: .15, fillOpacity: .06, weight: 1});
+    const mm = e.nearest_mtr;
+    mk.setPopupContent(`<b>${e.name_tc}</b>${e.source==="LPH"?"（簡約公屋）":""}<br>` +
+      `${e.district_tc}｜${(e.total_units||0).toLocaleString()} 個單位｜生活圈（${WEIGHTS[profile].label}）<b>${scoreOf(e)}</b> 分<br>` +
+      (mm ? `最近港鐵：${mm.zh} 約 ${mm.distance_m} 米` : "暫無港鐵數據"));
+  });
+
+  // 比較列
+  const tray = document.getElementById("cmpTray");
+  tray.style.display = compareSet.length ? "flex" : "none";
+  document.getElementById("cmpTrayTxt").innerHTML = compareSet.length ? `已選 <b>${compareSet.length}/3</b> 個屋邨` : "";
+
+  // 篩選變更後：當前路線嘅屋邨若已被篩走，自動清除路線
+  if (currentRoute && !matched.has(currentRoute.key)) clearRoute();
+}
+
+["q","etype","district","walk","minscore","sortby"].forEach(id =>
+  document.getElementById(id).addEventListener(id==="q"?"input":"change", render));
+document.getElementById("needLift").onchange = render;
+
+// ---- 重設篩選（含 AI 顧問套用嘅隱形條件）----
+function resetFilters(){
+  document.getElementById("q").value = "";
+  document.getElementById("etype").value = "";
+  document.getElementById("district").value = "";
+  document.getElementById("walk").value = "";
+  document.getElementById("minscore").value = "";
+  document.getElementById("sortby").value = "score";
+  document.getElementById("needLift").checked = false;
+  aiAreaMin = 0;
+  render();
+}
+document.getElementById("resetFilters").onclick = resetFilters;
+
+document.querySelectorAll("#modes button").forEach(b => b.onclick = () => {
+  const changed = mode !== +b.dataset.m;
+  mode = +b.dataset.m;
+  document.querySelectorAll("#modes button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  // 轉換模式後即刻用新模式重新規劃當前路線
+  if (changed && currentRoute) planRoute(currentRoute.key, currentRoute.dest);
+});
+
+// ---- 3D 路線（CSDI Enhanced Pedestrian Route）----
+// 策略：由最近港鐵站候選逐個嘗試；「最近站」可能冇行人路可達
+// （ArcGIS 400: Unable to complete operation / No route from location，
+//  例：青發街簡約公屋 → 欣澳站隔住海峽），全部失敗先報錯。
+let routeLayer = null;
+let currentRoute = null;      // 目前已畫出 3D 路線 {key, dest, c}
+let planSeq = 0;              // 防止並發規劃時舊結果覆蓋新結果
+let cmpLayer = null, cmpSeq = 0;  // 模式對比層
+const MODE_LABELS = {1:"最短路徑",2:"無障礙路徑",3:"推薦路徑",4:"行樓梯健身",5:"非付費區優先"};
+
+function clearRoute(){
+  if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+  if (cmpLayer) { map.removeLayer(cmpLayer); cmpLayer = null; }
+  currentRoute = null;
+  const panel = document.getElementById("routePanel");
+  panel.style.display = "none";
+  document.getElementById("routeStats").innerHTML = "";
+  document.getElementById("steps").innerHTML = "";
+  document.getElementById("elevWrap").style.display = "none";
+  document.getElementById("elev").innerHTML = "";
+  document.getElementById("cmpBox").style.display = "none";
+  try { history.replaceState(null, "", location.pathname + location.search); } catch(_){}
+}
+
+async function solveOnce(from, to, m){
+  const qs = new URLSearchParams({
+    stops: `${from.lng},${from.lat};${to.lng},${to.lat}`, f: "json",
+    returnZ: "true", outSR: "4326", travelMode: String(m),
+    directionsLanguage: "zh-HK", directionsStyleName: "NA Campus",
+    directionsLengthUnits: "esriNAUMeters"});
+  const r = await fetch(`${API}?${qs}`);
+  const j = await r.json();
+  if (j.error) {
+    const err = new Error(j.error.message || "API error");
+    err.code = j.error.code; err.details = j.error.details || [];
+    throw err;
+  }
+  return j;
+}
+
+function failReason(err){
+  const d = (err.details || []).join(" ");
+  if (/no route/i.test(d)) return "兩點之間冇可行行人路（可能隔住海、快速公路或封閉範圍）";
+  if (err.code) return `API 錯誤 ${err.code}${d ? "：" + d.slice(0, 140) : ""}`;
+  return err.message;
+}
+
+// 垂直高程剖面 SVG：path 每點 = [x, y, z, m]，m 係累計距離（米）、z 係海拔（米）
+function elevationSVG(path){
+  const pts = [];
+  const n = path.length, stride = Math.max(1, Math.floor(n / 160));
+  for (let i = 0; i < n; i += stride) pts.push([path[i][3], path[i][2]]);
+  const last = path[n - 1];
+  pts.push([last[3], last[2]]);
+  const W = 340, H = 96, P = 16;
+  const m0 = pts[0][0], m1 = pts[pts.length - 1][0];
+  const zs = pts.map(p => p[1]);
+  const zmin = Math.min(...zs), zmax = Math.max(...zs);
+  const span = Math.max(1, m1 - m0);
+  const zpad = Math.max(2, (zmax - zmin) * .14);
+  const lo = zmin - zpad, hi = zmax + zpad;
+  const X = m => P + (m - m0) / span * (W - 2 * P);
+  const Y = z => H - P - (z - lo) / (hi - lo) * (H - 2 * P);
+  const line = pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1)).join("");
+  const area = line + ` L${X(m1).toFixed(1)},${(H - P).toFixed(1)} L${X(m0).toFixed(1)},${(H - P).toFixed(1)} Z`;
+  let ground = "";
+  if (zmin < 0 && zmax > 0){
+    const y0 = Y(0).toFixed(1);
+    ground = `<line x1="${P}" y1="${y0}" x2="${W - P}" y2="${y0}" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4 3"/>` +
+             `<text x="${W - P - 2}" y="${(+y0 - 3).toFixed(1)}" text-anchor="end" font-size="8" fill="#6b7280">地面 0m（虛線以下係地底）</text>`;
+  }
+  const dots = `<circle cx="${X(m0).toFixed(1)}" cy="${Y(zs[0]).toFixed(1)}" r="3" fill="#c2410c"/>` +
+               `<circle cx="${X(m1).toFixed(1)}" cy="${Y(zs[zs.length-1]).toFixed(1)}" r="3" fill="#1d4ed8"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="路線垂直高程剖面圖">
+    <path d="${area}" fill="#dbeafe" stroke="none" opacity=".9"></path>
+    <path d="${line}" fill="none" stroke="#0b6e99" stroke-width="2"></path>
+    ${ground}${dots}
+    <text x="${P}" y="${10}" font-size="8.5" fill="#374151">最高 ${zmax.toFixed(1)}m</text>
+    <text x="${P}" y="${H - 4}" font-size="8.5" fill="#374151">最低 ${zmin.toFixed(1)}m｜全程 ${Math.round(span)} 米</text>
+  </svg>`;
+}
+
+const DEST_LABEL = {mtr: "🚶 去港鐵站", sch: "🎒 去小學"};
+
+async function planRoute(key, dest = "mtr"){
+  const seq = ++planSeq;
+  const e = DATA.find(x => x._key === key);
+  const kind = dest === "sch" ? "小學" : "港鐵站";
+  const pool = dest === "sch" ? (e.school_candidates || []) : (e.mtr_candidates || []);
+  const cands = pool.length ? pool
+                : (dest === "sch" ? [e.nearest_school] : [e.nearest_mtr]).filter(Boolean);
+  const btn = document.querySelector(`.go[data-p="${CSS.escape(key)}"][data-d="${dest}"]`);
+  const panel = document.getElementById("routePanel");
+  const attempts = [];
+  let done = null, usedMode = mode, note = "";
+  panel.style.display = "block";
+  document.getElementById("steps").innerHTML = "";
+  document.getElementById("routeStats").innerHTML = "規劃中…";
+  if (cmpLayer){ map.removeLayer(cmpLayer); cmpLayer = null; }
+  document.getElementById("cmpBox").style.display = "none";
+  if (btn) { btn.disabled = true; }
+  try {
+    // 二層 fallback：站（近至遠）× 錨點（邊界最近點 → 站體中心）——
+    // 兩種錨點各有 snap 唔到嘅情況（天水圍站要邊界點、大窩口站要中心）
+    const tries = [];
+    cands.forEach((c, vi) => {
+      const pts = (dest === "mtr" && c.anchors?.length) ? c.anchors : [c];
+      pts.forEach(a => tries.push({c, a, vi}));
+    });
+    for (let i = 0; i < tries.length && !done; i++){
+      const {c, a, vi} = tries[i];
+      if (btn) btn.textContent = `嘗試第 ${vi+1} 近${kind} ${c.zh}…`;
+      try {
+        done = { j: await solveOnce(e, a, mode), c, a };
+        if (vi > 0) note = `最近${kind}冇行人路直達，已自動改用第 ${vi+1} 近${kind}`;
+      } catch (err) {
+        const tag = (dest === "mtr" && c.anchors?.length > 1)
+          ? (a.kind === "boundary" ? "（邊界點）" : "（站體中心）") : "";
+        attempts.push(`第 ${vi+1} 近${kind} ${c.zh}${tag}：${failReason(err)}`);
+      }
+    }
+    // 最後手段：所選模式全部失敗 → 用最短路徑試最近站（如實標示）
+    if (!done && mode !== 1 && cands.length){
+      if (btn) btn.textContent = "改用最短路徑最後嘗試…";
+      const lastPt = (dest === "mtr" && cands[0].anchors?.length) ? cands[0].anchors[0] : cands[0];
+      try {
+        done = { j: await solveOnce(e, lastPt, 1), c: cands[0], a: lastPt };
+        usedMode = 1;
+        note = `${MODE_LABELS[mode]}網絡未能覆蓋此路線，已自動改用最短路徑（僅供參考）`;
+      } catch (err) {
+        attempts.push(`最後嘗試 最短路徑 → ${cands[0].zh}：${failReason(err)}`);
+      }
+    }
+    if (!done){
+      const err = new Error(`所有候選${kind}都無法規劃路線`);
+      err.attempts = attempts;
+      throw err;
+    }
+    if (seq !== planSeq) return;   // 已有更新嘅規劃請求，捨棄舊結果
+
+    const ft = done.j.routes.features[0];
+    const path = ft.geometry.paths[0];
+    const ll = path.map(pt => [pt[1], pt[0]]);
+    const zs = path.map(pt => pt[2]);
+    const dist = path[path.length-1][3];
+    const steps = (done.j.directions?.[0]?.features || []).map(s => s.attributes.text);
+    if (routeLayer) map.removeLayer(routeLayer);
+    const line = L.polyline(ll, {color: usedMode===2 ? "#0f9d8a" : "#0b6e99", weight: 5, opacity: .85});
+    routeLayer = L.layerGroup([
+      line,
+      L.circleMarker([e.lat, e.lng], {radius: 7, color: "#c2410c", fillOpacity: 1}).bindPopup(`<b>起點</b> ${e.name_tc}`),
+      L.circleMarker([done.a.lat, done.a.lng], {radius: 7, color: "#1d4ed8", fillOpacity: 1}).bindPopup(`<b>終點</b> ${done.c.zh}`)
+    ]).addTo(map);
+    map.fitBounds(line.getBounds().pad(.2));
+    currentRoute = {key, dest, c: done.c, a: done.a};
+    // URL Hash 深連結：評審可由 PDF/分享連結一鍵跳入此場景
+    try { history.replaceState(null, "", `#estate=${encodeURIComponent(e.name_tc)}&mode=${usedMode}&dest=${dest}`); } catch(_){}
+    document.getElementById("elevWrap").style.display = "block";
+    document.getElementById("elev").innerHTML = elevationSVG(path);
+    const disclaim = dest === "sch" ? `<br><span style="color:#6b7280">返學路線以最近小學估算，實際派位學校以教育局為準。</span>` : "";
+    // 改善四：2D 預估 vs 3D 實測校準 —— Naismith 等效距離（爬升 1m ≈ 平地 8m；無障礙模式多為斜道，係數減半 4m）
+    let calib = "";
+    if (dest === "mtr"){
+      const w = WEIGHTS[profile], s = subs(e);
+      let up = 0;
+      for (let i = 1; i < zs.length; i++){ const dz = zs[i] - zs[i-1]; if (dz > 0) up += dz; }
+      const dEff = dist + (usedMode === 2 ? 4 : 8) * up;
+      const calMtr = dEff > 300 ? Math.max(5, 100 * Math.exp(-Math.log(2)/1100*(dEff-300))) : 100;
+      const calTotal = Math.round((w.mtr*calMtr + w.school*s.school + w.care*s.care + w.elev*s.elevator)*10)/10;
+      const detour = e.nearest_mtr?.distance_m ? (dist / e.nearest_mtr.distance_m).toFixed(2) : null;
+      calib = `<br><span style="color:#0f7a6a">🎯 3D 實測校準：2D 預估 <b>${scoreOf(e)}</b> ➔ <b>${calTotal}</b> 分（實測 ${Math.round(dist)}m${detour ? `｜繞路系數 ${detour}×` : ""}｜垂直爬升 +${up.toFixed(1)}m｜Naismith 等效步程 ${Math.round(dEff)}m）</span>`;
+    }
+    document.getElementById("routeStats").innerHTML =
+      `<b>${e.name_tc}</b> → ${done.c.zh}${note ? `<br><span style="color:#b45309">⚠ ${note}</span>` : ""}<br>
+       模式 ${usedMode}（${MODE_LABELS[usedMode]}）｜全程步行約 <b>${Math.round(dist)} 米</b>｜${path.length} 個路徑點｜高度 ${Math.min(...zs).toFixed(1)}m – ${Math.max(...zs).toFixed(1)}m（高差 ${(Math.max(...zs)-Math.min(...zs)).toFixed(1)}m）${disclaim}${calib}`;
+    document.getElementById("steps").innerHTML = steps.slice(0,25).map(s=>`<li>${s}</li>`).join("")
+      + (steps.length>25 ? `<li>… 共 ${steps.length} 步</li>` : "");
+    panel.scrollIntoView({behavior:"smooth"});
+  } catch (err) {
+    document.getElementById("elevWrap").style.display = "none";
+    if (seq === planSeq){
+      const tries = err.attempts || (attempts.length ? attempts : [failReason(err)]);
+      const allNoRoute = tries.length > 0 && tries.every(t => /冇可行行人路/.test(t));
+      const head = allNoRoute
+        ? (dest === "sch"
+            ? `此屋邨冇任何步行路線直達最近的幾間小學，非系統故障。`
+            : `此屋邨冇任何步行路線直達港鐵站（可能位處離島或無鐵路覆蓋地區，如長洲、坪洲、梅窩、赤柱等），非系統故障。`)
+        : err.message;
+      document.getElementById("routeStats").innerHTML =
+        `<div class="err"><b>${e.name_tc}</b>：${head}<br>` +
+        tries.map(a => `· ${a}`).join("<br>") +
+        (allNoRoute ? "" : `<br>建議：揀另一個屋邨測試，或轉用「最短路徑」模式。`) + `</div>`;
+      document.getElementById("steps").innerHTML = "";
+    }
+  } finally {
+    if (btn && seq === planSeq) { btn.disabled = false; btn.textContent = DEST_LABEL[dest]; }
+  }
+}
+
+// ---- 多模式同屏對比（Mode Diff）----
+// 同一屋邨＋同一終點，同時請求 travelMode 1/2/5，量化證明 3D 路網嘅決策價值
+async function compareModes(){
+  if (!currentRoute) return;
+  const seq = ++cmpSeq;
+  const e = DATA.find(x => x._key === currentRoute.key);
+  const destPt = currentRoute.a || currentRoute.c || (currentRoute.dest === "sch" ? e.nearest_school : e.nearest_mtr);
+  if (!destPt || destPt.lat == null) return;
+  const btn = document.getElementById("cmpGo");
+  const box = document.getElementById("cmpBox");
+  btn.disabled = true; btn.textContent = "對比中…（同時請求 3 條路線）";
+  box.style.display = "block"; box.innerHTML = "對比中…";
+  try {
+    const results = await Promise.all([1,2,5].map(async m => {
+      try { return {m, j: await solveOnce(e, destPt, m)}; } catch (err){ return {m, err}; }
+    }));
+    if (seq !== cmpSeq) return;
+    if (cmpLayer) map.removeLayer(cmpLayer);
+    const styles = {1:{c:"#9ca3af",d:"7,7",w:3,label:"1 · 最短"},
+                    2:{c:"#0f9d8a",d:null,  w:5,label:"2 · 無障礙"},
+                    5:{c:"#0b6e99",d:null,  w:4,label:"5 · 非付費區（避雨）"}};
+    const layers = [], stats = [];
+    results.forEach(({m, j}) => {
+      if (!j || !j.routes) return;
+      const path = j.routes.features[0].geometry.paths[0];
+      const zs = path.map(pt => pt[2]);
+      let up = 0;
+      for (let i = 1; i < zs.length; i++){ const dz = zs[i] - zs[i-1]; if (dz > 0) up += dz; }
+      const st = styles[m];
+      layers.push(L.polyline(path.map(pt => [pt[1], pt[0]]), {color: st.c, weight: st.w, opacity: .9, dashArray: st.d}));
+      stats.push({label: st.label, dist: path[path.length-1][3], up,
+                  minz: Math.min(...zs), maxz: Math.max(...zs)});
+    });
+    if (!stats.length){ box.innerHTML = "3 條路線都對比失敗（可能冇可行行人路）。"; return; }
+    cmpLayer = L.layerGroup(layers).addTo(map);
+    map.fitBounds(L.featureGroup(layers).getBounds().pad(.2));
+    const s1 = stats.find(s => s.label.startsWith("1")),
+          s2 = stats.find(s => s.label.startsWith("2")),
+          s5 = stats.find(s => s.label.startsWith("5"));
+    const concl = [];
+    if (s1 && s2){
+      const dd = s2.dist - s1.dist;
+      concl.push(`無障礙 vs 最短：${dd >= 0 ? "多" : "少"}行 <b>${Math.abs(Math.round(dd))} 米</b>（約 ${dd >= 0 ? "+" : "−"}${Math.max(1, Math.round(Math.abs(dd)/75))} 分鐘）` +
+        (s1.up - s2.up > .5 ? `，減少 <b>${(s1.up - s2.up).toFixed(1)} 米</b> 垂直爬升` : ""));
+    }
+    if (s1 && s5){
+      const dd = s5.dist - s1.dist;
+      concl.push(`避雨 vs 最短：${dd >= 0 ? "多" : "少"}行 <b>${Math.abs(Math.round(dd))} 米</b>（全程優先有蓋／室內非付費區）`);
+    }
+    box.innerHTML = stats.map(s => `· ${s.label}：<b>${Math.round(s.dist)} 米</b>｜垂直爬升 ${s.up.toFixed(1)}m｜高度 ${s.minz.toFixed(1)}–${s.maxz.toFixed(1)}m`).join("<br>") +
+      (concl.length ? `<br>💡 實測對比：${concl.join("<br>💡 ")}` : "");
+  } catch (err){
+    if (seq === cmpSeq){ box.innerHTML = "對比失敗：" + (err.message || err); }
+  } finally {
+    if (seq === cmpSeq){ btn.disabled = false; btn.textContent = "⚡ 一鍵對比：最短 vs 無障礙 vs 避雨"; }
+  }
+}
+document.getElementById("cmpGo").onclick = compareModes;
+
+// ---- 評分視角切換 ----
+document.getElementById("profileHint").innerHTML = `<b>${WEIGHTS.family.label}</b>：${WEIGHTS.family.hint}`;
+document.querySelectorAll("#profiles button").forEach(b => b.onclick = () => setProfile(b.dataset.p));
+
+// ---- 比較籃 → 並排比較 Modal ＋ 列印報告 ----
+document.getElementById("cmpOpen").onclick = () => {
+  if (!compareSet.length) return;
+  const sel = compareSet.map(k => DATA.find(x => x._key === k)).filter(Boolean);
+  if (!sel.length) return;
+  const pr = WEIGHTS[profile];
+  const fmtD = d => d == null ? "-" : `${d.toLocaleString()} 米`;
+  const row = (label, fn) => `<tr><th>${label}</th>${sel.map(e => `<td>${fn(e)}</td>`).join("")}</tr>`;
+  document.getElementById("cmpTable").innerHTML = `<table>` +
+    row("屋邨／項目", e => `<h4>${e.name_tc}</h4><div class="mini">${e.name_en || ""}</div>`) +
+    row("類型", e => e.source === "LPH" ? "簡約公屋" : "公共屋邨") +
+    row("地區", e => `${e.district_tc}（${e.region_tc || "-"}）`) +
+    row("單位數", e => (e.total_units || 0).toLocaleString()) +
+    row("升降機覆蓋率", e => { const t = e.total_units || 0; return t ? Math.round((e.elevator_units||0)/t*100) + "%" : "-"; }) +
+    row("冇升降機單位", e => (e.non_elevator_units || 0).toLocaleString()) +
+    row("平均面積", e => e.avg_area ? `${e.avg_area} ㎡` : "-") +
+    row("座數／樓層", e => `${e.blocks_count || "?"} 座｜${e.min_floor ?? "?"}–${e.max_floor ?? "?"} 樓`) +
+    row(`生活圈評分（${pr.label}）`, e => { const p = calcScore(e);
+      return `<b style="font-size:15px;color:${scoreColor(p.total)}">${p.total}</b> / 100<br>` +
+        p.parts.map(pt => `${pt.label} ${pt.sub}×${(pt.w*100).toFixed(0)}%`).join(" · "); }) +
+    row("最近港鐵", e => e.nearest_mtr ? `${e.nearest_mtr.zh}<div class="mini">${fmtD(e.nearest_mtr.distance_m)}</div>` : "-") +
+    row("最近小學", e => e.nearest_school ? `${e.nearest_school.zh}<div class="mini">${fmtD(e.nearest_school.distance_m)}</div>` : "-") +
+    row("最近託管點", e => e.nearest_care ? `${e.nearest_care.zh}<div class="mini">${fmtD(e.nearest_care.distance_m)}</div>` : "-") +
+    `</table>`;
+  document.getElementById("cmpPrintTime").textContent = new Date().toLocaleString("zh-HK");
+  document.getElementById("cmpPrintProfile").textContent = pr.label;
+  document.getElementById("cmpModal").style.display = "flex";
+};
+document.getElementById("cmpClear").onclick = () => { compareSet.length = 0; render(); };
+document.getElementById("cmpClose").onclick = () => document.getElementById("cmpModal").style.display = "none";
+document.getElementById("cmpModal").addEventListener("click", ev => { if (ev.target.id === "cmpModal") ev.target.style.display = "none"; });
+document.getElementById("cmpPrint").onclick = () => window.print();
+
+// ---- AI 選樓顧問（廣東話規則引擎原型；正式版用 LLM 函數調用）----
+// 設計原則：AI 只做「參數解析與解釋」，配對邏輯為確定性計算，零幻覺（對應建議書 §5 AI 安全設計）
+const CN_NUM = {一:1,二:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10};
+
+function aiParse(q){
+  const r = {acts:[], chips:[], area:0};
+  const mp = q.match(/([一二兩三四五六七八九十\d]+)\s*(人|口)/);
+  if (mp){
+    const n = /\d/.test(mp[1]) ? +mp[1] : [...mp[1]].reduce((a,c)=>a+(CN_NUM[c]||0),0);
+    if (n) r.chips.push(`家庭 ${n} 人`);
+  }
+  const barrier = /輪椅|長者|老人|嬰兒車|bb/i.test(q);
+  if (barrier){
+    r.chips.push("長者/輪椅/嬰兒車 → 全幢必須有升降機");
+    r.acts.push(["profile","elder"]);
+    r.chips.push("切換 → 👵 長者安居評分視角");
+  }
+  else if (/𨋢|升降機/.test(q)) r.chips.push("要求全幢有升降機");
+  if (barrier || /𨋢|升降機/.test(q)) r.acts.push(["needLift", true]);
+  if (/小[一二三四五六]|小學|學童|返學/.test(q)){
+    r.acts.push(["sortby","sch"]);
+    r.chips.push("有學童 → 按小學距離排序");
+  }
+  const ma = q.match(/(\d+(?:\.\d+)?)\s*(?:平方米|平米|方米|m²|m2)/);
+  const mq = q.match(/(\d+(?:\.\d+)?)\s*呎/);
+  if (ma){ r.area = +ma[1]; r.chips.push(`平均面積 ≥ ${r.area} ㎡`); }
+  else if (mq){
+    r.area = Math.round(+mq[1] * 0.0929 * 10) / 10;
+    r.chips.push(`${mq[1]} 呎 ≈ ${r.area} ㎡（平均面積門檻）`);
+  }
+  const dHit = [...new Set(DATA.map(e=>e.district_tc).filter(Boolean))]
+    .find(d => q.includes(d) || q.includes(d.replace(/區$/,"")));
+  if (dHit){ r.acts.push(["district", dHit]); r.chips.push(`地區 → ${dHit}`); }
+  if (/簡約公屋/.test(q)){ r.acts.push(["etype","LPH"]); r.chips.push("類型 → 簡約公屋"); }
+  else if (/公屋/.test(q)){ r.acts.push(["etype","PRH"]); r.chips.push("類型 → 公屋"); }
+  if (/近.{0,4}(港鐵|地鐵|車站)|(港鐵|地鐵)站?附近/.test(q)){ r.acts.push(["walk","1000"]); r.chips.push("港鐵步行 ≤ 1km"); }
+  if (barrier){ r.acts.push(["mode",2]); r.chips.push("出行模式 → 2 無障礙"); }
+  else if (/避雨|落雨|擔遮|冷氣|有蓋/.test(q)){ r.acts.push(["mode",5]); r.chips.push("出行模式 → 5 非付費區優先（避雨嘆冷氣）"); }
+  else if (/行樓梯|健身|消脂|運動/.test(q)){ r.acts.push(["mode",4]); r.chips.push("出行模式 → 4 行樓梯健身"); }
+  return r;
+}
+
+function aiApply(q){
+  q = (q||"").trim();
+  const box = document.getElementById("aiResult");
+  if (!q){ box.style.display = "block"; box.innerHTML = "請先輸入您嘅家庭需要。"; return; }
+  const r = aiParse(q);
+  if (!r.chips.length){
+    box.style.display = "block";
+    box.innerHTML = "唔太理解 😅 試下講：家庭人數、有冇輪椅／長者／BB車、有冇小朋友返學、想住邊區、想要幾大面積、近唔近港鐵。";
+    return;
+  }
+  let modeSel = null;
+  r.acts.forEach(([k,v]) => {
+    if (k === "mode") modeSel = v;
+    else if (k === "profile") setProfile(v);
+    else if (k !== "needLift") document.getElementById(k).value = v;
+  });
+  if (r.acts.some(([k]) => k === "needLift")) document.getElementById("needLift").checked = true;
+  aiAreaMin = r.area;
+  if (modeSel != null){
+    const b = document.querySelector(`#modes button[data-m="${modeSel}"]`);
+    if (b) b.click();   // 同步更新模式；如有當前路線會自動以新模式重規劃
+  }
+  render();
+  box.style.display = "block";
+  box.innerHTML = `✅ 已理解並套用：<b>` + r.chips.join("</b> · <b>") + `</b><br>篩選器已同步更新，以下即符合條件嘅屋邨列表。` +
+    (modeSel != null ? ` 已切換出行模式。` : "") +
+    ` <a href="#" id="aiReset" style="color:#7c3aed;white-space:nowrap">↺ 重設篩選</a>`;
+  const rl = document.getElementById("aiReset");
+  if (rl) rl.onclick = ev => { ev.preventDefault(); resetFilters(); box.style.display = "none"; };
+  box.scrollIntoView({behavior:"smooth"});
+}
+
+document.getElementById("aiGo").onclick = ev => {
+  ev.target.disabled = true;
+  aiApply(document.getElementById("aiInput").value);
+  ev.target.disabled = false;
+};
+document.getElementById("aiInput").addEventListener("keydown", ev => {
+  if (ev.key === "Enter") aiApply(ev.target.value);
+});
+document.querySelectorAll("#aiExamples .chip").forEach(c => c.onclick = () => {
+  document.getElementById("aiInput").value = c.textContent;
+  aiApply(c.textContent);
+});
+
+// ---- URL Hash 深連結：#estate=葵涌邨&mode=2&dest=mtr → 自動畫好 3D 路線 ----
+(function(){
+  const h = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const est = h.get("estate");
+  if (!est) return;
+  const e = DATA.find(x => x.name_tc === est);
+  if (!e) return;
+  const md = +h.get("mode");
+  if (md && MODE_LABELS[md]){
+    mode = md;
+    document.querySelectorAll("#modes button").forEach(x => x.classList.toggle("on", +x.dataset.m === md));
+  }
+  const dest = h.get("dest") === "sch" ? "sch" : "mtr";
+  setTimeout(() => planRoute(e._key, dest), 400);  // 等地圖初始化完成
+})();
+
+render();
+</script>
+</body>
+</html>

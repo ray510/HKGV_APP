@@ -1,0 +1,11 @@
+# WorkBuddy AI session data (private)
+.workbuddy-ai/
+
+# Python
+__pycache__/
+*.pyc
+
+# Temp
+_chk.js
+.DS_Store
+Thumbs.db

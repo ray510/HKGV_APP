@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6 大香港開放數據 Web App 構思 · 起步比較</title>
+<style>
+  :root{--bg:#f7f8fa;--card:#fff;--ink:#1f2933;--muted:#6b7280;--accent:#0b6e99;
+    --accent2:#0f9d8a;--line:#e5e7eb;--soft:#eef4f8;--warn:#b45309;--good:#0f9d8a}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"PingFang HK","Microsoft YaHei",-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px}
+  header{background:linear-gradient(135deg,#0b6e99,#0f9d8a);color:#fff;padding:30px 26px}
+  header h1{margin:0 0 6px;font-size:24px}
+  header p{margin:0;opacity:.92;font-size:13.5px}
+  .wrap{max-width:1120px;margin:0 auto;padding:22px 20px 60px}
+  .note{background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:8px;padding:13px 16px;margin:18px 0;font-size:13px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);
+    border-radius:10px;overflow:hidden;font-size:13px}
+  th,td{padding:9px 8px;text-align:center;border-bottom:1px solid var(--line)}
+  th{background:var(--soft);font-weight:600;font-size:12px}
+  td.dim{text-align:left;font-weight:600;color:var(--ink);background:#fafcfe}
+  .score{font-weight:700;font-size:14px}
+  .s5{color:#0f9d8a}.s4{color:#3b9d6d}.s3{color:#caa200}.s2{color:#d97706}.s1{color:#dc2626}
+  .bar{height:6px;background:#eef2f5;border-radius:4px;margin-top:3px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .tot{font-weight:800;font-size:15px;color:var(--accent)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin:22px 0}
+  .c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:15px 16px;position:relative}
+  .c h3{margin:0 0 4px;font-size:15.5px}
+  .c .tag{position:absolute;top:12px;right:12px;font-size:11px;background:var(--accent);color:#fff;
+    padding:2px 8px;border-radius:20px}
+  .c .tag.rec{background:var(--good)}
+  .c .v{font-size:13px;color:var(--muted);margin:6px 0}
+  .c ul{margin:6px 0 0;padding-left:18px;font-size:12.5px;color:#374151}
+  .recbox{background:linear-gradient(135deg,#0f9d8a,#0b6e99);color:#fff;border-radius:12px;
+    padding:20px 22px;margin:22px 0}
+  .recbox h2{margin:0 0 8px;font-size:19px}
+  .recbox p{margin:6px 0;font-size:13.5px;opacity:.96}
+  .recbox b{color:#fff}
+  .flow{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+  .step{flex:1 1 200px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 14px}
+  .step b{color:var(--accent)}
+  .pill{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:6px;
+    padding:1px 8px;font-size:12px;color:var(--accent);margin:2px 3px 2px 0}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:18px}
+</style>
+</head>
+<body>
+<header>
+  <h1>6 大香港開放數據 Web App 構思 · 起步比較</h1>
+  <p>評分維度：技術可行性 / 數據就緒度 / 變現速度 / CSDI 比賽契合度 / 差異化護城河 / 社會價值（5 分制，5＝最有利起步）</p>
+</header>
+<div class="wrap">
+
+  <div class="note">
+    📌 評分係基於你分享嘅攻略內容 + 我哋實測過嘅 DATA.GOV.HK CKAN API 現實（803 數據集、JSON/CSV 現成可拉）作出嘅判斷，並非官方數字。目的係幫你喺「5 週內 CSDI Awards 2026 截止（2026-12-05）」嘅前提下，揀一個最啱你起步嘅構思。
+  </div>
+
+  <table>
+    <tr>
+      <th>構思</th>
+      <th>①三維微導航</th><th>②公屋AI配對</th><th>③物流署拍賣雷達</th>
+      <th>④B2B合規DD</th><th>⑤北都GeoAI沙盒</th><th>⑥文化/泊車</th>
+    </tr>
+    <tr>
+      <td class="dim">技術可行性<small>（難度低＝高分）</small></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+      <td><span class="score s5">5</span><div class="bar"><i style="width:100%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+      <td><span class="score s2">2</span><div class="bar"><i style="width:40%"></i></div></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+    </tr>
+    <tr>
+      <td class="dim">數據就緒度</td>
+      <td><span class="score s5">5</span><div class="bar"><i style="width:100%"></i></div></td>
+      <td><span class="score s5">5</span><div class="bar"><i style="width:100%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+    </tr>
+    <tr>
+      <td class="dim">變現速度</td>
+      <td><span class="score s2">2</span><div class="bar"><i style="width:40%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s5">5</span><div class="bar"><i style="width:100%"></i></div></td>
+      <td><span class="score s2">2</span><div class="bar"><i style="width:40%"></i></div></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+    </tr>
+    <tr>
+      <td class="dim">CSDI 比賽契合度</td>
+      <td><span class="score s5">5</span><div class="bar"><i style="width:100%"></i></div></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+      <td><span class="score s5">5</span><div class="bar"><i style="width:100%"></i></div></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+    </tr>
+    <tr>
+      <td class="dim">差異化／護城河</td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s5">5</span><div class="bar"><i style="width:100%"></i></div></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+    </tr>
+    <tr>
+      <td class="dim">社會價值</td>
+      <td><span class="score s5">5</span><div class="bar"><i style="width:100%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s2">2</span><div class="bar"><i style="width:40%"></i></div></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+      <td><span class="score s4">4</span><div class="bar"><i style="width:80%"></i></div></td>
+      <td><span class="score s3">3</span><div class="bar"><i style="width:60%"></i></div></td>
+    </tr>
+    <tr style="background:#fafcfe">
+      <td class="dim">總分</td>
+      <td class="tot">24</td><td class="tot">25</td><td class="tot">21</td>
+      <td class="tot">22</td><td class="tot">22</td><td class="tot">19</td>
+    </tr>
+  </table>
+
+  <div class="cards">
+    <div class="c">
+      <span class="tag">③</span>
+      <h3>① 三維無障礙／全天候微導航</h3>
+      <div class="v">CSDI 3D 行人路線 API（travelMode 1–5）現成可用，社會價值最高、比賽最契合；但係要處理 Z 軸高程、室內外無縫，技術中等。</div>
+      <ul><li>受眾：輪椅／BB 車／長者／搵冷氣通道市民</li><li>變現：商場餐飲導流分潤 + 社創基金</li></ul>
+    </div>
+    <div class="c">
+      <span class="tag rec">② 首推</span>
+      <h3>② 公屋／簡約公屋 AI 配對</h3>
+      <div class="v">技術最低、數據最 ready（房屋局 / 房委會 / 教育局 / 社署 JSON、CSV 現成，我哋 CKAN API 已證實拉得到）；變現最直接（裝修／傢俬／寬頻導流）。</div>
+      <ul><li>受眾：公屋申請家庭、社工、NGO</li><li>變現：本地商戶精準導流佣金</li></ul>
+    </div>
+    <div class="c">
+      <span class="tag">③</span>
+      <h3>③ 物流署拍賣／招標 AI 雷達</h3>
+      <div class="v">333 個 CSV 需爬蟲清洗，但 LLM 標準化 + 歷史成交價向量匹配係清晰護城河；Freemium 訂閱變現直接。</div>
+      <ul><li>受眾：二手貿易商、競投政府合約嘅中小企</li><li>變現：免費瀏覽 → 付費 AI 估價／推送</li></ul>
+    </div>
+    <div class="c">
+      <span class="tag">④</span>
+      <h3>④ B2B 職安健／法例 DD 引擎</h3>
+      <div class="v">變現確定性最高（B2B SaaS 按次／年訂），但 entity resolution + 法例版本 RAG diff 技術中高，前期做功多。</div>
+      <ul><li>受眾：業主立案法團、物管、合規、律所</li><li>變現：Pay-per-report / 年訂</li></ul>
+    </div>
+    <div class="c">
+      <span class="tag">⑤</span>
+      <h3>⑤ 北都／空置用地 GeoAI 沙盒</h3>
+      <div class="v">CSDI 比賽契合度最高（呼應官方 GeoFun 趨勢）、護城河最強；但 3D 空間分析／視域／飛行走廊演算法技術最高，5 週內要出原型壓力大。</div>
+      <ul><li>受眾：規劃師、環保 NGO、低空經濟初創、工程顧問</li><li>變現：獎金 + B2B 顧問軟件</li></ul>
+    </div>
+    <div class="c">
+      <span class="tag">⑥</span>
+      <h3>⑥ 時空文化／影視朝聖／3D 泊車</h3>
+      <div class="v">題材有趣、數據齊（歷史地圖、舊照片、泊車感應器 API）；但泊車 App 偏紅海，文化類商業化較慢，綜合最適合做興趣 side project。</div>
+      <ul><li>受眾：深度遊旅客、文化愛好者、考車學神／覓位車主</li><li>變現：旅遊分銷 + 車主增值服務</li></ul>
+    </div>
+  </div>
+
+  <div class="recbox">
+    <h2>🎯 我的起步建議：按你嘅目標二選一</h2>
+    <p><b>目標 A —— 最快出到嘢、最快見錢（推薦先打呢條）：</b>揀 <b>② 公屋／簡約公屋 AI 配對</b>。
+      技術難度最低、數據最 ready、變現路徑最直接，最啱「未有 idea、想先做出個嘢」。我哋可以即刻用 CKAN API 拉房屋局／房委會／教育局／社署數據，2 週內出到一個可用原型。</p>
+    <p><b>目標 B —— 想搏 CSDI Awards 2026（12-05 截止）、建立技術護城河：</b>揀 <b>① 三維微導航</b> 或 <b>⑤ 北都 GeoAI 沙盒</b>。
+      兩者比賽契合度滿分；① 技術中等較易喺 5 週內成嘢，⑤ 技術最高但一旦做成最驚艷。建議申請 Geospatial Lab 比賽專用帳戶先測 3D 路線 API。</p>
+    <p style="opacity:.85">💡 折中玩法：先用 ② 練手搭數據管線（Stage 1），再用同一套 JSON/地圖技術去撐 ① 嘅前端——兩條線共用地基，唔會白做。</p>
+  </div>
+
+  <h2 style="font-size:18px;margin:26px 0 4px">📍 如果你揀咗 ②，下一步我可以直接幫你做嘅（Stage 1）</h2>
+  <div class="flow">
+    <div class="step"><b>第 1 步</b><br>寫 Python 腳本經 CKAN API 拉：簡約公屋 API、房委會公屋單位、學校位置、課後託管名單。</div>
+    <div class="step"><b>第 2 步</b><br>清洗成統一 JSON，做單位級別欄位對齊（面積／樓層／有無升降機）。</div>
+    <div class="step"><b>第 3 步</b><br>加地址搜尋服務，計「15 分鐘生活圈」步行距離（先用 2D，後接 3D 網絡）。</div>
+    <div class="step"><b>第 4 步</b><br>出一個最簡 PWA 原型畀你試，再決定變現導流點。</div>
+  </div>
+
+  <div class="note">
+    🔧 想我直接落手寫 ② 嘅數據管線腳本？回我一句「做 ② 嘅 Stage 1」，我就開搞（會先確認你要邊幾個數據集、输出成咩格式）。如果想改為 ① 或 ③，都一樣講聲就得。
+  </div>
+
+  <footer>資料基礎：你分享嘅《香港 Web App 開發構思與開放數據商業化全攻略》＋ DATA.GOV.HK CKAN API 實測（2026-10-28）｜評分為輔助決策用，可按你實際能力調整</footer>
+</div>
+</body>
+</html>

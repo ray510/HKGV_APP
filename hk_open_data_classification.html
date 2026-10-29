@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>香港政府開放數據 · 20 類詳細分類</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1f2933; --muted:#6b7280;
+    --accent:#0b6e99; --accent2:#0f9d8a; --line:#e5e7eb; --soft:#eef4f8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"PingFang HK","Microsoft YaHei",-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px}
+  header{background:linear-gradient(135deg,#0b6e99,#0f9d8a);color:#fff;padding:34px 28px}
+  header h1{margin:0 0 6px;font-size:26px}
+  header p{margin:0;opacity:.92;font-size:14px}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 20px 60px}
+  .note{background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:8px;padding:14px 16px;margin:20px 0;font-size:13.5px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:22px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .stat b{display:block;font-size:24px;color:var(--accent)}
+  .stat span{font-size:13px;color:var(--muted)}
+  .group{margin:30px 0}
+  .group h2{font-size:20px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  .group .gtag{font-size:12px;background:var(--accent);color:#fff;padding:2px 9px;border-radius:20px}
+  .group .gsum{font-size:13px;color:var(--muted);margin:0 0 14px}
+  .cat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0}
+  .cat h3{margin:0 0 2px;font-size:16.5px}
+  .cat .meta{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+  .bar{height:8px;background:var(--soft);border-radius:6px;overflow:hidden;margin:6px 0 12px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .sub{font-size:13px;color:var(--ink);margin:8px 0 4px;font-weight:600}
+  .ex{margin:6px 0 0;padding-left:18px;font-size:13px;color:#374151}
+  .ex li{margin:2px 0}
+  .pill{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:6px;
+    padding:1px 8px;font-size:12px;color:var(--accent);margin:2px 4px 2px 0}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0}
+  .toc a{color:var(--accent);text-decoration:none;margin-right:14px;font-size:13px;white-space:nowrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>香港政府開放數據平台 · 20 類詳細分類</h1>
+  <p>DATA.GOV.HK｜按 CKAN API（package_count）於 2026-10-28 實測，共約 803 個數據集</p>
+</header>
+<div class="wrap">
+
+  <div class="note">
+    📌 說明：下面先將 20 個官方分類歸納成 <b>8 個大主題</b>，再逐類拆出<b>子主題</b>與<b>真實數據集例子</b>（例子均取自平台實際數據集名稱）。
+    括號內為主要提供機構。數字為該分類下的數據集數量（部分數據集橫跨多類，故總和會略大於實際獨立數量）。
+  </div>
+
+  <div class="grid">
+    <div class="stat"><b>20</b><span>官方分類（group）</span></div>
+    <div class="stat"><b>~803</b><span>數據集總數（估算）</span></div>
+    <div class="stat"><b>8</b><span>歸納大主題</span></div>
+    <div class="stat"><b>160+</b><span>參與數據提供機構</span></div>
+  </div>
+
+  <div class="toc">
+    <b>跳至大主題：</b>
+    <a href="#g1">① 經濟與勞工</a>
+    <a href="#g2">② 人口與社會民生</a>
+    <a href="#g3">③ 城市發展與房屋土地</a>
+    <a href="#g4">④ 環境氣象與資源</a>
+    <a href="#g5">⑤ 運輸與旅遊</a>
+    <a href="#g6">⑥ 教育文化與康樂</a>
+    <a href="#g7">⑦ 管治法律與科技</a>
+    <a href="#g8">⑧ 其他</a>
+  </div>
+
+  <!-- ============ G1 ============ -->
+  <div class="group" id="g1">
+    <h2><span class="gtag">①</span> 經濟與勞工</h2>
+    <p class="gsum">工商業 + 財經 + 就業及勞工 ＝ <b>382</b> 個數據集（全站最大板塊，以政府統計處表列數據為主）</p>
+
+    <div class="cat">
+      <h3>工商業 (Commerce and Industry)</h3>
+      <div class="meta">141 個 · 主要：政府統計處、知識產權署、公司註冊處</div>
+      <div class="bar"><i style="width:100%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">消費物價指數 CPI</span><span class="pill">服務行業收益指數</span>
+      <span class="pill">進出口／貿易統計</span><span class="pill">知識產權（商標／專利／外觀設計）</span><span class="pill">公司註冊名單</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>消費物價指數 — 各商品／服務類別及組別指數（政府統計處）</li>
+        <li>服務行業業務收益指數 — 按季變動百分率（政府統計處）</li>
+        <li>在香港註冊／獲批予的有效商標、專利及外觀設計數目（知識產權署）</li>
+        <li>新成立／註冊公司名單（公司註冊處）</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>財經 (Finance)</h3>
+      <div class="meta">91 個 · 主要：政府統計處、香港金融管理局、保險業監管局、公司註冊處</div>
+      <div class="bar"><i style="width:65%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">公共財政</span><span class="pill">貨幣與金融市場（利率／匯率）</span>
+      <span class="pill">政府債券（基建／可持續債券）</span><span class="pill">保險業統計</span><span class="pill">公司名單</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>基礎建設債券計劃及政府可持續債券計劃下未償還政府債券一覽（金管局）</li>
+        <li>貨幣及金融市場統計 — 港元利率／利息結算率（政府統計處）</li>
+        <li>保險業投訴統計數字、保險中介牌照（保險業監管局）</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>就業及勞工 (Employment and Labour)</h3>
+      <div class="meta">150 個 · 主要：政府統計處、勞工處</div>
+      <div class="bar"><i style="width:75%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">勞動人口／失業／就業不足</span><span class="pill">工資及收入中位數</span>
+      <span class="pill">勞工生產力指數</span><span class="pill">職業安全健康（定罪紀錄）</span><span class="pill">青年就業計劃</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>勞動人口、失業和就業不足統計 — 按年齡／性別／行業（政府統計處）</li>
+        <li>違犯職安健條例的定罪紀錄（勞工處）</li>
+        <li>「大灣區青年就業計劃」主要統計數字（勞工處）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ G2 ============ -->
+  <div class="group" id="g2">
+    <h2><span class="gtag">②</span> 人口與社會民生</h2>
+    <p class="gsum">人口 + 社區及社會福利 + 衞生 + 食物 ＝ <b>156</b> 個數據集</p>
+
+    <div class="cat">
+      <h3>人口 (Population)</h3>
+      <div class="meta">82 個 · 主要：政府統計處</div>
+      <div class="bar"><i style="width:55%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">出生／死亡／結婚（生命事件）</span><span class="pill">家庭住戶收入</span>
+      <span class="pill">人口普查</span><span class="pill">性別統計</span><span class="pill">人口生命表／預期壽命</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>香港人口數字 — 生命事件、年齡性別死亡率（政府統計處）</li>
+        <li>家庭住戶統計 — 按房屋類型劃分每月入息中位數</li>
+        <li>人口普查 — 按種族／年齡組別劃分的人口</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>社區及社會福利 (Social Welfare)</h3>
+      <div class="meta">42 個 · 主要：社會福利署、政府統計處、在職家庭及學生資助事務處、民政及青年事務局</div>
+      <div class="bar"><i style="width:28%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">社會保障／公共福利金</span><span class="pill">安老／殘疾院舍</span>
+      <span class="pill">託管／暫託服務</span><span class="pill">在職家庭津貼</span><span class="pill">青年宿舍</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>在校課後託管服務計劃（社會福利署）</li>
+        <li>公共福利金計劃、社會保障計劃統計（政府統計處）</li>
+        <li>在職家庭津貼計劃統計數字摘要</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>衞生 (Health)</h3>
+      <div class="meta">29 個 · 主要：衞生署、醫務衞生局、政府統計處、醫院管理局</div>
+      <div class="bar"><i style="width:19%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">醫管局門診／住院服務</span><span class="pill">死亡／癌症／愛滋統計</span>
+      <span class="pill">平均預期壽命</span><span class="pill">自願醫保計劃</span><span class="pill">醫護人力</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>醫院管理局 — 住院／門診服務（政府統計處）</li>
+        <li>死亡統計、癌症統計、平均預期壽命（衞生署）</li>
+        <li>自願醫保計劃認可產品名單（醫務衞生局）</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>食物 (Food)</h3>
+      <div class="meta">3 個 · 主要：食物環境衞生署、政府統計處</div>
+      <div class="bar"><i style="width:3%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">營養標籤豁免產品</span><span class="pill">食品批發數字</span><span class="pill">本地食品生產量</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>已獲豁免營養標籤之產品（食環署）</li>
+        <li>食品批發數字、本地食品生產量估計（政府統計處）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ G3 ============ -->
+  <div class="group" id="g3">
+    <h2><span class="gtag">③</span> 城市發展與房屋土地</h2>
+    <p class="gsum">城市管理及公共設施 + 發展地理及土地資訊 + 房屋 ＝ <b>55</b> 個數據集</p>
+
+    <div class="cat">
+      <h3>城市管理及公共設施 (City Management)</h3>
+      <div class="meta">30 個 · 主要：政府產業署、水務署、渠務署、數字政策辦公室、路政署</div>
+      <div class="bar"><i style="width:20%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">政府物業／停車場／售賣機</span><span class="pill">水塘存水量／水質／供水量</span>
+      <span class="pill">智慧燈柱</span><span class="pill">污水處理及排水設施</span><span class="pill">挖掘准許證</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>個別水塘存水量、全年供水量、食水水質（水務署）</li>
+        <li>多功能智慧燈柱（數字政策辦公室）</li>
+        <li>渠務署污水處理及排水設施（渠務署）</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>發展、地理及土地資訊 (Development)</h3>
+      <div class="meta">12 個 · 主要：地政總署、規劃署、城市規劃委員會、政府產業署</div>
+      <div class="bar"><i style="width:8%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">土地交易申請</span><span class="pill">法定圖則</span>
+      <span class="pill">土地用途網格</span><span class="pill">可視化三維地圖</span><span class="pill">重建／改裝工廈</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>土地用途網格、香港土地用途統計（規劃署）</li>
+        <li>已刊憲的法定圖則列表（城市規劃委員會）</li>
+        <li>可視化三維地圖（無紋理／方格／單體化模型）（地政總署）</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>房屋 (Housing)</h3>
+      <div class="meta">13 個 · 主要：香港房屋委員會、房屋局、土地註冊處、差餉物業估價署</div>
+      <div class="bar"><i style="width:9%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">公屋單位／屋邨資料</span><span class="pill">簡約公屋</span>
+      <span class="pill">租者置其屋成交</span><span class="pill">物業市場統計</span><span class="pill">差餉估價／業主立案法團</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>公共租住房屋單位資料、公共屋邨位置及資料（房委會）</li>
+        <li>「簡約公屋」單位資料（房屋局）</li>
+        <li>物業市場統計資料（差餉物業估價署）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ G4 ============ -->
+  <div class="group" id="g4">
+    <h2><span class="gtag">④</span> 環境、氣象與資源</h2>
+    <p class="gsum">環境 + 氣象 ＝ <b>24</b> 個數據集</p>
+
+    <div class="cat">
+      <h3>環境 (Environment)</h3>
+      <div class="meta">23 個 · 主要：環境保護署、漁農自然護理署、機電工程署、渠務署</div>
+      <div class="bar"><i style="width:15%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">泳灘／河溪／海水水質</span><span class="pill">空氣質素</span>
+      <span class="pill">回收公司名錄</span><span class="pill">區域供冷／能源數據</span><span class="pill">污水排放</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>泳灘水質等級、近期河溪／海水水質數據（環保署）</li>
+        <li>智慧燈柱空氣質素數據（環保署）</li>
+        <li>香港能源最終用途數據 2026（機電工程署）</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>氣象 (Climate and Weather)</h3>
+      <div class="meta">1 個 · 主要：香港天文台</div>
+      <div class="bar"><i style="width:2%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">熱帶氣旋路徑（事後分析）</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>熱帶氣旋最佳路徑數據（事後分析）（香港天文台）</li>
+      </ul>
+      <div class="note" style="margin-top:10px">💡 天文台大量即時天氣數據（溫度、雨量、風向等）其實經專屬 API／網頁提供，未必歸入此 CKAN 分類，想做天氣應用可另行對接天文台資料。</div>
+    </div>
+  </div>
+
+  <!-- ============ G5 ============ -->
+  <div class="group" id="g5">
+    <h2><span class="gtag">⑤</span> 運輸與旅遊</h2>
+    <p class="gsum">運輸 + 旅遊 ＝ <b>40</b> 個數據集</p>
+
+    <div class="cat">
+      <h3>運輸 (Transport)</h3>
+      <div class="meta">31 個 · 主要：運輸署、香港鐵路、政府統計處、政府產業署</div>
+      <div class="bar"><i style="width:21%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">車輛首次登記</span><span class="pill">港鐵路線／實時到站</span>
+      <span class="pill">的士電召台</span><span class="pill">航空／船務貨運統計</span><span class="pill">道路交通意外</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>港鐵巴士及接駁巴士實時到站時間、港鐵綫／車費／無障礙設施（港鐵）</li>
+        <li>首次登記的車輛細節、的士電召台（運輸署）</li>
+        <li>香港船務統計、航空運輸統計（政府統計處）</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>旅遊 (Tourism)</h3>
+      <div class="meta">9 個 · 主要：政府統計處、文化體育及旅遊局</div>
+      <div class="bar"><i style="width:6%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">訪港旅客人次</span><span class="pill">旅客消費開支</span>
+      <span class="pill">酒店房間數目（未來三年）</span><span class="pill">本港居民離港</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>按國籍／地區劃分的訪港旅客人次（政府統計處）</li>
+        <li>未來三年酒店房間數目、按 18 區劃分的酒店數目（文體旅遊局）</li>
+        <li>旅客人均消費、境內消費開支（政府統計處）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ G6 ============ -->
+  <div class="group" id="g6">
+    <h2><span class="gtag">⑥</span> 教育、文化與康樂</h2>
+    <p class="gsum">教育 + 康樂體育及文化 ＝ <b>54</b> 個數據集</p>
+
+    <div class="cat">
+      <h3>教育 (Education)</h3>
+      <div class="meta">41 個 · 主要：教育局、在職家庭及學生資助事務處、家庭與學校合作事宜委員會</div>
+      <div class="bar"><i style="width:27%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">學校位置／名單（中小學／幼稚園／直資）</span><span class="pill">各項學生資助統計</span>
+      <span class="pill">學費發還</span><span class="pill">K1 收生安排</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>學校位置及資料（教育局）</li>
+        <li>中學概覽、小學概覽（家庭與學校合作事宜委員會）</li>
+        <li>專上學生資助計劃、學校書簿津貼等統計（學生資助事務處）</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>康樂、體育及文化 (Recreation and Culture)</h3>
+      <div class="meta">13 個 · 主要：康樂及文化事務署、文化體育及旅遊局、政府統計處</div>
+      <div class="bar"><i style="width:9%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">公共圖書館電子書</span><span class="pill">文化場地／康樂設施使用率</span>
+      <span class="pill">電影院／電影發展基金</span><span class="pill">創意產業</span><span class="pill">樹木</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>香港公共圖書館電子書列表／最受歡迎排行榜（康文署）</li>
+        <li>電影發展基金下電影製作項目香港票房（文體旅遊局）</li>
+        <li>文化場地使用率、康樂設施使用率（政府統計處）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ G7 ============ -->
+  <div class="group" id="g7">
+    <h2><span class="gtag">⑦</span> 管治、法律與科技</h2>
+    <p class="gsum">選舉及立法機關 + 法律及保安 + 科技及廣播 ＝ <b>46</b> 個數據集</p>
+
+    <div class="cat">
+      <h3>選舉及立法機關 (Legislature)</h3>
+      <div class="meta">1 個 · 主要：政府統計處</div>
+      <div class="bar"><i style="width:2%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">議會候選人／當選人／委任議員（性別）</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>按性別劃分的政府議會候選人、當選人及委任議員數目（政府統計處）</li>
+      </ul>
+      <div class="note" style="margin-top:10px">💡 更多選舉相關數據（選民登記、投票率等）多在「其他」或個別機構（選舉事務處、立法會）名下，可跨類搜尋。</div>
+    </div>
+
+    <div class="cat">
+      <h3>法律及保安 (Law and Security)</h3>
+      <div class="meta">19 個 · 主要：律政司、廉政公署、保安局、截取通訊及監察事務專員秘書處</div>
+      <div class="bar"><i style="width:13%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">香港法例（現行／過去版本）</span><span class="pill">廉政公署檢控／貪污投訴</span>
+      <span class="pill">免遣返聲請／藥物濫用統計</span><span class="pill">持牌保安公司</span><span class="pill">截取通訊報告</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>「電子版香港法例」— 香港法例（現行／過去版本）（律政司）</li>
+        <li>檢控數字、貪污投訴（廉政公署）</li>
+        <li>免遣返聲請統計、持牌保安公司名單（保安局）</li>
+      </ul>
+    </div>
+
+    <div class="cat">
+      <h3>科技及廣播 (Information Technology and Broadcasting)</h3>
+      <div class="meta">26 個 · 主要：數字政策辦公室、香港互聯網註冊管理有限公司、創新科技署、政府統計處</div>
+      <div class="bar"><i style="width:17%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">政府資訊保安事故</span><span class="pill">.hk／.香港域名登記</span>
+      <span class="pill">創新科技基金撥款</span><span class="pill">開放數據清單／使用統計</span><span class="pill">跨境通辦／數碼共融</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>政府電腦保安事故協調中心保安警報、資訊保安事故統計（數字政策辦公室）</li>
+        <li>.hk 及 .香港域名登記數目（HKIRC）</li>
+        <li>創新及科技基金撥款概覽（創新科技署）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ G8 ============ -->
+  <div class="group" id="g8">
+    <h2><span class="gtag">⑧</span> 其他 (Miscellaneous)</h2>
+    <p class="gsum">其他 ＝ <b>46</b> 個數據集（跨範疇、未歸類的雜項）</p>
+
+    <div class="cat">
+      <h3>其他 (Miscellaneous)</h3>
+      <div class="meta">46 個 · 主要：政務司司長辦公室、政府物流服務署、民政事務總署、民政及青年事務局、政府統計處</div>
+      <div class="bar"><i style="width:31%"></i></div>
+      <div class="sub">子主題</div>
+      <span class="pill">太平紳士名表</span><span class="pill">政府物流拍賣</span>
+      <span class="pill">諮詢及法定組織</span><span class="pill">鄉郊代表選舉</span><span class="pill">索取資料統計／市政牌照</span>
+      <div class="sub">真實例子</div>
+      <ul class="ex">
+        <li>太平紳士名表（行政署）</li>
+        <li>拍賣結果、拍賣物品清單（政府物流服務署）</li>
+        <li>諮詢及法定組織名單、鄉郊代表選舉登記選民分佈</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note">
+    🔗 <b>下一步建議</b>：若想動手做嘢，可優先揀 <b>運輸（港鐵實時到站）</</b>、<b>教育（學校位置）</b>、<b>城市（智慧燈柱空氣質素）</b>、<b>環境（泳灘水質）</b> 呢幾類 —— 佢哋有即時／地點型數據，最啱起地圖或通知類小工具。我可以直接幫你寫 Python 腳本透過 API 拉呢啲數據。
+  </div>
+
+  <footer>
+    資料來源：香港政府開放數據平台 DATA.GOV.HK（CKAN API：tc-data/api/3/action/group_show & package_search）｜整理日期 2026-10-28
+  </footer>
+</div>
+</body>
+</html>

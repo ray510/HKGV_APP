@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>構思② · Stage 1 數據管線成果</title>
+<style>
+  :root{--bg:#f7f8fa;--card:#fff;--ink:#1f2933;--muted:#6b7280;--accent:#0b6e99;--accent2:#0f9d8a;--line:#e5e7eb;--soft:#eef4f8;--warn:#b45309}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"PingFang HK","Microsoft YaHei",-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px}
+  header{background:linear-gradient(135deg,#0b6e99,#0f9d8a);color:#fff;padding:28px 26px}
+  header h1{margin:0 0 6px;font-size:23px}
+  header p{margin:0;opacity:.92;font-size:13.5px}
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 20px 56px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:13px;margin:20px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:15px}
+  .stat b{display:block;font-size:22px;color:var(--accent)}
+  .stat span{font-size:12.5px;color:var(--muted)}
+  h2{font-size:18px;margin:26px 0 10px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px}
+  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line)}
+  th{background:var(--soft);font-weight:600;font-size:12px;white-space:nowrap}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .warn{color:var(--warn);font-weight:600}
+  .ok{color:var(--accent2);font-weight:600}
+  .note{background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:13px 16px;margin:16px 0;font-size:13px;color:var(--muted)}
+  .files{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;font-size:13px}
+  .files code{background:var(--soft);padding:1px 6px;border-radius:4px;font-size:12.5px}
+  .files li{margin:3px 0}
+  .next{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:12px 0}
+  .n{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-size:13px}
+  .n b{color:var(--accent)}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:18px}
+</style>
+</head>
+<body>
+<header>
+  <h1>構思② 公屋／簡約公屋 AI 配對 · Stage 1 數據管線成果</h1>
+  <p>管線：拉取（CKAN/官方 JSON）→ 清洗 → 標準化 → 項目級聚合｜2026-10-28 跑通</p>
+</header>
+<div class="wrap">
+
+  <div class="grid">
+    <div class="stat"><b>28,951</b><span>簡約公屋單位（單位級）</span></div>
+    <div class="stat"><b>10</b><span>簡約公屋項目</span></div>
+    <div class="stat"><b>245</b><span>公共屋邨（房委會）</span></div>
+    <div class="stat"><b>6</b><span>輸出檔案（raw + normalized + report）</span></div>
+  </div>
+
+  <h2>簡約公屋項目一覽（已聚合，可直接做配對篩選）</h2>
+  <table>
+    <tr><th>項目</th><th>地區</th><th class="num">單位數</th><th class="num">有升降機</th><th class="num">冇升降機</th><th class="num">樓宇</th><th>樓層</th><th class="num">平均室內面積</th></tr>
+    <tr><td>世運道簡約公屋</td><td>九龍城</td><td class="num">10,731</td><td class="num ok">10,470</td><td class="num warn">261</td><td class="num">12</td><td>1–16</td><td class="num">18.59 m²</td></tr>
+    <tr><td>欣寶路簡約公屋</td><td>屯門</td><td class="num">5,614</td><td class="num ok">5,614</td><td class="num">0</td><td class="num">4</td><td>1–18</td><td class="num">18.18 m²</td></tr>
+    <tr><td>青發街簡約公屋</td><td>屯門</td><td class="num">4,200</td><td class="num ok">4,200</td><td class="num">0</td><td class="num">3</td><td>1–18</td><td class="num">16.13 m²</td></tr>
+    <tr><td>青福里簡約公屋</td><td>屯門</td><td class="num">1,856</td><td class="num ok">1,854</td><td class="num warn">2</td><td class="num">2</td><td>1–18</td><td class="num">17.85 m²</td></tr>
+    <tr><td>常安街簡約公屋</td><td>東區</td><td class="num">1,719</td><td class="num ok">1,719</td><td class="num">0</td><td class="num">2</td><td>1–22</td><td class="num">18.72 m²</td></tr>
+    <tr><td>彩興路簡約公屋</td><td>觀塘</td><td class="num">2,290</td><td class="num ok">2,290</td><td class="num">0</td><td class="num">2</td><td>1–18</td><td class="num">18.53 m²</td></tr>
+    <tr><td>攸壆路簡約公屋</td><td>元朗</td><td class="num">2,156</td><td class="num warn">0</td><td class="num warn">2,156</td><td class="num">11</td><td>1–2</td><td class="num">16.25 m²</td></tr>
+    <tr><td>彩石里簡約公屋</td><td>觀塘</td><td class="num">148</td><td class="num ok">141</td><td class="num warn">7</td><td class="num">1</td><td>1–4</td><td class="num">26.18 m²</td></tr>
+    <tr><td>順安道簡約公屋</td><td>觀塘</td><td class="num">127</td><td class="num ok">127</td><td class="num">0</td><td class="num">1</td><td>1–6</td><td class="num">22.45 m²</td></tr>
+    <tr><td>彩園路簡約公屋</td><td>北區</td><td class="num">110</td><td class="num ok">110</td><td class="num">0</td><td class="num">1</td><td>1–7</td><td class="num">23.39 m²</td></tr>
+  </table>
+
+  <div class="note">
+    💡 <b>即刻有用嘅產品啟發</b>：攸壆路（元朗）全幢 2,156 個單位都<b>冇升降機</b>（1–2 層低層組裝建築），世運道（九龍城）有 261 個冇升降機單位。
+    呢啲正正係「有長者／輪椅／BB 車家庭」要自動過濾嘅關鍵屬性——配對器嘅核心價值即刻成立。而最大項目世運道一個項目就佔 10,731 個單位，係流量主力。
+  </div>
+
+  <h2>公共屋邨分佈（房委會，屋邨級）</h2>
+  <table>
+    <tr><th>區域</th><th class="num">屋邨數</th></tr>
+    <tr><td>新界</td><td class="num">135</td></tr>
+    <tr><td>九龍</td><td class="num">84</td></tr>
+    <tr><td>香港島</td><td class="num">26</td></tr>
+    <tr><td><b>合計</b></td><td class="num"><b>245</b></td></tr>
+  </table>
+  <p style="font-size:13px;color:var(--muted)">每個邨含：中英文名、地區、經緯度、屋邨類型、入伙年份、樓宇類型／數量／名稱、租住單位數、單位面積、物業管理等 18 個欄位。</p>
+
+  <h2>輸出檔案</h2>
+  <div class="files">
+    <ul>
+      <li><code>data/raw/lph_units.json</code> — 簡約公屋原始（房屋局 API）</li>
+      <li><code>data/raw/prh_estates.json</code> — 公共屋邨原始（房委會 API）</li>
+      <li><code>data/normalized/lph_units.csv</code> — 單位級標準化（28,951 行，15 欄）</li>
+      <li><code>data/normalized/lph_projects_summary.csv</code> — 項目級聚合（10 行）</li>
+      <li><code>data/normalized/prh_estates.csv</code> — 屋邨標準化（245 行，18 欄）</li>
+      <li><code>pipeline_stage1.py</code> — 可重跑管線腳本（純 stdlib，無第三方依賴）</li>
+      <li><code>stage1_report.json</code> — 機器可讀執行報告</li>
+    </ul>
+  </div>
+
+  <h2>下一步（Stage 1.5 → Stage 2）</h2>
+  <div class="next">
+    <div class="n"><b>Stage 1.5 · 生活圈數據</b><br>接入 CSDI WFS：教育局「學校位置及資料」（資助小學／中學等 5 個圖層）＋ 社署「在校課後託管服務計劃」，用嚟算 15 分鐘步行生活圈。</div>
+    <div class="n"><b>Stage 2 · 配對邏輯</b><br>輸入：家庭人數／入息／長者或 BB 車需求／返工地點 → 自動篩單位（面積標準＋升降機過濾）→ 出「社區生活圈評分卡」。</div>
+    <div class="n"><b>Stage 2.5 · 前端原型</b><br>用 lph_projects_summary.csv 經緯度出地圖 + 篩選表格（Leaflet / Mapbox GL），先 2D 後接 CSDI 3D 行人網絡。</div>
+  </div>
+
+  <footer>數據源：DATA.GOV.HK（hk-hb-lph-housing-stock、hk-housing-eslocator-eslocator）｜管線可隨時重跑，2026-10-28 首跑</footer>
+</div>
+</body>
+</html>

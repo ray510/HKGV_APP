@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>全港簡約公屋 · 智能配對 × 3D 無障礙路線原型</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{--ink:#1f2933;--muted:#6b7280;--accent:#0b6e99;--accent2:#0f9d8a;--line:#e5e7eb;--soft:#eef4f8;--warn:#b45309}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:"PingFang HK","Microsoft YaHei",-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);font-size:14px}
+  #app{display:flex;height:100%}
+  #side{width:380px;min-width:320px;overflow-y:auto;background:#fbfcfd;border-right:1px solid var(--line);padding:16px}
+  #map{flex:1;height:100%}
+  h1{font-size:17px;margin:0 0 2px}
+  .sub{font-size:11.5px;color:var(--muted);margin:0 0 14px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+  .panel b.t{font-size:12.5px;color:var(--accent);display:block;margin-bottom:8px}
+  label.chk{display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0;cursor:pointer}
+  select,input[type=range]{width:100%;padding:6px;font-size:13px;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .modes{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .modes button{flex:1 1 45%;padding:7px 6px;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer}
+  .modes button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+  .card h3{margin:0 0 2px;font-size:14.5px}
+  .card .d{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .row{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;margin:4px 0}
+  .pill{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  .pill.good{border-color:#bfe3da;background:#effaf7;color:#0f7a6a}
+  .pill.bad{border-color:#f3d9b0;background:#fdf6ec;color:var(--warn)}
+  .go{width:100%;margin-top:8px;padding:8px;font-size:13px;border:0;border-radius:7px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;cursor:pointer}
+  .go:disabled{opacity:.5;cursor:wait}
+  .hint{font-size:11.5px;color:var(--muted);margin:8px 0 0}
+  #steps{max-height:220px;overflow-y:auto;font-size:12px}
+  #steps li{margin:3px 0;color:#374151}
+  .err{background:#fdf2f2;border:1px solid #f5c6c6;color:#a12626;border-radius:8px;padding:10px;font-size:12px;margin-top:10px}
+  .stat-line{font-size:12.5px;margin:6px 0;color:#374151}
+  .stat-line b{color:var(--accent)}
+  .leaflet-container{font-size:12px}
+  .footer-note{font-size:10.5px;color:var(--muted);line-height:1.5;margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <h1>簡約公屋 · 智能配對 × 3D 無障礙路線</h1>
+    <p class="sub">構思②（篩單位）× 構思①（CSDI 三維行人路線）聯動原型｜數據：房屋局・房委會・地政總署</p>
+
+    <div class="panel">
+      <b class="t">① 篩選條件</b>
+      <label class="chk"><input type="checkbox" id="needLift"> <span>全幢必須有升降機（長者／輪椅／BB 車）</span></label>
+      <label class="chk"><span style="width:70px">地區</span>
+        <select id="district"><option value="">全部</option></select></label>
+      <label class="chk"><span style="width:70px">去港鐵站</span>
+        <select id="walk">
+          <option value="">不限</option>
+          <option value="500">步行 ≤ 500 米</option>
+          <option value="1000">步行 ≤ 1 公里</option>
+          <option value="2000">步行 ≤ 2 公里</option>
+        </select></label>
+      <div class="hint" id="count"></div>
+    </div>
+
+    <div class="panel">
+      <b class="t">② 路線模式（CSDI 三維行人路線 API）</b>
+      <div class="modes" id="modes">
+        <button data-m="2" class="on">2 · 無障礙路徑</button>
+        <button data-m="1">1 · 最短路徑</button>
+        <button data-m="5">5 · 非付費區優先</button>
+        <button data-m="4">4 · 行樓梯健身</button>
+      </div>
+    </div>
+
+    <div class="panel" id="routePanel" style="display:none">
+      <b class="t">③ 路線結果</b>
+      <div class="stat-line" id="routeStats"></div>
+      <ol id="steps"></ol>
+    </div>
+
+    <div id="results"></div>
+
+    <p class="footer-note">
+      路線服務：地政總署「三維行人路線搜尋 API」（CSDI）｜房屋數據：房屋局「簡約公屋」、房委會（DATA.GOV.HK）｜底圖 © OpenStreetMap 貢獻者。<br>
+      本頁為開發原型，非政府官方應用。
+    </p>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const PROJECTS = __PROJECTS__;
+
+const API = "https://mapapi.hkmapservice.gov.hk/PedRoute/NAServer/route/solve";
+let mode = 2;
+
+const map = L.map("map").setView([22.37, 114.10], 10);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {attribution: "© OpenStreetMap 貢獻者"}).addTo(map);
+
+const markers = {};
+PROJECTS.forEach((p, i) => {
+  const ok = p.non_elevator_units === 0;
+  markers[p.project_tc] = L.circleMarker([p.lat, p.lng], {
+    radius: 6 + Math.min(10, p.total_units / 1000),
+    color: ok ? "#0f9d8a" : "#b45309", fillOpacity: .75, weight: 2
+  }).addTo(map).bindPopup(`<b>${p.project_tc}</b><br>${p.district_tc}｜${p.total_units.toLocaleString()} 個單位`);
+});
+
+// 初始化地區下拉
+[...new Set(PROJECTS.map(p => p.district_tc))].sort().forEach(d => {
+  const o = document.createElement("option"); o.value = d; o.textContent = d;
+  document.getElementById("district").appendChild(o);
+});
+
+function filtered() {
+  const lift = document.getElementById("needLift").checked;
+  const dist = document.getElementById("district").value;
+  const walk = document.getElementById("walk").value;
+  return PROJECTS.filter(p =>
+    (!lift || p.non_elevator_units === 0) &&
+    (!dist || p.district_tc === dist) &&
+    (!walk || p.nearest_mtr.distance_m <= +walk));
+}
+
+function render() {
+  const list = filtered();
+  document.getElementById("count").textContent = `符合條件：${list.length} / ${PROJECTS.length} 個項目`;
+  const box = document.getElementById("results"); box.innerHTML = "";
+  list.forEach(p => {
+    const ok = p.non_elevator_units === 0;
+    const m = p.nearest_mtr;
+    const el = document.createElement("div"); el.className = "card";
+    el.innerHTML = `
+      <h3>${p.project_tc}</h3>
+      <div class="d">${p.district_tc}（${p.region_tc}）</div>
+      <div class="row">
+        <span class="pill">${p.total_units.toLocaleString()} 個單位</span>
+        <span class="pill">${p.blocks_count} 座</span>
+        <span class="pill">樓層 ${p.min_floor}–${p.max_floor}</span>
+        <span class="pill">平均 ${p.avg_area} m²</span>
+      </div>
+      <div class="row">
+        ${ok ? '<span class="pill good">✓ 全幢有升降機</span>'
+             : `<span class="pill bad">✗ ${p.non_elevator_units} 個單位冇升降機</span>`}
+      </div>
+      <div class="row"><span class="pill">最近港鐵：${m.zh} 約 ${m.distance_m} 米</span></div>
+      <button class="go" data-p="${p.project_tc}">🚶 規劃去 ${m.zh} 的路線</button>`;
+    box.appendChild(el);
+  });
+  box.querySelectorAll(".go").forEach(btn => btn.onclick = () => planRoute(btn.dataset.p));
+}
+
+document.getElementById("needLift").onchange = render;
+document.getElementById("district").onchange = render;
+document.getElementById("walk").onchange = render;
+document.querySelectorAll("#modes button").forEach(b => b.onclick = () => {
+  mode = +b.dataset.m;
+  document.querySelectorAll("#modes button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+});
+
+let routeLayer = null;
+async function planRoute(name) {
+  const p = PROJECTS.find(x => x.project_tc === name);
+  const m = p.nearest_mtr;
+  const btn = document.querySelector(`.go[data-p="${CSS.escape(name)}"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "規劃中…"; }
+  const qs = new URLSearchParams({
+    stops: `${p.lng},${p.lat};${m.lng},${m.lat}`, f: "json",
+    returnZ: "true", outSR: "4326", travelMode: String(mode),
+    directionsLanguage: "zh-HK", directionsStyleName: "NA Campus"});
+  try {
+    const r = await fetch(`${API}?${qs}`);
+    const j = await r.json();
+    if (j.error) throw new Error(j.error.message || "API error");
+    const ft = j.routes.features[0];
+    const path = ft.geometry.paths[0];
+    const ll = path.map(pt => [pt[1], pt[0]]);
+    const zs = path.map(pt => pt[2]);
+    const dist = path[path.length - 1][3];
+    const steps = (j.directions?.[0]?.features || []).map(s => s.attributes.text);
+    const labels = {1:"最短路徑",2:"無障礙路徑",3:"推薦路徑",4:"行樓梯健身",5:"非付費區優先"};
+    if (routeLayer) map.removeLayer(routeLayer);
+    const line = L.polyline(ll, {color: mode === 2 ? "#0f9d8a" : "#0b6e99", weight: 5, opacity: .85});
+    routeLayer = L.layerGroup([
+      line,
+      L.circleMarker([p.lat, p.lng], {radius: 7, color: "#c2410c", fillOpacity: 1}).bindPopup(`<b>起點</b> ${p.project_tc}`),
+      L.circleMarker([m.lat, m.lng], {radius: 7, color: "#1d4ed8", fillOpacity: 1}).bindPopup(`<b>終點</b> ${m.zh}`)
+    ]).addTo(map);
+    map.fitBounds(line.getBounds().pad(.2));
+    const panel = document.getElementById("routePanel");
+    panel.style.display = "block";
+    document.getElementById("routeStats").innerHTML =
+      `<b>${p.project_tc}</b> → ${m.zh}｜模式 ${mode}（${labels[mode]}）<br>
+       全程步行約 <b>${Math.round(dist)} 米</b>｜${path.length} 個路徑點｜高度 ${Math.min(...zs).toFixed(1)}m – ${Math.max(...zs).toFixed(1)}m（高差 ${(Math.max(...zs)-Math.min(...zs)).toFixed(1)}m）`;
+    document.getElementById("steps").innerHTML = steps.slice(0, 25).map(s => `<li>${s}</li>`).join("")
+      + (steps.length > 25 ? `<li>… 共 ${steps.length} 步</li>` : "");
+    panel.scrollIntoView({behavior: "smooth"});
+  } catch (e) {
+    const panel = document.getElementById("routePanel");
+    panel.style.display = "block";
+    document.getElementById("routeStats").innerHTML = "";
+    document.getElementById("steps").innerHTML = "";
+    panel.insertAdjacentHTML("beforeend",
+      `<div class="err">路線 API 調用失敗：${e.message}<br>可能原因：網絡限制／CORS。請確認以 http 開啟本頁（非 file://）並可連接 mapapi.hkmapservice.gov.hk。</div>`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = `🚶 規劃去 ${m.zh} 的路線`; }
+  }
+}
+
+render();
+</script>
+</body>
+</html>

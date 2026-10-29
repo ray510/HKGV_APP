@@ -1,0 +1,222 @@
+[
+ {
+  "project_tc": "世運道簡約公屋",
+  "project_en": "OLYMPIC AVENUE LPH",
+  "district_tc": "九龍城",
+  "region_tc": "市區",
+  "lat": 22.3298,
+  "lng": 114.1963,
+  "total_units": 10731,
+  "elevator_units": 10470,
+  "non_elevator_units": 261,
+  "blocks_count": 12,
+  "min_floor": 1.0,
+  "max_floor": 16.0,
+  "avg_area": 18.59,
+  "nearest_mtr": {
+   "zh": "啟德鐵路站",
+   "en": "Kai Tak Station",
+   "lat": 22.33053325000006,
+   "lng": 114.19948139000007,
+   "distance_m": 337
+  }
+ },
+ {
+  "project_tc": "欣寶路簡約公屋",
+  "project_en": "YAN PO ROAD LPH",
+  "district_tc": "屯門",
+  "region_tc": "擴展市區",
+  "lat": 22.4134,
+  "lng": 113.9734,
+  "total_units": 5614,
+  "elevator_units": 5614,
+  "non_elevator_units": 0,
+  "blocks_count": 4,
+  "min_floor": 1.0,
+  "max_floor": 18.0,
+  "avg_area": 18.18,
+  "nearest_mtr": {
+   "zh": "兆康鐵路站",
+   "en": "Siu Hong Station",
+   "lat": 22.412099110000042,
+   "lng": 113.97872616000006,
+   "distance_m": 566
+  }
+ },
+ {
+  "project_tc": "青發街簡約公屋",
+  "project_en": "TSING FAT STREET LPH",
+  "district_tc": "屯門",
+  "region_tc": "擴展市區",
+  "lat": 22.36206,
+  "lng": 114.00068,
+  "total_units": 4200,
+  "elevator_units": 4200,
+  "non_elevator_units": 0,
+  "blocks_count": 3,
+  "min_floor": 1.0,
+  "max_floor": 18.0,
+  "avg_area": 16.13,
+  "nearest_mtr": {
+   "zh": "欣澳鐵路站",
+   "en": "Sunny Bay Station",
+   "lat": 22.33188996000007,
+   "lng": 114.02894721000007,
+   "distance_m": 4439
+  }
+ },
+ {
+  "project_tc": "彩興路簡約公屋",
+  "project_en": "CHOI HING ROAD LPH",
+  "district_tc": "觀塘",
+  "region_tc": "市區",
+  "lat": 22.331,
+  "lng": 114.216,
+  "total_units": 2290,
+  "elevator_units": 2290,
+  "non_elevator_units": 0,
+  "blocks_count": 2,
+  "min_floor": 1.0,
+  "max_floor": 18.0,
+  "avg_area": 18.53,
+  "nearest_mtr": {
+   "zh": "彩虹鐵路站",
+   "en": "Choi Hung Station",
+   "lat": 22.33490520500004,
+   "lng": 114.20891985000009,
+   "distance_m": 848
+  }
+ },
+ {
+  "project_tc": "攸壆路簡約公屋",
+  "project_en": "YAU POK ROAD LPH",
+  "district_tc": "元朗",
+  "region_tc": "新界",
+  "lat": 22.4744,
+  "lng": 114.05,
+  "total_units": 2156,
+  "elevator_units": 0,
+  "non_elevator_units": 2156,
+  "blocks_count": 11,
+  "min_floor": 1.0,
+  "max_floor": 2.0,
+  "avg_area": 16.25,
+  "nearest_mtr": {
+   "zh": "元朗鐵路站",
+   "en": "Yuen Long Station",
+   "lat": 22.446250760000055,
+   "lng": 114.03530996000006,
+   "distance_m": 3475
+  }
+ },
+ {
+  "project_tc": "青福里簡約公屋",
+  "project_en": "TSING FUK LANE LPH",
+  "district_tc": "屯門",
+  "region_tc": "擴展市區",
+  "lat": 22.4077,
+  "lng": 113.9724,
+  "total_units": 1856,
+  "elevator_units": 1854,
+  "non_elevator_units": 2,
+  "blocks_count": 2,
+  "min_floor": 1.0,
+  "max_floor": 18.0,
+  "avg_area": 17.85,
+  "nearest_mtr": {
+   "zh": "兆康鐵路站",
+   "en": "Siu Hong Station",
+   "lat": 22.412099110000042,
+   "lng": 113.97872616000006,
+   "distance_m": 814
+  }
+ },
+ {
+  "project_tc": "常安街簡約公屋",
+  "project_en": "SHEUNG ON STREET LPH",
+  "district_tc": "東區",
+  "region_tc": "市區",
+  "lat": 22.2689,
+  "lng": 114.2416,
+  "total_units": 1719,
+  "elevator_units": 1719,
+  "non_elevator_units": 0,
+  "blocks_count": 2,
+  "min_floor": 1.0,
+  "max_floor": 22.0,
+  "avg_area": 18.72,
+  "nearest_mtr": {
+   "zh": "柴灣鐵路站",
+   "en": "Chai Wan Station",
+   "lat": 22.264598610000064,
+   "lng": 114.23712379000006,
+   "distance_m": 664
+  }
+ },
+ {
+  "project_tc": "彩石里簡約公屋",
+  "project_en": "CHOI SHEK LANE LPH",
+  "district_tc": "觀塘",
+  "region_tc": "市區",
+  "lat": 22.331,
+  "lng": 114.2106,
+  "total_units": 148,
+  "elevator_units": 141,
+  "non_elevator_units": 7,
+  "blocks_count": 1,
+  "min_floor": 1.0,
+  "max_floor": 4.0,
+  "avg_area": 26.18,
+  "nearest_mtr": {
+   "zh": "彩虹鐵路站",
+   "en": "Choi Hung Station",
+   "lat": 22.33490520500004,
+   "lng": 114.20891985000009,
+   "distance_m": 467
+  }
+ },
+ {
+  "project_tc": "順安道簡約公屋",
+  "project_en": "SHUN ON ROAD LPH",
+  "district_tc": "觀塘",
+  "region_tc": "市區",
+  "lat": 22.3276,
+  "lng": 114.2255,
+  "total_units": 127,
+  "elevator_units": 127,
+  "non_elevator_units": 0,
+  "blocks_count": 1,
+  "min_floor": 1.0,
+  "max_floor": 6.0,
+  "avg_area": 22.45,
+  "nearest_mtr": {
+   "zh": "九龍灣鐵路站",
+   "en": "Kowloon Bay Station",
+   "lat": 22.32343380000006,
+   "lng": 114.21408140000005,
+   "distance_m": 1263
+  }
+ },
+ {
+  "project_tc": "彩園路簡約公屋",
+  "project_en": "CHOI YUEN ROAD LPH",
+  "district_tc": "北區",
+  "region_tc": "新界",
+  "lat": 22.4988,
+  "lng": 114.13,
+  "total_units": 110,
+  "elevator_units": 110,
+  "non_elevator_units": 0,
+  "blocks_count": 1,
+  "min_floor": 1.0,
+  "max_floor": 7.0,
+  "avg_area": 23.39,
+  "nearest_mtr": {
+   "zh": "上水鐵路站",
+   "en": "Sheung Shui Station",
+   "lat": 22.501382560000025,
+   "lng": 114.12785846000003,
+   "distance_m": 362
+  }
+ }
+]
