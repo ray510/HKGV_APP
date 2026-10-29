@@ -34,7 +34,19 @@ NEW_ESTATE_COORDS_PATCH = {
                "note_tc": "觀塘秀茂坪曉明街（行人天橋連接曉光街）"},
 }
 
-# CSDI 新數據集（2026-10 民政署欄位改名 → 動態鍵名解析）
+# 幼兒中心組合（社署 4 個數據集，約 326 點，補 0–6 歲育兒維度）
+CHILDCARE_DATASETS = [
+    dict(dataset_id="swd_rcd_1629267205235_2324", layer=None, static=None, save_as="swd_ccc_kg.json"),
+    dict(dataset_id="swd_rcd_1629267205216_48300", layer=None, static=None, save_as="swd_ccc_standalone.json"),
+    dict(dataset_id="swd_rcd_1629267205235_96246", layer=None, static=None, save_as="swd_ccc_private.json"),
+    dict(dataset_id="swd_rcd_1727429358872_6783", layer=None, static=None, save_as="swd_ccc_respite.json"),
+]
+# 長者服務組合（社署 3 個數據集，約 342 點，補長者維度鑑別度）
+ELDER_DATASETS = [
+    dict(dataset_id="swd_rcd_1629267205235_1216", layer=None, static=None, save_as="swd_dec.json"),
+    dict(dataset_id="swd_rcd_1629267205235_34036", layer=None, static=None, save_as="swd_nec.json"),
+    dict(dataset_id="swd_rcd_1696994103126_1549", layer=None, static=None, save_as="swd_elder_support.json"),
+]
 CSDI_DATASETS = {
     "elderly": dict(dataset_id="swd_rcd_1633501860637_42476", layer="DCUDECC",
                     static="https://static.csdi.gov.hk/csdi-webpage/download/common/145157f813ced72d715daece518d7f4df60ba7dd87413fb955628ae3b162aeb6",
@@ -94,27 +106,31 @@ def smooth_distance_score(dist_m, full_radius=200.0, half_life=1000.0):
 
 
 def compute_living_circle_metrics(mtr_d, sch_d, sch_n800, kg_n800, care_d, care_n800,
-                                  elderly_d, shelter_d, hosp_d, elev_u, total_u):
-    """生活圈評分 v3.2：五維標準化 0~100 後加權。
+                                  childcare_d, childcare_n800,
+                                  elder_svc_d, shelter_d, hosp_d, elev_u, total_u):
+    """生活圈評分 v3.3：五維標準化 0~100 後加權。
     小學 = 60% 最近距離 + 25% 800m 小學密度（5 間滿分）+ 15% 800m 幼稚園密度（3 間滿分）；
     託管 = 80% 最近距離 + 20% 密度（3 間滿分）；
-    長者/會堂 = 30% 長者日間護理單位 + 40% 社區會堂（避暑中心）+ 30% 急症醫院（OSM emergency=yes）；
+    幼兒中心 = 80% 最近距離 + 20% 密度（3 間滿分）；
+    長者/會堂 = 30% 最近長者服務（DEC/NEC/支援隊/DCUDECC）+ 40% 社區會堂（避暑中心）+ 30% 急症醫院；
     升降機 = 單位級覆蓋率 ×100。
-    預設（育兒家庭）= 港鐵 35% + 小學 25% + 託管 15% + 長者/會堂 10% + 升降機 15%。"""
+    預設（育兒家庭）= 港鐵 35% + 小學 25% + 託管 10% + 幼兒中心 5% + 長者/會堂 10% + 升降機 15%。"""
     s_mtr = smooth_distance_score(mtr_d, 200, 900)
     s_sch = round(0.6 * smooth_distance_score(sch_d, 150, 800)
                   + 0.25 * min(1.0, (sch_n800 or 0) / 5.0) * 100.0
                   + 0.15 * min(1.0, (kg_n800 or 0) / 3.0) * 100.0, 1)
     s_care = round(0.8 * smooth_distance_score(care_d, 200, 1200)
                    + 0.2 * min(1.0, (care_n800 or 0) / 3.0) * 100.0, 1)
-    s_elder = round(0.30 * smooth_distance_score(elderly_d, 200, 1000)
+    s_childcare = round(0.8 * smooth_distance_score(childcare_d, 200, 1200)
+                        + 0.2 * min(1.0, (childcare_n800 or 0) / 3.0) * 100.0, 1)
+    s_elder = round(0.30 * smooth_distance_score(elder_svc_d, 200, 1000)
                     + 0.40 * smooth_distance_score(shelter_d, 200, 1000)
                     + 0.30 * smooth_distance_score(hosp_d, 300, 1500), 1)
     s_elev = round(elev_u / total_u * 100.0, 1) if total_u > 0 else 100.0
-    score = round(0.35 * s_mtr + 0.25 * s_sch + 0.15 * s_care
-                  + 0.10 * s_elder + 0.15 * s_elev, 1)
+    score = round(0.35 * s_mtr + 0.25 * s_sch + 0.10 * s_care
+                  + 0.05 * s_childcare + 0.10 * s_elder + 0.15 * s_elev, 1)
     return score, {"mtr": s_mtr, "school": s_sch, "care": s_care,
-                   "elderly_shelter": s_elder, "elevator": s_elev}
+                   "childcare": s_childcare, "elderly_shelter": s_elder, "elevator": s_elev}
 
 
 # ---------------- Part 1: PRH 18 區單位 → 屋邨級 ----------------
@@ -546,6 +562,34 @@ def build_hospitals():
     return out
 
 
+def build_childcare():
+    """幼兒中心組合（0–6 歲）：附設幼稚園資助 243＋資助獨立 21＋私營非牟利 14＋殘疾暫託 48。"""
+    pool, seen = [], set()
+    for spec in CHILDCARE_DATASETS:
+        for f in parse_facilities(fetch_csdi_geojson(spec)):
+            key = (f["zh"], round(f["lat"], 4), round(f["lng"], 4))
+            if key in seen:
+                continue
+            seen.add(key)
+            pool.append(f)
+    print(f"Part 7 完成：{len(pool)} 個幼兒中心（0–6 歲組合）", flush=True)
+    return pool
+
+
+def build_elder_services():
+    """長者服務組合：長者地區中心 62＋長者鄰舍中心 216＋長者支援服務隊 64（另加 DCUDECC 3）。"""
+    pool, seen = [], set()
+    for spec in ELDER_DATASETS:
+        for f in parse_facilities(fetch_csdi_geojson(spec)):
+            key = (f["zh"], round(f["lat"], 4), round(f["lng"], 4))
+            if key in seen:
+                continue
+            seen.add(key)
+            pool.append(f)
+    print(f"Part 7 完成：{len(pool)} 個長者服務點（地區中心／鄰舍中心／支援隊）", flush=True)
+    return pool
+
+
 def main():
     prh = build_prh_estates()
     schools = build_schools()
@@ -554,6 +598,8 @@ def main():
     care = build_care()
     mtr = build_mtr_venues()
     elderly, halls = build_community()
+    elderly_all = elderly + build_elder_services()      # 345 點：DCUDECC＋DEC＋NEC＋支援隊
+    childcare = build_childcare()                       # 326 點：0–6 歲幼兒中心組合
     hospitals = build_hospitals()
     ae_hospitals = [h for h in hospitals if h.get("ae")]
 
@@ -606,7 +652,8 @@ def main():
         kg, kgn = nearest_and_count(e["lat"], e["lng"], kgs)
         pg, pgn = nearest_and_count(e["lat"], e["lng"], pgs)
         c, cn = nearest_and_count(e["lat"], e["lng"], care)
-        el, eln = nearest_and_count(e["lat"], e["lng"], elderly)
+        cc, ccn = nearest_and_count(e["lat"], e["lng"], childcare)
+        el, eln = nearest_and_count(e["lat"], e["lng"], elderly_all)
         sh, shn = nearest_and_count(e["lat"], e["lng"], halls)
         ae, aen = nearest_and_count(e["lat"], e["lng"], ae_hospitals)
         hp, hpn = nearest_and_count(e["lat"], e["lng"], hospitals)
@@ -626,6 +673,8 @@ def main():
         e["nearest_pg_lng"] = pg["item"]["lng"] if pg else None
         e["nearest_care"] = {"zh": c["item"]["zh"], "lat": c["item"]["lat"], "lng": c["item"]["lng"],
                              "distance_m": c["distance_m"], "count_800m": cn} if c else None
+        e["nearest_childcare"] = {"zh": cc["item"]["zh"], "lat": cc["item"]["lat"], "lng": cc["item"]["lng"],
+                                  "distance_m": cc["distance_m"], "count_800m": ccn} if cc else None
         e["nearest_elderly"] = {"zh": el["item"]["zh"], "en": el["item"].get("en"),
                                 "lat": el["item"]["lat"], "lng": el["item"]["lng"],
                                 "distance_m": el["distance_m"], "count_800m": eln} if el else None
@@ -644,11 +693,12 @@ def main():
             m["distance_m"] if m else None,
             s["distance_m"] if s else None, sn, kgn,
             c["distance_m"] if c else None, cn,
+            cc["distance_m"] if cc else None, ccn,
             el["distance_m"] if el else None,
             sh["distance_m"] if sh else None,
             ae["distance_m"] if ae else None,
             e["elevator_units"], e["total_units"])
-        e["density_800m"] = {"schools": sn, "cares": cn}
+        e["density_800m"] = {"schools": sn, "cares": cn, "childcare": ccn}
     all_est.sort(key=lambda x: (-x["score"], -(x["total_units"] or 0)))
 
     dst = os.path.join(NORM, "all_estates_enriched.json")

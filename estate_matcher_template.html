@@ -312,11 +312,12 @@ const dist2 = (e,k) => k==="mtr" ? (e.nearest_mtr?.distance_m ?? null)
                     : k==="eld" ? (e.nearest_elderly?.distance_m ?? null)
                     : k==="shel" ? (e.nearest_shelter?.distance_m ?? null)
                     : k==="hosp" ? (e.nearest_ae_hospital?.distance_m ?? null)
+                    : k==="cc" ? (e.nearest_childcare?.distance_m ?? null)
                     : (e.nearest_care?.distance_m ?? null);
 const smoothScore = (d, d0, hl) => d == null ? 50
   : (d <= d0 ? 100 : Math.max(5, 100 * Math.exp(-Math.log(2)/hl*(d-d0))));
 function subs(e){
-  if (e.sub_scores) return e.sub_scores;   // 管線 v3.1 輸出
+  if (e.sub_scores) return e.sub_scores;   // 管線 v3.3 輸出
   const t = e.total_units||0;              // 舊數據 fallback：同管線公式
   return {
     mtr: smoothScore(dist2(e,"mtr"),200,900),
@@ -325,6 +326,8 @@ function subs(e){
       + 0.15*Math.min(1,(e.kindergartens_800m??0)/3)*100)*10)/10,
     care: Math.round((0.8*smoothScore(dist2(e,"care"),200,1200)
       + 0.2*Math.min(1,(e.density_800m?.cares??0)/3)*100)*10)/10,
+    childcare: Math.round((0.8*smoothScore(dist2(e,"cc"),200,1200)
+      + 0.2*Math.min(1,(e.density_800m?.childcare??0)/3)*100)*10)/10,
     elderly_shelter: Math.round((0.3*smoothScore(dist2(e,"eld"),200,1000)
       + 0.4*smoothScore(dist2(e,"shel"),200,1000)
       + 0.3*smoothScore(dist2(e,"hosp"),300,1500))*10)/10,
@@ -333,22 +336,22 @@ function subs(e){
 }
 // 4 個 Persona 權重矩陣（港鐵／小學／託管／長者會堂／升降機），對應建議書 §5
 const WEIGHTS = {
-  family:  {mtr:.35, school:.25, care:.15, elder:.10, elev:.15, label:"育兒家庭",
-            hint:"港鐵 35% ＋ 小學 25%（含 800m 幼稚園密度）＋ 託管 15% ＋ 長者/會堂 10% ＋ 升降機 15%"},
-  elder:   {mtr:.25, school:0,   care:0,   elder:.30, elev:.45, label:"長者安居",
+  family:  {mtr:.35, school:.25, care:.10, cc:.05, elder:.10, elev:.15, label:"育兒家庭",
+            hint:"港鐵 35% ＋ 小學 25%（含 800m 幼稚園密度）＋ 託管 10% ＋ 幼兒中心 5% ＋ 長者/會堂 10% ＋ 升降機 15%"},
+  elder:   {mtr:.25, school:0,   care:0,   cc:0,  elder:.30, elev:.45, label:"長者安居",
             hint:"升降機 45% ＋ 長者中心/避暑會堂/急症醫院 30% ＋ 港鐵 25%"},
-  commute: {mtr:.75, school:0,   care:0,   elder:0,   elev:.25, label:"極速通勤",
+  commute: {mtr:.75, school:0,   care:0,   cc:0,  elder:0,   elev:.25, label:"極速通勤",
             hint:"港鐵 75% ＋ 升降機 25%"},
-  balanced:{mtr:.20, school:.20, care:.20, elder:.20, elev:.20, label:"全齡均衡",
-            hint:"五維各 20%（全齡共融）"}
+  balanced:{mtr:.20, school:.20, care:.15, cc:.05, elder:.20, elev:.20, label:"全齡均衡",
+            hint:"六維均衡（港鐵／小學／託管／幼兒中心／長者會堂／升降機）"}
 };
-const DIM_LABEL = {mtr:"🚇 港鐵", school:"🏫 小學", care:"👶 託管", elder:"👵 長者/會堂", elev:"🛗 升降機"};
-const DIM_COLOR = {mtr:"#0b6e99", school:"#0f9d8a", care:"#7c3aed", elder:"#0d9488", elev:"#b45309"};
+const DIM_LABEL = {mtr:"🚇 港鐵", school:"🏫 小學", care:"👶 託管", cc:"👶 幼兒中心", elder:"👵 長者/會堂", elev:"🛗 升降機"};
+const DIM_COLOR = {mtr:"#0b6e99", school:"#0f9d8a", care:"#7c3aed", cc:"#db2777", elder:"#0d9488", elev:"#b45309"};
 function calcScore(e, p = profile){
   const w = WEIGHTS[p], s = subs(e);
   const total = Math.round((w.mtr*s.mtr + w.school*s.school + w.care*s.care
-    + w.elder*s.elderly_shelter + w.elev*s.elevator)*10)/10;
-  const parts = ["mtr","school","care","elder","elev"]
+    + (w.cc||0)*s.childcare + w.elder*s.elderly_shelter + w.elev*s.elevator)*10)/10;
+  const parts = ["mtr","school","care","cc","elder","elev"]
     .map(k => ({k, label: DIM_LABEL[k],
       sub: k === "elev" ? s.elevator : (k === "elder" ? s.elderly_shelter : s[k]), w: w[k]}))
     .filter(p => p.w > 0);
@@ -452,7 +455,7 @@ function render(){
     const nBlk = (e.blocks||[]).length;
     const blkBtn = nBlk ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
     const el = document.createElement("div"); el.className = "card";
-    const dests = ["mtr","sch","care","eld","shel","kg","pg","hosp","pier"].filter(d => e.lat != null && DEST[d].pool(e).length);
+    const dests = ["mtr","sch","care","cc","eld","shel","kg","pg","hosp","pier"].filter(d => e.lat != null && DEST[d].pool(e).length);
     const routeBtns = dests.length
       ? `<div class="dchips">` + dests.map(d => {
           const cnt = (d === "kg" || d === "hosp") ? ` ${DEST[d].pool(e).length}` : "";
@@ -755,8 +758,9 @@ const DEST = {
           ? [{zh:e.nearest_pg_name_tc, lat:e.nearest_pg_lat, lng:e.nearest_pg_lng, distance_m:e.nearest_pg_dist_m}] : [])},
   hosp: {label:"🏥 急症室",  kind:"急症醫院", pool:e => (e.ae_hospitals||[]).map(h => ({zh:h.n, lat:h.lat, lng:h.lng, distance_m:h.d}))},
   pier: {label:"⛴️ 碼頭",    kind:"渡輪碼頭", pool:e => (e.nearest_pier ? [{zh:e.nearest_pier.zh, lat:e.nearest_pier.lat, lng:e.nearest_pier.lng, distance_m:e.nearest_pier.distance_m}] : [])},
+  cc:   {label:"👶 幼兒中心", kind:"幼兒中心", pool:e => (e.nearest_childcare ? [{zh:e.nearest_childcare.zh, lat:e.nearest_childcare.lat, lng:e.nearest_childcare.lng, distance_m:e.nearest_childcare.distance_m}] : [])},
 };
-const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場", hosp:"🏥 急症室", pier:"⛴️ 碼頭"};
+const DEST_LABEL = {mtr:"🚇 港鐵", sch:"🏫 小學", care:"🎒 託管", eld:"👵 長者中心", shel:"🌡️ 會堂", kg:"👶 幼稚園", pg:"🎠 遊樂場", hosp:"🏥 急症室", pier:"⛴️ 碼頭", cc:"👶 幼兒中心"};
 
 async function planRoute(key, dest = "mtr", origin = null, destOverride = null){
   const seq = ++planSeq;
