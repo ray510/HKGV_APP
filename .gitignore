@@ -13,3 +13,5 @@ Thumbs.db
 # 其他工具／agent 產生嘅掃描檔（唔納入 repo）
 csdi_portal_scan*.py
 csdi_roadmap_winners.json
+csdi_portal_stats.json
+csdi_portal_scan4.py
