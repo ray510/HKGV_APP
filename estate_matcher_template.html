@@ -558,12 +558,13 @@ function toggleBlocks(key, btn){
     const cls = pct >= 100 ? "good" : (pct > 0 ? "" : "bad");
     const coord = b.lat != null;
     const hgt = (b.s != null ? `${b.s} 層` : "?") + (b.h != null ? `／${b.h}m` : "");
-    return `<tr><td>${b.n}</td><td>${b.u}</td><td><span class="pill ${cls}">${pct}%</span></td>` +
+    const emsd = b.emsd_lifts != null ? `<span style="color:#0f9d8a;font-weight:600">${b.emsd_lifts} 部</span>` : "<span style='color:#9ca3af'>—</span>";
+    return `<tr><td>${b.n}</td><td>${b.u}</td><td><span class="pill ${cls}">${pct}%</span></td><td>${emsd}</td>` +
       `<td>${b.f1 ?? "?"}–${b.f2 ?? "?"}</td><td>${b.a ?? "?"} ㎡</td><td>${hgt}</td>` +
       (coord ? `<td><button class="blkGo" data-n="${b.n}">🚶 由呢座出發</button></td>` : "<td></td>") + `</tr>`;
   }).join("");
-  boxEl.innerHTML = `<table class="blkT"><tr><th>座</th><th>單位</th><th>有𨋢</th><th>樓層</th><th>均面</th><th>樓高</th><th>路線</th></tr>${rows}</table>` +
-    `<div class="hint">有𨋢 %＝該座有升降機服務嘅單位比例；樓高（層／米）來自地政總署「建築物」數據集；座級位置：官方建築物多邊形中心（LandsD），未覆蓋時以 OSM 補。</div>`;
+  boxEl.innerHTML = `<table class="blkT"><tr><th>座</th><th>單位</th><th>有𨋢</th><th>EMSD 升降機</th><th>樓層</th><th>均面</th><th>樓高</th><th>路線</th></tr>${rows}</table>` +
+    `<div class="hint">有𨋢 %＝該座有升降機服務嘅單位比例；EMSD 升降機＝機電署註冊升降機部數（覆核用，含商場等附屬設施）；樓高來自地政總署「建築物」；座級位置：官方多邊形中心（LandsD），未覆蓋以 OSM 補。</div>`;
   boxEl.style.display = "block";
   btn.textContent = "▲ 收起座別明細";
   boxEl.querySelectorAll(".blkGo").forEach(g => g.onclick = () => {

@@ -26,6 +26,7 @@ OSM_CACHE = os.path.join(BASE, "data", "normalized", "osm_block_coords.json")
 LANDSD_CACHE = os.path.join(BASE, "data", "normalized", "landsd_block_coords.json")
 CSDI_BLOCK_CACHE = os.path.join(BASE, "data", "normalized", "csdi_block_coords.json")
 FERRY_CACHE = os.path.join(BASE, "data", "normalized", "ferry_piers.json")
+EMSD_BLOCK_LIFTS = os.path.join(BASE, "data", "normalized", "emsd_block_lifts.json")
 LANDSD_QUERY = ("https://portal.csdi.gov.hk/server/rest/services/common/"
                 "landsd_rcd_1637211194312_35158/FeatureServer/0/query")
 GENERIC_BLOCK = re.compile(r"^\s*(第\s*[0-9一二兩三四五六七八九十]+\s*座|BLOCK\s*\d+)\s*$", re.I)
@@ -130,6 +131,24 @@ def attach_ferry_piers(data):
                              "lng": round(best["lng"], 5), "distance_m": int(bd)}
         n += 1
     print(f"  ⛴️ 渡輪碼頭錨點：{n} 邨（最近碼頭中位數 {sorted(x['nearest_pier']['distance_m'] for x in data)[n//2]}m）", flush=True)
+    return n
+
+
+def attach_emsd_lifts(data):
+    """機電署升降機覆核：為每座附加 EMSD 升降機部數（驗證房委單位檔「有𨋢比例」）。"""
+    if not os.path.exists(EMSD_BLOCK_LIFTS):
+        return 0
+    with open(EMSD_BLOCK_LIFTS, encoding="utf-8") as f:
+        lifts = json.load(f)
+    n = 0
+    for e in data:
+        for b in e.get("blocks", []):
+            key = e["source"] + "|" + e["name_tc"] + "|" + b["n"]
+            cnt = lifts.get(key)
+            if cnt:
+                b["emsd_lifts"] = cnt
+                n += 1
+    print(f"  🛗 EMSD 升降機覆核：{n} 座有數據", flush=True)
     return n
 
 
@@ -346,6 +365,8 @@ ensure_block_coords(data)
 
 # 離島錨點：最近渡輪碼頭
 attach_ferry_piers(data)
+# EMSD 升降機覆核（機電署 74,550 部驗證座級有𨋢比例）
+attach_emsd_lifts(data)
 
 n_mtr = n_sch = 0
 for e in data:

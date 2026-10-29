@@ -1,0 +1,2594 @@
+{
+  "meta": {
+    "emsd_dataset": "emsd_rcd_1630562381876_94541",
+    "emsd_total_records": 74550,
+    "emsd_estate_filtered": 14029,
+    "pipeline_estates": 258,
+    "pipeline_blocks": 1713,
+    "matched_estates": 229,
+    "matched_blocks": 1234,
+    "timestamp": "2026-10-29"
+  },
+  "comparison": [
+    {
+      "name_tc": "葵涌邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 13659,
+      "pipe_elevator_units": 13659,
+      "pipe_blocks": 16,
+      "emsd_total_lifts": 105,
+      "emsd_matched_blocks": 16,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "秀茂坪邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 12537,
+      "pipe_elevator_units": 12537,
+      "pipe_blocks": 19,
+      "emsd_total_lifts": 104,
+      "emsd_matched_blocks": 19,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "水泉澳邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 11123,
+      "pipe_elevator_units": 11123,
+      "pipe_blocks": 18,
+      "emsd_total_lifts": 98,
+      "emsd_matched_blocks": 18,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "石硤尾邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 10787,
+      "pipe_elevator_units": 10124,
+      "pipe_blocks": 21,
+      "emsd_total_lifts": 96,
+      "emsd_matched_blocks": 20,
+      "pipe_elev_ratio": 93.9
+    },
+    {
+      "name_tc": "逸東二邨",
+      "district_tc": "離島",
+      "pipe_total_units": 6382,
+      "pipe_elevator_units": 6382,
+      "pipe_blocks": 12,
+      "emsd_total_lifts": 78,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "蘇屋邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 6985,
+      "pipe_elevator_units": 6985,
+      "pipe_blocks": 14,
+      "emsd_total_lifts": 76,
+      "emsd_matched_blocks": 14,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "友愛邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 9153,
+      "pipe_elevator_units": 8586,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 76,
+      "emsd_matched_blocks": 11,
+      "pipe_elev_ratio": 93.8
+    },
+    {
+      "name_tc": "橫頭磡邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 5900,
+      "pipe_elevator_units": 5870,
+      "pipe_blocks": 18,
+      "emsd_total_lifts": 72,
+      "emsd_matched_blocks": 18,
+      "pipe_elev_ratio": 99.5
+    },
+    {
+      "name_tc": "白田邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 11849,
+      "pipe_elevator_units": 11102,
+      "pipe_blocks": 23,
+      "emsd_total_lifts": 72,
+      "emsd_matched_blocks": 17,
+      "pipe_elev_ratio": 93.7
+    },
+    {
+      "name_tc": "油麗邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 9037,
+      "pipe_elevator_units": 9037,
+      "pipe_blocks": 14,
+      "emsd_total_lifts": 71,
+      "emsd_matched_blocks": 14,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "安泰邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 8561,
+      "pipe_elevator_units": 8561,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 68,
+      "emsd_matched_blocks": 10,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "元州邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 7816,
+      "pipe_elevator_units": 7816,
+      "pipe_blocks": 13,
+      "emsd_total_lifts": 67,
+      "emsd_matched_blocks": 13,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "寶達邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 7434,
+      "pipe_elevator_units": 7434,
+      "pipe_blocks": 13,
+      "emsd_total_lifts": 67,
+      "emsd_matched_blocks": 13,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "大窩口邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 7877,
+      "pipe_elevator_units": 7795,
+      "pipe_blocks": 17,
+      "emsd_total_lifts": 66,
+      "emsd_matched_blocks": 17,
+      "pipe_elev_ratio": 99.0
+    },
+    {
+      "name_tc": "朗屏邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 8483,
+      "pipe_elevator_units": 8483,
+      "pipe_blocks": 15,
+      "emsd_total_lifts": 63,
+      "emsd_matched_blocks": 15,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "山景邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 8644,
+      "pipe_elevator_units": 8445,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 63,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 97.7
+    },
+    {
+      "name_tc": "葵盛東邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 6284,
+      "pipe_elevator_units": 6276,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 62,
+      "emsd_matched_blocks": 11,
+      "pipe_elev_ratio": 99.9
+    },
+    {
+      "name_tc": "長康邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 8349,
+      "pipe_elevator_units": 8184,
+      "pipe_blocks": 13,
+      "emsd_total_lifts": 62,
+      "emsd_matched_blocks": 13,
+      "pipe_elev_ratio": 98.0
+    },
+    {
+      "name_tc": "大興邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 8609,
+      "pipe_elevator_units": 8597,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 62,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 99.9
+    },
+    {
+      "name_tc": "慈樂邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 6219,
+      "pipe_elevator_units": 6219,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 59,
+      "emsd_matched_blocks": 11,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "長青邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 6370,
+      "pipe_elevator_units": 6186,
+      "pipe_blocks": 10,
+      "emsd_total_lifts": 59,
+      "emsd_matched_blocks": 10,
+      "pipe_elev_ratio": 97.1
+    },
+    {
+      "name_tc": "葵芳邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 6326,
+      "pipe_elevator_units": 6326,
+      "pipe_blocks": 12,
+      "emsd_total_lifts": 58,
+      "emsd_matched_blocks": 12,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "安達邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 9356,
+      "pipe_elevator_units": 9356,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 58,
+      "emsd_matched_blocks": 11,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "小西灣邨",
+      "district_tc": "東區",
+      "pipe_total_units": 6071,
+      "pipe_elevator_units": 6071,
+      "pipe_blocks": 12,
+      "emsd_total_lifts": 58,
+      "emsd_matched_blocks": 12,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "皇后山邨",
+      "district_tc": "北區",
+      "pipe_total_units": 8865,
+      "pipe_elevator_units": 8865,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 58,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "石圍角邨",
+      "district_tc": "荃灣",
+      "pipe_total_units": 6457,
+      "pipe_elevator_units": 6042,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 57,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 93.6
+    },
+    {
+      "name_tc": "太和邨",
+      "district_tc": "大埔",
+      "pipe_total_units": 6952,
+      "pipe_elevator_units": 6952,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 56,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "牛頭角上邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 6717,
+      "pipe_elevator_units": 6717,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 56,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "美田邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 6713,
+      "pipe_elevator_units": 6713,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 56,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "德朗邨",
+      "district_tc": "九龍城",
+      "pipe_total_units": 8164,
+      "pipe_elevator_units": 8164,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 55,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "長安邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 7338,
+      "pipe_elevator_units": 7338,
+      "pipe_blocks": 10,
+      "emsd_total_lifts": 54,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "海麗邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 4908,
+      "pipe_elevator_units": 4908,
+      "pipe_blocks": 12,
+      "emsd_total_lifts": 53,
+      "emsd_matched_blocks": 12,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "富蝶邨",
+      "district_tc": "大埔",
+      "pipe_total_units": 7431,
+      "pipe_elevator_units": 7431,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 53,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "尚德邨",
+      "district_tc": "西貢",
+      "pipe_total_units": 5561,
+      "pipe_elevator_units": 5561,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 52,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "禾輋邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 6323,
+      "pipe_elevator_units": 5898,
+      "pipe_blocks": 13,
+      "emsd_total_lifts": 52,
+      "emsd_matched_blocks": 13,
+      "pipe_elev_ratio": 93.3
+    },
+    {
+      "name_tc": "順天邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 7052,
+      "pipe_elevator_units": 6828,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 52,
+      "emsd_matched_blocks": 11,
+      "pipe_elev_ratio": 96.8
+    },
+    {
+      "name_tc": "富泰邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 5066,
+      "pipe_elevator_units": 5066,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 52,
+      "emsd_matched_blocks": 11,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "富昌邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 6008,
+      "pipe_elevator_units": 6008,
+      "pipe_blocks": 10,
+      "emsd_total_lifts": 51,
+      "emsd_matched_blocks": 10,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "耀東邨",
+      "district_tc": "東區",
+      "pipe_total_units": 5169,
+      "pipe_elevator_units": 5105,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 51,
+      "emsd_matched_blocks": 11,
+      "pipe_elev_ratio": 98.8
+    },
+    {
+      "name_tc": "安蔭邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 5340,
+      "pipe_elevator_units": 5340,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 51,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "健明邨",
+      "district_tc": "西貢",
+      "pipe_total_units": 7018,
+      "pipe_elevator_units": 7018,
+      "pipe_blocks": 10,
+      "emsd_total_lifts": 50,
+      "emsd_matched_blocks": 10,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "恆安邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 5932,
+      "pipe_elevator_units": 5932,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 50,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "顯徑邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 5876,
+      "pipe_elevator_units": 5876,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 50,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "清河邨",
+      "district_tc": "北區",
+      "pipe_total_units": 7162,
+      "pipe_elevator_units": 7162,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 50,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "平田邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 5661,
+      "pipe_elevator_units": 5661,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 49,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "翠屏北邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 6569,
+      "pipe_elevator_units": 6429,
+      "pipe_blocks": 13,
+      "emsd_total_lifts": 48,
+      "emsd_matched_blocks": 11,
+      "pipe_elev_ratio": 97.9
+    },
+    {
+      "name_tc": "竹園北邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 6736,
+      "pipe_elevator_units": 6736,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 48,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "新翠邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 6643,
+      "pipe_elevator_units": 6385,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 48,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 96.1
+    },
+    {
+      "name_tc": "大元邨",
+      "district_tc": "大埔",
+      "pipe_total_units": 4875,
+      "pipe_elevator_units": 4577,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 48,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 93.9
+    },
+    {
+      "name_tc": "葵盛西邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 5262,
+      "pipe_elevator_units": 4666,
+      "pipe_blocks": 10,
+      "emsd_total_lifts": 48,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 88.7
+    },
+    {
+      "name_tc": "博康邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 5466,
+      "pipe_elevator_units": 5305,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 47,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 97.1
+    },
+    {
+      "name_tc": "德田邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 5675,
+      "pipe_elevator_units": 5675,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 47,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "富善邨",
+      "district_tc": "大埔",
+      "pipe_total_units": 5508,
+      "pipe_elevator_units": 5508,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 47,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "富亨邨",
+      "district_tc": "大埔",
+      "pipe_total_units": 5772,
+      "pipe_elevator_units": 5772,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 47,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "天平邨",
+      "district_tc": "北區",
+      "pipe_total_units": 5700,
+      "pipe_elevator_units": 5700,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 46,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "天晴邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 6201,
+      "pipe_elevator_units": 6201,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 46,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "厚德邨",
+      "district_tc": "西貢",
+      "pipe_total_units": 4192,
+      "pipe_elevator_units": 4192,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 45,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "耀安邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 4798,
+      "pipe_elevator_units": 4798,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 45,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "彩德邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 5752,
+      "pipe_elevator_units": 5752,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 45,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "安定邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 5050,
+      "pipe_elevator_units": 4810,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 45,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 95.2
+    },
+    {
+      "name_tc": "長宏邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 4273,
+      "pipe_elevator_units": 4273,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 45,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "寶林邨",
+      "district_tc": "西貢",
+      "pipe_total_units": 5272,
+      "pipe_elevator_units": 5270,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 44,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "樂富邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 3721,
+      "pipe_elevator_units": 3641,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 43,
+      "emsd_matched_blocks": 10,
+      "pipe_elev_ratio": 97.9
+    },
+    {
+      "name_tc": "華明邨",
+      "district_tc": "北區",
+      "pipe_total_units": 5380,
+      "pipe_elevator_units": 5380,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 43,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "石排灣邨",
+      "district_tc": "南區",
+      "pipe_total_units": 5275,
+      "pipe_elevator_units": 5275,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 43,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "沙角邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 6377,
+      "pipe_elevator_units": 6051,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 42,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 94.9
+    },
+    {
+      "name_tc": "駿洋邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 4846,
+      "pipe_elevator_units": 4846,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 42,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "黃大仙上邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 4873,
+      "pipe_elevator_units": 4873,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 41,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "景林邨",
+      "district_tc": "西貢",
+      "pipe_total_units": 5278,
+      "pipe_elevator_units": 5278,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 41,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "廣源邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 4449,
+      "pipe_elevator_units": 4449,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 41,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "天澤邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 3995,
+      "pipe_elevator_units": 3995,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 41,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "碩門邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 4982,
+      "pipe_elevator_units": 4982,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 40,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "愛民邨",
+      "district_tc": "九龍城",
+      "pipe_total_units": 6322,
+      "pipe_elevator_units": 5257,
+      "pipe_blocks": 12,
+      "emsd_total_lifts": 40,
+      "emsd_matched_blocks": 10,
+      "pipe_elev_ratio": 83.2
+    },
+    {
+      "name_tc": "何文田邨",
+      "district_tc": "九龍城",
+      "pipe_total_units": 4738,
+      "pipe_elevator_units": 4722,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 40,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 99.7
+    },
+    {
+      "name_tc": "天恩邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 5640,
+      "pipe_elevator_units": 5640,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 40,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "廣福邨",
+      "district_tc": "大埔",
+      "pipe_total_units": 6202,
+      "pipe_elevator_units": 6007,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 39,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 96.9
+    },
+    {
+      "name_tc": "慈正邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 8120,
+      "pipe_elevator_units": 8111,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 39,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 99.9
+    },
+    {
+      "name_tc": "寶田邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 4468,
+      "pipe_elevator_units": 4468,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 39,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "祥華邨",
+      "district_tc": "北區",
+      "pipe_total_units": 5120,
+      "pipe_elevator_units": 5032,
+      "pipe_blocks": 10,
+      "emsd_total_lifts": 38,
+      "emsd_matched_blocks": 10,
+      "pipe_elev_ratio": 98.3
+    },
+    {
+      "name_tc": "愛東邨",
+      "district_tc": "東區",
+      "pipe_total_units": 3923,
+      "pipe_elevator_units": 3923,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 37,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "彩園邨",
+      "district_tc": "北區",
+      "pipe_total_units": 5079,
+      "pipe_elevator_units": 4824,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 37,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 95.0
+    },
+    {
+      "name_tc": "李鄭屋邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 4826,
+      "pipe_elevator_units": 4826,
+      "pipe_blocks": 10,
+      "emsd_total_lifts": 37,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "鯉魚門邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 3639,
+      "pipe_elevator_units": 3639,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 37,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "荔景邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 4759,
+      "pipe_elevator_units": 4198,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 37,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 88.2
+    },
+    {
+      "name_tc": "長亨邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 4381,
+      "pipe_elevator_units": 4380,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 37,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "牛頭角下邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 4805,
+      "pipe_elevator_units": 4805,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 36,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "隆亨邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 4376,
+      "pipe_elevator_units": 4316,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 36,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 98.6
+    },
+    {
+      "name_tc": "彩石邨",
+      "district_tc": "北區",
+      "pipe_total_units": 2894,
+      "pipe_elevator_units": 2894,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 36,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "梨木樹邨",
+      "district_tc": "荃灣",
+      "pipe_total_units": 3901,
+      "pipe_elevator_units": 3901,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 36,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "天逸邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 3330,
+      "pipe_elevator_units": 3330,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 36,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "雋東邨",
+      "district_tc": "離島",
+      "pipe_total_units": 5200,
+      "pipe_elevator_units": 5200,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 36,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "彩虹邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 7435,
+      "pipe_elevator_units": 5392,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 35,
+      "emsd_matched_blocks": 11,
+      "pipe_elev_ratio": 72.5
+    },
+    {
+      "name_tc": "翔東邨",
+      "district_tc": "離島",
+      "pipe_total_units": 4780,
+      "pipe_elevator_units": 4780,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 35,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "業旺邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 3288,
+      "pipe_elevator_units": 3288,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 34,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "海富苑",
+      "district_tc": "油尖旺",
+      "pipe_total_units": 2820,
+      "pipe_elevator_units": 2820,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 33,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "美林邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 4111,
+      "pipe_elevator_units": 3959,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 33,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 96.3
+    },
+    {
+      "name_tc": "天悅邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 4195,
+      "pipe_elevator_units": 4195,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 33,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "高翔苑",
+      "district_tc": "觀塘",
+      "pipe_total_units": 1800,
+      "pipe_elevator_units": 1800,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 32,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "鴨脷洲邨",
+      "district_tc": "南區",
+      "pipe_total_units": 4456,
+      "pipe_elevator_units": 4172,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 32,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 93.6
+    },
+    {
+      "name_tc": "環翠邨",
+      "district_tc": "東區",
+      "pipe_total_units": 3678,
+      "pipe_elevator_units": 3573,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 32,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 97.1
+    },
+    {
+      "name_tc": "新田圍邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 3418,
+      "pipe_elevator_units": 3226,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 32,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 94.4
+    },
+    {
+      "name_tc": "麗瑤邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 3663,
+      "pipe_elevator_units": 3591,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 32,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 98.0
+    },
+    {
+      "name_tc": "菁田邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 5183,
+      "pipe_elevator_units": 5183,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 32,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "石蔭邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 2671,
+      "pipe_elevator_units": 2671,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 32,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "天華邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 3722,
+      "pipe_elevator_units": 3722,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 32,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "順利邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 4486,
+      "pipe_elevator_units": 4255,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 32,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 94.9
+    },
+    {
+      "name_tc": "瀝源邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 3232,
+      "pipe_elevator_units": 2889,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 31,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 89.4
+    },
+    {
+      "name_tc": "湖景邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 4386,
+      "pipe_elevator_units": 4284,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 31,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 97.7
+    },
+    {
+      "name_tc": "洪福邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 4905,
+      "pipe_elevator_units": 4905,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 30,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "利東邨",
+      "district_tc": "南區",
+      "pipe_total_units": 7270,
+      "pipe_elevator_units": 7270,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 29,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "田灣邨",
+      "district_tc": "南區",
+      "pipe_total_units": 3165,
+      "pipe_elevator_units": 3165,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 29,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "良景邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 6844,
+      "pipe_elevator_units": 6844,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 29,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "麗翠苑",
+      "district_tc": "深水埗",
+      "pipe_total_units": 1314,
+      "pipe_elevator_units": 1314,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 28,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "油塘邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 3596,
+      "pipe_elevator_units": 3596,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 28,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "海達邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 3335,
+      "pipe_elevator_units": 3335,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 28,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "彩盈邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 3995,
+      "pipe_elevator_units": 3995,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 28,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "東頭二邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 6646,
+      "pipe_elevator_units": 6512,
+      "pipe_blocks": 20,
+      "emsd_total_lifts": 28,
+      "emsd_matched_blocks": 10,
+      "pipe_elev_ratio": 98.0
+    },
+    {
+      "name_tc": "欣田邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 4688,
+      "pipe_elevator_units": 4688,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 28,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "建生邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 2652,
+      "pipe_elevator_units": 2652,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 28,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "滿東邨",
+      "district_tc": "離島",
+      "pipe_total_units": 3866,
+      "pipe_elevator_units": 3866,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 28,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "蝴蝶邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 5424,
+      "pipe_elevator_units": 5306,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 28,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 97.8
+    },
+    {
+      "name_tc": "啟田邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 2280,
+      "pipe_elevator_units": 2280,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 27,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "迎東邨",
+      "district_tc": "離島",
+      "pipe_total_units": 3580,
+      "pipe_elevator_units": 3580,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 27,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "田景邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 3207,
+      "pipe_elevator_units": 3207,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 26,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "坪石邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 4581,
+      "pipe_elevator_units": 4581,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 25,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "欣安邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 2587,
+      "pipe_elevator_units": 2587,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 25,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "頌安邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 2741,
+      "pipe_elevator_units": 2741,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 25,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "利安邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 3632,
+      "pipe_elevator_units": 3632,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 25,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "華貴邨",
+      "district_tc": "南區",
+      "pipe_total_units": 3724,
+      "pipe_elevator_units": 3724,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 25,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "和田邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 4232,
+      "pipe_elevator_units": 4232,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 25,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "天慈邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 3316,
+      "pipe_elevator_units": 3316,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 24,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "南昌邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 1898,
+      "pipe_elevator_units": 1898,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 24,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "翠灣邨",
+      "district_tc": "東區",
+      "pipe_total_units": 2340,
+      "pipe_elevator_units": 2340,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 24,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "長沙灣邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 1390,
+      "pipe_elevator_units": 1390,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 23,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "麗閣邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 3048,
+      "pipe_elevator_units": 2810,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 23,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 92.2
+    },
+    {
+      "name_tc": "南山邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 2862,
+      "pipe_elevator_units": 2582,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 23,
+      "emsd_matched_blocks": 8,
+      "pipe_elev_ratio": 90.2
+    },
+    {
+      "name_tc": "青衣邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 3216,
+      "pipe_elevator_units": 3215,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 23,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "長發邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 2533,
+      "pipe_elevator_units": 2533,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 23,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "富東邨",
+      "district_tc": "離島",
+      "pipe_total_units": 1664,
+      "pipe_elevator_units": 1664,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 22,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "興東邨",
+      "district_tc": "東區",
+      "pipe_total_units": 2089,
+      "pipe_elevator_units": 2089,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 22,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "慈康邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 2000,
+      "pipe_elevator_units": 2000,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 22,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "啟業邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 4300,
+      "pipe_elevator_units": 4036,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 21,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 93.9
+    },
+    {
+      "name_tc": "廣田邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 2453,
+      "pipe_elevator_units": 2453,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 21,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "藍田邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 3531,
+      "pipe_elevator_units": 3531,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 20,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "嘉福邨",
+      "district_tc": "北區",
+      "pipe_total_units": 1963,
+      "pipe_elevator_units": 1963,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 20,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "葵聯邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 2977,
+      "pipe_elevator_units": 2977,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 20,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "雍盛苑",
+      "district_tc": "北區",
+      "pipe_total_units": 1738,
+      "pipe_elevator_units": 1738,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 20,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "順安邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 3002,
+      "pipe_elevator_units": 2994,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 20,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 99.7
+    },
+    {
+      "name_tc": "興民邨",
+      "district_tc": "東區",
+      "pipe_total_units": 1999,
+      "pipe_elevator_units": 398,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 20,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 19.9
+    },
+    {
+      "name_tc": "大坑東邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 2101,
+      "pipe_elevator_units": 2024,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 19,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 96.3
+    },
+    {
+      "name_tc": "秦石邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 2131,
+      "pipe_elevator_units": 2010,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 19,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 94.3
+    },
+    {
+      "name_tc": "天瑞二邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 3172,
+      "pipe_elevator_units": 3172,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 19,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "興田邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 2448,
+      "pipe_elevator_units": 2448,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 19,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "水邊圍邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 2399,
+      "pipe_elevator_units": 2179,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 18,
+      "emsd_matched_blocks": 7,
+      "pipe_elev_ratio": 90.8
+    },
+    {
+      "name_tc": "彩霞邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 2238,
+      "pipe_elevator_units": 2238,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 18,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "慈民邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 2043,
+      "pipe_elevator_units": 2043,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 18,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "石蔭東邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 2414,
+      "pipe_elevator_units": 2414,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 18,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "東匯邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 2366,
+      "pipe_elevator_units": 2366,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 17,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "漁灣邨",
+      "district_tc": "東區",
+      "pipe_total_units": 3046,
+      "pipe_elevator_units": 2967,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 17,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 97.4
+    },
+    {
+      "name_tc": "寶石湖邨",
+      "district_tc": "北區",
+      "pipe_total_units": 1144,
+      "pipe_elevator_units": 1144,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 17,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "太平邨",
+      "district_tc": "北區",
+      "pipe_total_units": 1429,
+      "pipe_elevator_units": 1429,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 16,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "和樂邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 1943,
+      "pipe_elevator_units": 1805,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 16,
+      "emsd_matched_blocks": 6,
+      "pipe_elev_ratio": 92.9
+    },
+    {
+      "name_tc": "富山邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 2339,
+      "pipe_elevator_units": 2229,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 16,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 95.3
+    },
+    {
+      "name_tc": "高怡邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 1215,
+      "pipe_elevator_units": 1215,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 15,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "怡明邨",
+      "district_tc": "西貢",
+      "pipe_total_units": 2059,
+      "pipe_elevator_units": 2059,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 14,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "華荔邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 1434,
+      "pipe_elevator_units": 1434,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 14,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "明德邨",
+      "district_tc": "西貢",
+      "pipe_total_units": 1487,
+      "pipe_elevator_units": 1487,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 14,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "華心邨",
+      "district_tc": "北區",
+      "pipe_total_units": 1482,
+      "pipe_elevator_units": 1472,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 14,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 99.3
+    },
+    {
+      "name_tc": "滿田邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 1020,
+      "pipe_elevator_units": 1020,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 14,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "幸福邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 2125,
+      "pipe_elevator_units": 2125,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 13,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "豐和邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 1607,
+      "pipe_elevator_units": 1607,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 13,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "三聖邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 1834,
+      "pipe_elevator_units": 1725,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 13,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 94.1
+    },
+    {
+      "name_tc": "紅磡邨",
+      "district_tc": "九龍城",
+      "pipe_total_units": 2773,
+      "pipe_elevator_units": 2773,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 12,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "海盈邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 1320,
+      "pipe_elevator_units": 1320,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 12,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "福來邨",
+      "district_tc": "荃灣",
+      "pipe_total_units": 3131,
+      "pipe_elevator_units": 2282,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 12,
+      "emsd_matched_blocks": 9,
+      "pipe_elev_ratio": 72.9
+    },
+    {
+      "name_tc": "彩輝邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 1351,
+      "pipe_elevator_units": 1351,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 12,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "澤安邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 1861,
+      "pipe_elevator_units": 1686,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 12,
+      "emsd_matched_blocks": 4,
+      "pipe_elev_ratio": 90.6
+    },
+    {
+      "name_tc": "象山邨",
+      "district_tc": "荃灣",
+      "pipe_total_units": 1622,
+      "pipe_elevator_units": 1551,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 12,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 95.6
+    },
+    {
+      "name_tc": "鳳凰嶺邨",
+      "district_tc": "北區",
+      "pipe_total_units": 6168,
+      "pipe_elevator_units": 6168,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 12,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "黃大仙下一邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 4729,
+      "pipe_elevator_units": 4729,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 11,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "善明邨",
+      "district_tc": "西貢",
+      "pipe_total_units": 1974,
+      "pipe_elevator_units": 1974,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 11,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "美東邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 2454,
+      "pipe_elevator_units": 2237,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 11,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 91.2
+    },
+    {
+      "name_tc": "馬坑邨",
+      "district_tc": "南區",
+      "pipe_total_units": 916,
+      "pipe_elevator_units": 896,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 11,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 97.8
+    },
+    {
+      "name_tc": "安田邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 720,
+      "pipe_elevator_units": 720,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 10,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "彩明苑",
+      "district_tc": "西貢",
+      "pipe_total_units": 2797,
+      "pipe_elevator_units": 2797,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 10,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "麗安邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 1365,
+      "pipe_elevator_units": 1265,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 10,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 92.7
+    },
+    {
+      "name_tc": "彩興路簡約公屋",
+      "district_tc": "觀塘",
+      "pipe_total_units": 2290,
+      "pipe_elevator_units": 2290,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 10,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "葵翠邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 866,
+      "pipe_elevator_units": 866,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 9,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "馬頭圍邨",
+      "district_tc": "九龍城",
+      "pipe_total_units": 2075,
+      "pipe_elevator_units": 1465,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 9,
+      "emsd_matched_blocks": 5,
+      "pipe_elev_ratio": 70.6
+    },
+    {
+      "name_tc": "朗善邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 1203,
+      "pipe_elevator_units": 1203,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 9,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "雅寧苑",
+      "district_tc": "離島",
+      "pipe_total_units": 422,
+      "pipe_elevator_units": 422,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 9,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "榮昌邨",
+      "district_tc": "深水埗",
+      "pipe_total_units": 1488,
+      "pipe_elevator_units": 1488,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 8,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "葵興邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 1528,
+      "pipe_elevator_units": 1528,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 8,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "鳳德邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 5338,
+      "pipe_elevator_units": 5338,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 8,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "石籬一邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 4913,
+      "pipe_elevator_units": 4911,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 8,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "彩福邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 4549,
+      "pipe_elevator_units": 4549,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 8,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "柴灣邨",
+      "district_tc": "東區",
+      "pipe_total_units": 1600,
+      "pipe_elevator_units": 1600,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 8,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "沙田坳邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 1278,
+      "pipe_elevator_units": 1278,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 8,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "祥龍圍邨",
+      "district_tc": "北區",
+      "pipe_total_units": 1358,
+      "pipe_elevator_units": 1358,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 8,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "天耀一邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 4655,
+      "pipe_elevator_units": 4655,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 7,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "啟鑽苑",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 1018,
+      "pipe_elevator_units": 1018,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 7,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "雲漢邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 1003,
+      "pipe_elevator_units": 1003,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 7,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "龍逸邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 990,
+      "pipe_elevator_units": 990,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 7,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "顯發邨",
+      "district_tc": "屯門",
+      "pipe_total_units": 872,
+      "pipe_elevator_units": 872,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 7,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "暉明邨",
+      "district_tc": "北區",
+      "pipe_total_units": 952,
+      "pipe_elevator_units": 952,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 7,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "古雋邨",
+      "district_tc": "北區",
+      "pipe_total_units": 4968,
+      "pipe_elevator_units": 4968,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 7,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "興華一邨",
+      "district_tc": "東區",
+      "pipe_total_units": 2272,
+      "pipe_elevator_units": 2272,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 6,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "朗晴邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 438,
+      "pipe_elevator_units": 438,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 6,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "竹園南邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 6182,
+      "pipe_elevator_units": 6181,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 6,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "顯耀邨",
+      "district_tc": "沙田",
+      "pipe_total_units": 799,
+      "pipe_elevator_units": 799,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 6,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "寶鄉邨",
+      "district_tc": "大埔",
+      "pipe_total_units": 483,
+      "pipe_elevator_units": 483,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 6,
+      "emsd_matched_blocks": 2,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "運頭塘邨",
+      "district_tc": "大埔",
+      "pipe_total_units": 2681,
+      "pipe_elevator_units": 2681,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 5,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "華富二邨",
+      "district_tc": "南區",
+      "pipe_total_units": 4347,
+      "pipe_elevator_units": 4220,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 5,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 97.1
+    },
+    {
+      "name_tc": "康東邨",
+      "district_tc": "東區",
+      "pipe_total_units": 475,
+      "pipe_elevator_units": 475,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 4,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "樂華南邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 6957,
+      "pipe_elevator_units": 6837,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 4,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 98.3
+    },
+    {
+      "name_tc": "曉茵邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 1088,
+      "pipe_elevator_units": 1088,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 4,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "銀灣邨",
+      "district_tc": "離島",
+      "pipe_total_units": 437,
+      "pipe_elevator_units": 393,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 4,
+      "emsd_matched_blocks": 3,
+      "pipe_elev_ratio": 89.9
+    },
+    {
+      "name_tc": "連翠邨",
+      "district_tc": "東區",
+      "pipe_total_units": 288,
+      "pipe_elevator_units": 288,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 3,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "常樂邨",
+      "district_tc": "九龍城",
+      "pipe_total_units": 360,
+      "pipe_elevator_units": 360,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 3,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "翠林邨",
+      "district_tc": "西貢",
+      "pipe_total_units": 4932,
+      "pipe_elevator_units": 4932,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 3,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "華廈邨",
+      "district_tc": "東區",
+      "pipe_total_units": 187,
+      "pipe_elevator_units": 187,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 2,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "黃大仙下二邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 6709,
+      "pipe_elevator_units": 6605,
+      "pipe_blocks": 15,
+      "emsd_total_lifts": 2,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 98.4
+    },
+    {
+      "name_tc": "翠樂邨",
+      "district_tc": "東區",
+      "pipe_total_units": 320,
+      "pipe_elevator_units": 320,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 2,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "樂華北邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 2975,
+      "pipe_elevator_units": 2975,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 2,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "模範邨",
+      "district_tc": "東區",
+      "pipe_total_units": 667,
+      "pipe_elevator_units": 417,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 2,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 62.5
+    },
+    {
+      "name_tc": "彩雲一邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 5927,
+      "pipe_elevator_units": 5703,
+      "pipe_blocks": 16,
+      "emsd_total_lifts": 2,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 96.2
+    },
+    {
+      "name_tc": "金坪邨",
+      "district_tc": "離島",
+      "pipe_total_units": 255,
+      "pipe_elevator_units": 255,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 2,
+      "emsd_matched_blocks": 1,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "彩雲二邨",
+      "district_tc": "黃大仙",
+      "pipe_total_units": 2967,
+      "pipe_elevator_units": 2863,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 1,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 96.5
+    },
+    {
+      "name_tc": "峰華邨",
+      "district_tc": "東區",
+      "pipe_total_units": 1286,
+      "pipe_elevator_units": 1286,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 1,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "彩園路簡約公屋",
+      "district_tc": "北區",
+      "pipe_total_units": 110,
+      "pipe_elevator_units": 110,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "青逸軒",
+      "district_tc": "葵青",
+      "pipe_total_units": 510,
+      "pipe_elevator_units": 510,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "啟晴邨",
+      "district_tc": "九龍城",
+      "pipe_total_units": 5204,
+      "pipe_elevator_units": 5204,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "天耀二邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 3823,
+      "pipe_elevator_units": 3823,
+      "pipe_blocks": 6,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "彩石里簡約公屋",
+      "district_tc": "觀塘",
+      "pipe_total_units": 148,
+      "pipe_elevator_units": 141,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 95.3
+    },
+    {
+      "name_tc": "世運道簡約公屋",
+      "district_tc": "九龍城",
+      "pipe_total_units": 10731,
+      "pipe_elevator_units": 10470,
+      "pipe_blocks": 12,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 97.6
+    },
+    {
+      "name_tc": "翠屏南邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 4880,
+      "pipe_elevator_units": 4880,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "西環邨",
+      "district_tc": "中西區",
+      "pipe_total_units": 636,
+      "pipe_elevator_units": 416,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 65.4
+    },
+    {
+      "name_tc": "高盛臺",
+      "district_tc": "葵青",
+      "pipe_total_units": 760,
+      "pipe_elevator_units": 760,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "常安街簡約公屋",
+      "district_tc": "東區",
+      "pipe_total_units": 1719,
+      "pipe_elevator_units": 1719,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "青福里簡約公屋",
+      "district_tc": "屯門",
+      "pipe_total_units": 1856,
+      "pipe_elevator_units": 1854,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 99.9
+    },
+    {
+      "name_tc": "興華二邨",
+      "district_tc": "東區",
+      "pipe_total_units": 3596,
+      "pipe_elevator_units": 1890,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 52.6
+    },
+    {
+      "name_tc": "欣寶路簡約公屋",
+      "district_tc": "屯門",
+      "pipe_total_units": 5614,
+      "pipe_elevator_units": 5614,
+      "pipe_blocks": 4,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "天瑞一邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 4615,
+      "pipe_elevator_units": 4615,
+      "pipe_blocks": 7,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "石籬二邨",
+      "district_tc": "葵青",
+      "pipe_total_units": 8389,
+      "pipe_elevator_units": 8389,
+      "pipe_blocks": 12,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "逸東一邨",
+      "district_tc": "離島",
+      "pipe_total_units": 5597,
+      "pipe_elevator_units": 5597,
+      "pipe_blocks": 13,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "秀茂坪南邨",
+      "district_tc": "觀塘",
+      "pipe_total_units": 3995,
+      "pipe_elevator_units": 3995,
+      "pipe_blocks": 5,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "順安道簡約公屋",
+      "district_tc": "觀塘",
+      "pipe_total_units": 127,
+      "pipe_elevator_units": 127,
+      "pipe_blocks": 1,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "梨木樹一邨",
+      "district_tc": "荃灣",
+      "pipe_total_units": 2317,
+      "pipe_elevator_units": 2317,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "梨木樹二邨",
+      "district_tc": "荃灣",
+      "pipe_total_units": 4305,
+      "pipe_elevator_units": 4061,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 94.3
+    },
+    {
+      "name_tc": "寶田中轉房屋",
+      "district_tc": "屯門",
+      "pipe_total_units": 4267,
+      "pipe_elevator_units": 4267,
+      "pipe_blocks": 9,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "華富北邨",
+      "district_tc": "南區",
+      "pipe_total_units": 1208,
+      "pipe_elevator_units": 1208,
+      "pipe_blocks": 2,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "華富一邨",
+      "district_tc": "南區",
+      "pipe_total_units": 4801,
+      "pipe_elevator_units": 3666,
+      "pipe_blocks": 12,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 76.4
+    },
+    {
+      "name_tc": "俊宏軒",
+      "district_tc": "元朗",
+      "pipe_total_units": 4100,
+      "pipe_elevator_units": 4100,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "天恒邨",
+      "district_tc": "元朗",
+      "pipe_total_units": 5760,
+      "pipe_elevator_units": 5760,
+      "pipe_blocks": 14,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "龍田邨",
+      "district_tc": "離島",
+      "pipe_total_units": 455,
+      "pipe_elevator_units": 283,
+      "pipe_blocks": 8,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 62.2
+    },
+    {
+      "name_tc": "長貴邨",
+      "district_tc": "離島",
+      "pipe_total_units": 472,
+      "pipe_elevator_units": 0,
+      "pipe_blocks": 18,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 0.0
+    },
+    {
+      "name_tc": "青發街簡約公屋",
+      "district_tc": "屯門",
+      "pipe_total_units": 4200,
+      "pipe_elevator_units": 4200,
+      "pipe_blocks": 3,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 100.0
+    },
+    {
+      "name_tc": "攸壆路簡約公屋",
+      "district_tc": "元朗",
+      "pipe_total_units": 2156,
+      "pipe_elevator_units": 0,
+      "pipe_blocks": 11,
+      "emsd_total_lifts": 0,
+      "emsd_matched_blocks": 0,
+      "pipe_elev_ratio": 0.0
+    }
+  ]
+}
