@@ -357,7 +357,9 @@ def ensure_landsd_block_coords(data):
             combo = (e["name_tc"] + b["n"]).strip()
             if combo not in cache and combo not in todo2:
                 todo2[combo] = True
-    if todo2:
+    if todo2 and os.environ.get("HKGV_SKIP_LANDSD"):
+        print(f"  LandsD 座級（串接名 fallback）：{len(todo2)} 個待查，HKGV_SKIP_LANDSD=1 → 跳過", flush=True)
+    elif todo2:
         combos = sorted(todo2)
         print(f"  LandsD 座級（串接名 fallback）：{len(combos)} 個待查…", flush=True)
         for i in range(0, len(combos), 25):
@@ -418,7 +420,12 @@ def ensure_block_coords(data):
         BATCH = 20
         batches = [todo[i:i+BATCH] for i in range(0, len(todo), BATCH)]
         print(f"  OSM 座級座標：{len(todo)} 個屋邨待查，分 {len(batches)} 批…", flush=True)
+        consec_fail = 0          # 熔斷：連續 3 批失敗即判定 Overpass 不可達，跳過其餘批次（免 34 批 × 2 分鐘空等）
         for bi, batch in enumerate(batches, 1):
+            if consec_fail >= 3:
+                print(f"  OSM 座級座標：連續 {consec_fail} 批失敗，判定端點不可達 → 跳過餘下 "
+                      f"{len(batches) - bi + 1} 批（LandsD 官方座標已覆蓋大部分座別）", flush=True)
+                break
             clauses = ";".join(f'way["building"]["name"](around:400,{e["lat"]},{e["lng"]});'
                                for e in batch)
             q = f"[out:json][timeout:90];({clauses});out center tags;"
@@ -440,6 +447,7 @@ def ensure_block_coords(data):
                         time.sleep(4 * (attempt + 1))
                     else:
                         print(f"  OSM 批 {bi}/{len(batches)} FAIL {type(ex).__name__}，該批下次重試", flush=True)
+            consec_fail = 0 if named else consec_fail + 1
             if named:
                 for e in batch:
                     key = e["source"] + "|" + e["name_tc"]
@@ -593,7 +601,19 @@ payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
 assert "__DATA__" not in payload, "data payload contains placeholder token"
 assert "</script" not in payload.lower(), "data payload contains script-breaking sequence"
 
-html = tpl.replace("__DATA__", payload)
+# ☔ 有蓋步行網絡圖層（路政署 2,116 個構築物中心點；只傳顯示所需欄位）
+cov_path = os.path.join(BASE, "data", "normalized", "covered_network.json")
+covered = []
+if os.path.exists(cov_path):
+    with open(cov_path, encoding="utf-8") as f:
+        covered = json.load(f)
+cov_payload = json.dumps(
+    [{"t": c["type"], "n": c.get("str_no") or "", "l": c["length_m"],
+      "la": round(c["lat"], 5), "lo": round(c["lng"], 5)} for c in covered],
+    ensure_ascii=False, separators=(",", ":"))
+assert "</script" not in cov_payload.lower(), "covered payload contains script-breaking sequence"
+
+html = tpl.replace("__DATA__", payload).replace("__COVERED__", cov_payload)
 with open(OUT, "w", encoding="utf-8") as f:
     f.write(html)
 

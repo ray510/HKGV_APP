@@ -519,9 +519,9 @@
 
   <table>
     <tr><th style="width:16%">組</th><th style="width:44%">數據集（rcd id｜WFS 實測）</th><th>點用</th></tr>
-    <tr><td><b>① 有蓋步行網絡三件套</b>（路政署）</td>
-      <td><b>行人天橋 1,199</b>（<code>hyd_rcd_1632360512481_74705</code>）＋<b>行人隧道 573</b>（<code>…_1632360845029_59241</code>）＋<b>行人通道上蓋 344</b>（<code>…_1632360364210_72608</code>）＝<b>2,116 個立體行人設施</b></td>
-      <td>「有蓋／無障礙步行網絡密度」新評分素材——465,892 段 3D 行人路網之外嘅<b>立體層</b>；雨天/酷熱出行韌性故事</td></tr>
+    <tr><td><b>① 有蓋步行網絡三件套</b>（路政署）<br><span style="color:#0f7a6a;font-weight:600">✅ 已落地 v4.2</span></td>
+      <td><b>行人天橋 1,199</b>（<code>hyd_rcd_1632360512481_74705</code>）＋<b>行人隧道 573</b>（<code>…_1632360845029_59241</code>）＋<b>行人通道上蓋 344</b>（<code>…_1632360364210_72608</code>）＝<b>2,116 個立體行人設施</b>（實測總長 <b>320.4 km</b>）</td>
+      <td>「有蓋／無障礙步行網絡密度」新評分素材——465,892 段 3D 行人路網之外嘅<b>立體層</b>；已成為評分<b>第七維</b>＋第 5 個 Persona「☔ 全天候出行」（見下方 ⑬d）</td></tr>
     <tr><td><b>② 極端天氣風險</b></td>
       <td>水浸黑點 4（<code>dsd_rcd_1728891975004_392</code>）＋<b>香港暑熱指數 10 站</b>（<code>hko_rcd_1787711252202_42844</code>）＋山泥傾瀉歷史位置 <b>113,166</b>（1924-2022，<code>cedd_rcd_1636520697377_96152</code>）</td>
       <td>HKHI 升級酷熱聯動（而家只用氣溫/雨量，暑熱指數更科學）；水浸黑點做 ❄️🏠 天氣 banner 對稱位；山泥歷史做斜坡背景</td></tr>
@@ -555,6 +555,28 @@
   <div class="note">⚠️ 如實聲明位：私人樓／村屋<b>冇單位級公開數據</b>（私隱），升降機覆蓋／平均面積／樓層呢啲欄位只對公屋簡屋有效——
     前端按 source_type 條件顯示，唔好硬補估算。普查屋苑統計係 2021 時點。居屋「補地價」狀態唔喺數據內。</div>
 
+  <h2 class="sec"><span class="tag">⑬d</span>★ ① 由候選到落地：有蓋步行網絡（v4.2，2026-10-30 實作）</h2>
+  <p class="lead">⑬c 最大遺珠已全鏈落地：<b>2,116 個構築物</b>（天橋 1,199／隧道 573／上蓋 344，MultiPolygon 足印，WGS84）
+    實測總長 <b>320.4 km</b>、切出 <b>70,391 段</b>；以段級網格索引（0.004° ≈ 440m）算點到線段距離，
+    為 1,422 個錨點各計「500m 內有蓋網絡總長＋最近構築物距離」→ 成為生活圈評分<b>第七維</b>。</p>
+
+  <table>
+    <tr><th style="width:18%">環節</th><th>實作</th></tr>
+    <tr><td>抓取</td><td><code>covered_network.py</code>：file-api geojson（<code>STR_FB</code>／<code>STR_SUBWAY</code>／<code>STR_WALKWAY</code>）→ 快取 <code>data/raw/hyd_*.json</code>；失敗自動 fallback FeatureServer</td></tr>
+    <tr><td>幾何</td><td>段級網格索引＋點到線段距離（局部等距投影）；500m 內按<b>段中點</b>累計長度——避免長天橋（最長 635m）用 centroid 造成偏差</td></tr>
+    <tr><td>每邨輸出</td><td><code>nearest_covered</code>（類型／STR_NO／距離）、<code>covered_500m</code>（段數／總長／橋隧蓋分項）、<code>sub_scores.covered</code></td></tr>
+    <tr><td>評分公式</td><td>covered ＝ 45% 最近距離（≤60m 滿分，half-life 220m）＋ 55% 500m 密度（2,000m 滿分，按實測 p85 定）</td></tr>
+    <tr><td>鑑別度</td><td>min 2.2／p25 13.8／<b>中位 47.7</b>／p75 77.5／p90 92.8／max 100（54 個滿分＝3.8%，冇並列爆表）</td></tr>
+    <tr><td>前端</td><td>新 pill「☔ 500m 有蓋 X m／N 段」＋比較表兩行＋地圖右上「☔ 有蓋網絡」圖層（2,116 點）＋<b>第 5 個 Persona「☔ 全天候出行」</b>（有蓋 30%／港鐵 25%／升降機 20%／長者 15%／小學 5%／託管 5%）</td></tr>
+    <tr><td>順手修 bug</td><td>接入第七維時發現前端 <code>calcScore</code> 用 <code>s[k]</code> 直取維度分，但管線欄名係 <code>childcare</code>／<code>covered</code>——「幼兒中心」維度一直顯示 N/A（5% 權重被靜默丟棄）。已改為顯式 <code>SUB_KEY</code> 映射，同時修正舊有 cc 與新增 cov</td></tr>
+    <tr><td>常識驗收</td><td>天耀一邨 100（500m 17 段 3,223m）／瀝源邨 100（15 段 2,063m）／彩虹邨 99.7／沙田第一城 38.0／金坪邨 2.2（大嶼山無天橋）</td></tr>
+  </table>
+
+  <div class="note"><b>如實聲明（重要）</b>：呢個係「<b>立體有蓋資源密度</b>」指標，<b>唔係點對點有蓋路徑證明</b>——500m 內有 3km 天橋，
+    唔代表由屋邨行到車站全程有蓋。開發期間試過「往最近港鐵嘅直線走廊取樣」計有蓋覆蓋率（781 邨，中位僅 <b>15.4%</b>），
+    因直線穿樓宇而非真實步行線而<b>棄用</b>（<code>mtr_corridor</code> 只留診斷欄位，唔入評分、唔顯示）。
+    真正點對點有蓋路徑要用 465,892 段 3D 路網做圖論連通分析，屬賽後擴展。</div>
+
   <div class="note">
     ⚠️ 使用注意（同項目已知限制一致）：CSDI 服務單次查詢上限 5,000 條；官方偶有欄位改名（2026-10 例子），
     抓取器保留動態鍵名解析；全部分類／部門統計以 2026-10-29 實測快照為準（<code>data/csdi_catalog.json</code>；
@@ -568,6 +590,7 @@
   REA 逆向＋全量 XML：csdi_portal_analysis ⑩、rea_analysis/（grab_all.py + 證據包）、data/csdi_catalog_full.json + csdi_metadata_xml.zip｜
   第⑬b節：rea_analysis/housing_sweep.py + verify_housing_wfs.py（WFS resultType=hits 實測）｜
   第⑬c節：rea_analysis/coverage_audit.py（479 條未掃剩量覆蓋審計）｜
+  第⑬d節：covered_network.py（路政署 2,116 個有蓋構築物／320.4 km 落地為第七維）｜
   《屋邨智配・3D 無障礙生活圈》CSDI Awards 2026 調研產物
 </footer>
 </body>

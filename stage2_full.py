@@ -962,6 +962,13 @@ def main():
             ae["distance_m"] if ae else None,
             e["elevator_units"], e["total_units"])
         e["density_800m"] = {"schools": sn, "cares": cn, "childcare": ccn}
+    # ⑬c ① 有蓋步行網絡（路政署天橋 1,199／隧道 573／通道上蓋 344）：掛上第七維 covered
+    # 注意：呢步要喺 nearest_mtr 定稿之後行（雖然 covered 唔用港鐵距離，但 mtr_corridor 診斷欄要用）
+    try:
+        import covered_network
+        covered_network.attach(all_est, verbose=True)
+    except Exception as ex:
+        print(f"⚠️ 有蓋步行網絡計算失敗（{type(ex).__name__}: {ex}），covered 維度留空", flush=True)
     all_est.sort(key=lambda x: (-x["score"], -(x["total_units"] or 0)))
 
     dst = os.path.join(NORM, "all_estates_enriched.json")

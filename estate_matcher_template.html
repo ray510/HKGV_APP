@@ -141,6 +141,9 @@
   .footer-note{font-size:10.5px;color:var(--muted);line-height:1.5;margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
   .legend{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.7}
   .legend .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .covCtl{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:11.5px;box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:pointer;user-select:none}
+  .covCtl label{cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .covCtl .k{display:inline-block;width:7px;height:7px;border-radius:50%}
 </style>
 </head>
 <body>
@@ -175,6 +178,7 @@
         <button data-p="family" class="on">👨‍👩‍👧 育兒家庭</button>
         <button data-p="elder">👵 長者安居</button>
         <button data-p="commute">🚇 極速通勤</button>
+        <button data-p="weather">☔ 全天候出行</button>
         <button data-p="balanced">⚖️ 均衡社區</button>
       </div>
       <div class="hint" id="profileHint"></div>
@@ -296,6 +300,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const DATA = __DATA__;
+const COVERED = __COVERED__;   // 路政署有蓋構築物（t=類型 n=編號 l=長度 la/lo=中心）
 
 const API = "https://mapapi.hkmapservice.gov.hk/PedRoute/NAServer/route/solve";
 let mode = 2;
@@ -337,39 +342,38 @@ function subs(e){
     elderly_shelter: Math.round((0.3*smoothScore(dist2(e,"eld"),200,1000)
       + 0.4*smoothScore(dist2(e,"shel"),200,1000)
       + 0.3*smoothScore(dist2(e,"hosp"),300,1500))*10)/10,
-    elevator: t ? Math.round((e.elevator_units||0)/t*1000)/10 : 100
+    elevator: t ? Math.round((e.elevator_units||0)/t*1000)/10 : 100,
+    covered: null
   };
 }
-// 4 個 Persona 權重矩陣（港鐵／小學／託管／長者會堂／升降機），對應建議書 §5
+// 5 個 Persona 權重矩陣（港鐵／小學／託管／長者會堂／升降機／有蓋網絡），對應建議書 §5
 const WEIGHTS = {
-  family:  {mtr:.35, school:.25, care:.10, cc:.05, elder:.10, elev:.15, label:"育兒家庭",
+  family:  {mtr:.35, school:.25, care:.10, cc:.05, elder:.10, elev:.15, cov:0, label:"育兒家庭",
             hint:"港鐵 35% ＋ 小學 25%（含 800m 幼稚園密度）＋ 託管 10% ＋ 幼兒中心 5% ＋ 長者/會堂 10% ＋ 升降機 15%"},
-  elder:   {mtr:.25, school:0,   care:0,   cc:0,  elder:.30, elev:.45, label:"長者安居",
+  elder:   {mtr:.25, school:0,   care:0,   cc:0,  elder:.30, elev:.45, cov:0, label:"長者安居",
             hint:"升降機 45% ＋ 長者中心/避暑會堂/急症醫院 30% ＋ 港鐵 25%"},
-  commute: {mtr:.75, school:0,   care:0,   cc:0,  elder:0,   elev:.25, label:"極速通勤",
+  commute: {mtr:.75, school:0,   care:0,   cc:0,  elder:0,   elev:.25, cov:0, label:"極速通勤",
             hint:"港鐵 75% ＋ 升降機 25%"},
-  balanced:{mtr:.20, school:.20, care:.15, cc:.05, elder:.20, elev:.20, label:"全齡均衡",
+  weather: {mtr:.25, school:.05, care:.05, cc:0,  elder:.15, elev:.20, cov:.30, label:"全天候出行",
+            hint:"有蓋步行網絡 30% ＋ 港鐵 25% ＋ 升降機 20% ＋ 長者/會堂 15% ＋ 小學 5% ＋ 託管 5%（雨季／酷熱天由屋邨行到車站有幾多程有蓋）"},
+  balanced:{mtr:.20, school:.20, care:.15, cc:.05, elder:.20, elev:.20, cov:0, label:"全齡均衡",
             hint:"六維均衡（港鐵／小學／託管／幼兒中心／長者會堂／升降機）"}
 };
-const DIM_LABEL = {mtr:"🚇 港鐵", school:"🏫 小學", care:"👶 託管", cc:"👶 幼兒中心", elder:"👵 長者/會堂", elev:"🛗 升降機"};
-const DIM_COLOR = {mtr:"#0b6e99", school:"#0f9d8a", care:"#7c3aed", cc:"#db2777", elder:"#0d9488", elev:"#b45309"};
+const DIM_LABEL = {mtr:"🚇 港鐵", school:"🏫 小學", care:"👶 託管", cc:"👶 幼兒中心", elder:"👵 長者/會堂", elev:"🛗 升降機", cov:"☔ 有蓋步行"};
+const DIM_COLOR = {mtr:"#0b6e99", school:"#0f9d8a", care:"#7c3aed", cc:"#db2777", elder:"#0d9488", elev:"#b45309", cov:"#0369a1"};
+const DIM_ORDER = ["mtr","school","care","cc","elder","elev","cov"];
+// 維度 key → sub_scores 欄名（cc／cov 喺管線叫 childcare／covered，唔可以直接 s[k]）
+const SUB_KEY = {mtr:"mtr", school:"school", care:"care", cc:"childcare",
+                 elder:"elderly_shelter", elev:"elevator", cov:"covered"};
 function calcScore(e, p = profile){
   const w = WEIGHTS[p], s = subs(e);
-  const hasElev = s.elevator != null;
-  let total;
-  if (hasElev){
-    total = Math.round((w.mtr*s.mtr + w.school*s.school + w.care*s.care
-      + (w.cc||0)*s.childcare + w.elder*s.elderly_shelter + w.elev*s.elevator)*10)/10;
-  } else {
-    // 居屋／私人／村屋：升降機 N/A → 其餘維度重歸一化
-    const base = w.mtr*s.mtr + w.school*s.school + w.care*s.care + (w.cc||0)*s.childcare + w.elder*s.elderly_shelter;
-    const wsum = w.mtr + w.school + w.care + (w.cc||0) + w.elder;
-    total = Math.round((base / wsum)*10)/10;
-  }
-  const parts = ["mtr","school","care","cc","elder","elev"]
-    .map(k => ({k, label: DIM_LABEL[k],
-      sub: k === "elev" ? s.elevator : (k === "elder" ? s.elderly_shelter : s[k]), w: w[k]}))
-    .filter(p => p.w > 0);
+  // 通用處理：權重 >0 嘅維度先入表；N/A 維度（升降機／有蓋網絡冇座標）剔除後按剩餘權重歸一化
+  const parts = DIM_ORDER.map(k => ({k, label: DIM_LABEL[k],
+      sub: s[SUB_KEY[k]], w: w[k] || 0}))
+    .filter(x => x.w > 0);
+  const act = parts.filter(x => x.sub != null);
+  const wsum = act.reduce((a, x) => a + x.w, 0);
+  const total = wsum ? Math.round(act.reduce((a, x) => a + x.w * x.sub, 0) / wsum * 10) / 10 : 0;
   return {total, parts};
 }
 const scoreOf = e => calcScore(e).total;
@@ -387,7 +391,7 @@ DATA.forEach(e => { const k = e.source_type || e.source; stCounts[k] = (stCounts
 const nUnits = DATA.reduce((a,e)=>a+(e.total_units||0),0);
 const stSummary = Object.entries(ST_NAME).filter(([k])=>stCounts[k]).map(([k])=>`${ST_NAME[k]} ${stCounts[k]}`).join("＋");
 document.getElementById("statbar").innerHTML =
-  `<b>${DATA.length}</b> 個屋邨／項目（${stSummary}）· 公屋簡屋合共 <b>${nUnits.toLocaleString()}</b> 個單位<br>數據：房屋局・房委會・統計處・教育局・社署・地政總署・機電署`;
+  `<b>${DATA.length}</b> 個屋邨／項目（${stSummary}）· 公屋簡屋合共 <b>${nUnits.toLocaleString()}</b> 個單位<br>數據：房屋局・房委會・統計處・教育局・社署・地政總署・機電署・路政署`;
 
 // 地圖 popup 共用：單位數只對有數據類型顯示；居屋顯示落成年份、私人顯示普查人口
 function popupHtml(e, withProfile){
@@ -432,6 +436,35 @@ legend.onAdd = () => {
   return div;
 };
 legend.addTo(map);
+
+// ---- ☔ 有蓋步行網絡圖層（路政署 2,116 個構築物；預設關閉，避免遮蓋屋邨錨點）----
+const COV_COLOR = {FB: "#0369a1", SUBWAY: "#7c3aed", WALKWAY: "#0d9488"};
+const COV_NAME = {FB: "行人天橋", SUBWAY: "行人隧道", WALKWAY: "行人通道上蓋"};
+const covLayer = L.layerGroup();
+let covDrawn = false;
+function drawCoveredLayer(){
+  if (covDrawn) return;
+  COVERED.forEach(c => {
+    L.circleMarker([c.la, c.lo], {radius: 2.6, weight: 0, fillOpacity: .7,
+      fillColor: COV_COLOR[c.t] || "#6b7280"})
+      .bindPopup(`<b>${COV_NAME[c.t] || c.t}</b> ${c.n || ""}<br>長 ${c.l} m（路政署）`)
+      .addTo(covLayer);
+  });
+  covDrawn = true;
+}
+const covCtl = L.control({position: "topright"});
+covCtl.onAdd = () => {
+  const d = L.DomUtil.create("div", "covCtl");
+  d.innerHTML = `<label title="路政署行人天橋／隧道／通道上蓋 2,116 個（藍＝天橋・紫＝隧道・綠＝上蓋）"><input type="checkbox" id="covToggle"> ☔ 有蓋網絡 <span class="k" style="background:${COV_COLOR.FB}"></span><span class="k" style="background:${COV_COLOR.SUBWAY}"></span><span class="k" style="background:${COV_COLOR.WALKWAY}"></span></label>`;
+  L.DomEvent.disableClickPropagation(d);
+  L.DomEvent.disableScrollPropagation(d);
+  return d;
+};
+covCtl.addTo(map);
+document.getElementById("covToggle").onchange = ev => {
+  if (ev.target.checked){ drawCoveredLayer(); covLayer.addTo(map); }
+  else map.removeLayer(covLayer);
+};
 
 // ---- 地區下拉 ----
 [...new Set(DATA.map(e => e.district_tc).filter(Boolean))].sort().forEach(d => {
@@ -479,7 +512,7 @@ function render(){
     const c = scoreColor(pr.total);
     const brk = pr.parts.filter(p => p.sub != null).map(p =>
       `<div>${p.label} ${p.sub} 分 × ${(p.w*100).toFixed(0)}%</div><div class="bar"><i style="width:${Math.round(p.sub)}%;background:${DIM_COLOR[p.k]}"></i></div>`).join("") +
-      pr.parts.filter(p => p.sub == null).map(p => `<div>${p.label} N/A（${e.source_type === "HOS" ? "居屋" : e.source_type === "PRV" ? "私人" : "村屋"}冇單位級數據）</div>`).join("");
+      pr.parts.filter(p => p.sub == null).map(p => `<div>${p.label} N/A（${p.k === "elev" ? (e.source_type === "HOS" ? "居屋" : e.source_type === "PRV" ? "私人" : "村屋") + "冇單位級數據" : "冇座標／未計算"}）</div>`).join("");
     const addCmpBtn = `<button class="addCmp ${compareSet.includes(e._key)?"on":""}" data-c="${e._key}">${compareSet.includes(e._key)?"✓ 已加入比較":"＋ 加入比較"}</button>`;
     const nBlk = (e.blocks||[]).length;
     const blkBtn = nBlk ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
@@ -527,6 +560,8 @@ function render(){
       </div>` : (e.lat == null ? `<div class="row"><span class="pill noc">暫無座標，未能規劃路線</span></div>` : "")}
       <div class="row">
         ${m ? `<span class="pill">🚇 ${m.zh} ${m.distance_m}m</span>` : ""}
+        ${e.nearest_covered ? `<span class="pill">☔ ${e.nearest_covered.type} ${e.nearest_covered.distance_m}m</span>` : ""}
+        ${e.covered_500m && e.covered_500m.length_m ? `<span class="pill ${e.sub_scores?.covered >= 70 ? "good" : (e.sub_scores?.covered != null && e.sub_scores.covered < 35 ? "noc" : "")}" title="500m 內行人天橋／隧道／通道上蓋總長度（路政署）">☔ 500m 有蓋 ${e.covered_500m.length_m}m／${e.covered_500m.count} 段</span>` : ""}
         ${e.nearest_elderly ? `<span class="pill">👵 長者中心 ${e.nearest_elderly.distance_m}m</span>` : ""}
         ${e.nearest_shelter ? `<span class="pill">🌡️ 會堂 ${e.nearest_shelter.distance_m}m${e.nearest_shelter.heat_shelter ? "（避暑）" : ""}</span>` : ""}
         ${e.nearest_cold_shelter ? `<span class="pill">❄️ 避寒 ${e.nearest_cold_shelter.distance_m}m</span>` : ""}
@@ -1114,6 +1149,10 @@ document.getElementById("cmpOpen").onclick = () => {
       return parts.length ? parts.join("｜") : "N/A"; }) +
     row(`生活圈評分（${pr.label}）`, fmtScore) +
     row("最近港鐵", e => e.nearest_mtr ? `${e.nearest_mtr.zh}<div class="mini">${fmtD(e.nearest_mtr.distance_m)}</div>` : "-") +
+    row("有蓋步行網絡（500m 內）", e => e.covered_500m
+      ? `${e.covered_500m.length_m} m<div class="mini">${e.covered_500m.count} 段｜天橋 ${e.covered_500m.fb}・隧道 ${e.covered_500m.subway}・上蓋 ${e.covered_500m.walkway}</div>` : "N/A") +
+    row("最近有蓋設施", e => e.nearest_covered
+      ? `${e.nearest_covered.type}<div class="mini">${fmtD(e.nearest_covered.distance_m)}</div>` : "-") +
     row("最近小學", e => e.nearest_school ? `${e.nearest_school.zh}<div class="mini">${fmtD(e.nearest_school.distance_m)}</div>` : "-") +
     row("最近託管點", e => e.nearest_care ? `${e.nearest_care.zh}<div class="mini">${fmtD(e.nearest_care.distance_m)}</div>` : "-") +
     row("最近長者中心", e => e.nearest_elderly ? `${e.nearest_elderly.zh}<div class="mini">${fmtD(e.nearest_elderly.distance_m)}</div>` : "-") +
