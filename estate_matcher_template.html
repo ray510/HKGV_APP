@@ -36,7 +36,8 @@
   .modes{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
   .modes button{flex:1 1 45%;padding:7px 6px;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer}
   .modes button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;transition:box-shadow .3s}
+  .card.hl{box-shadow:0 0 0 3px #0b6e99}
   .card h3{margin:0;font-size:14.5px;display:flex;align-items:center;gap:7px}
   .badge{flex:none;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;letter-spacing:.5px}
   .badge.prh{background:#e3eff7;color:#0b6e99}
@@ -94,6 +95,10 @@
   .blkGo{border:0;background:var(--accent);color:#fff;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer}
   .dchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
   .dchip{flex:1 1 auto;padding:6px 8px;font-size:11.5px;border:1px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;color:#374151;white-space:nowrap}
+  .pkRow{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+  .pkRow button{padding:4px 8px;font-size:11.5px;border-radius:6px;border:1px solid var(--line);background:#f0f7fb;color:var(--accent);cursor:pointer}
+  .pkRow button:hover{background:#e2eff8}
+  .pkRow .pkView{background:#f9fafb;color:#4b5563}
   .dchip:hover{border-color:var(--accent);color:var(--accent)}
   .dchip:disabled{opacity:.5;cursor:wait}
   .go.chain{background:linear-gradient(90deg,#b45309,#d97706);font-size:12px}
@@ -401,9 +406,16 @@ function popupHtml(e, withProfile){
     : e.source_type === "PRV" ? (e.census_pop ? `｜人口 ${e.census_pop.toLocaleString()}（2021 普查）` : "｜私人屋苑")
     : e.source_type === "VLG" ? "｜鄉村（村級錨點）" : "";
   const mm = e.nearest_mtr;
+  const hasMtr = mm && e.lat != null;
+  const hasSch = e.nearest_school && e.lat != null;
   return `<b>${e.name_tc}</b>${stn ? `（${stn}）` : ""}<br>` +
     `${e.district_tc || "-"}${units}｜生活圈${withProfile ? `（${WEIGHTS[profile].label}）` : ""} <b>${withProfile ? scoreOf(e) : e.score}</b> 分<br>` +
-    (mm ? `最近港鐵：${mm.zh} 約 ${mm.distance_m} 米` : "暫無港鐵數據");
+    (mm ? `最近港鐵：${mm.zh} 約 ${mm.distance_m} 米` : "暫無港鐵數據") +
+    `<div class="pkRow">` +
+    (hasMtr ? `<button class="pkGo" data-k="${e._key}" data-d="mtr">🚇 3D 路線</button>` : "") +
+    (hasSch ? `<button class="pkGo" data-k="${e._key}" data-d="sch">🏫 小學</button>` : "") +
+    (e.nearest_elderly ? `<button class="pkGo" data-k="${e._key}" data-d="eld">👵 長者</button>` : "") +
+    `<button class="pkView" data-k="${e._key}">📋 詳情</button></div>`;
 }
 
 // ---- 地圖 ----
@@ -420,10 +432,13 @@ const markers = {};
 DATA.forEach(e => {
   if (e.lat == null) return;
   const c = scoreColor(e.score);
-  markers[e._key] = L.circleMarker([e.lat, e.lng], {
+  const mk = L.circleMarker([e.lat, e.lng], {
     radius: 5 + Math.min(9, (e.total_units||0)/1800),
     color: c, fillColor: c, fillOpacity: .7, weight: 2
   }).addTo(map).bindPopup(popupHtml(e, false));
+  // 直接喺地圖點屋邨圓點 → 即刻規劃去最近港鐵（唔使落卡片搵掣）
+  mk.on("click", () => { if (e.lat != null && e.nearest_mtr) planRoute(e._key, "mtr"); });
+  markers[e._key] = mk;
 });
 
 const legend = L.control({position: "bottomright"});
@@ -432,7 +447,8 @@ legend.onAdd = () => {
   div.innerHTML = `<span class="dot" style="background:#0f9d8a"></span>生活圈 ≥ 80 分<br>` +
                   `<span class="dot" style="background:#0b6e99"></span>60–79 分<br>` +
                   `<span class="dot" style="background:#b45309"></span>&lt; 60 分<br>` +
-                  `<span style="color:#6b7280">圓點大小＝單位數</span>`;
+                  `<span style="color:#6b7280">圓點大小＝單位數</span><br>` +
+                  `<span style="color:#0b6e99">👆 撳圓點＝即時規劃 3D 路線</span>`;
   return div;
 };
 legend.addTo(map);
@@ -515,8 +531,9 @@ function render(){
       pr.parts.filter(p => p.sub == null).map(p => `<div>${p.label} N/A（${p.k === "elev" ? (e.source_type === "HOS" ? "居屋" : e.source_type === "PRV" ? "私人" : "村屋") + "冇單位級數據" : "冇座標／未計算"}）</div>`).join("");
     const addCmpBtn = `<button class="addCmp ${compareSet.includes(e._key)?"on":""}" data-c="${e._key}">${compareSet.includes(e._key)?"✓ 已加入比較":"＋ 加入比較"}</button>`;
     const nBlk = (e.blocks||[]).length;
-    const blkBtn = nBlk ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
-    const el = document.createElement("div"); el.className = "card";
+    const pseudoOnly = nBlk === 1 && /第.+座\s*至\s*第.+座/.test((e.blocks[0].n||""));
+    const blkBtn = (nBlk && !pseudoOnly) ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
+    const el = document.createElement("div"); el.className = "card"; el.id = "card-" + e._key;
     const dests = ["mtr","sch","care","cc","eld","shel","kg","pg","hosp","pier","cold","lib"].filter(d => e.lat != null && DEST[d].pool(e).length);
     const routeBtns = dests.length
       ? `<div class="dchips">` + dests.map(d => {
@@ -640,7 +657,9 @@ function toggleBlocks(key, btn){
     : ["座", "樓高", "路線"];
   const rows = (e.blocks || []).map(b => {
     const coord = b.lat != null;
-    const hgt = (b.s != null ? `${b.s} 層` : "—") + (b.h != null ? `／${b.h}m` : "");
+    const hgt = b.s != null
+      ? `${b.s} 層${b.h != null ? `／${b.h}m` : ""}`
+      : (b.h != null ? `${b.h}m` : "—");
     const tds = [`<td>${b.n}</td>`];
     if (isUnitLevel){
       const hasU = b.u != null;
@@ -658,12 +677,14 @@ function toggleBlocks(key, btn){
     return `<tr>${tds.join("")}</tr>`;
   }).join("");
   const head = COLS.map(c => `<th>${c}</th>`).join("");
-  const blkNote = isUnitLevel
+  const srcNote = e.blocks_source === "LandsD"
+    ? "座名／樓高由地政總署「建築物」名稱比對自動補完；" : "";
+  const blkNote = srcNote + (isUnitLevel
     ? `「—」＝該座冇公開數據（如實 N/A）；有𨋢 %＝該座有升降機服務嘅單位比例；EMSD＝機電署註冊升降機部數；樓高／座級位置來自地政總署「建築物」多邊形。`
     : (e.source_type === "HOS"
         ? `居屋：房委會只公佈<b>屋苑級</b>數字（總單位數 ${(e.total_units || 0).toLocaleString()}、實用面積 ${e.hos_area_range || "—"} m²），冇逐座單位／升降機／樓層／面積——所以只列「樓高」同「路線」。`
         : `私人屋苑：無公開逐座單位／升降機數據；座名同樓高來自地政總署「建築物」多邊形。`) +
-      ` 樓高＝層數／米（地政總署）。`;
+      ` 樓高＝層數／米（地政總署）。`);
   boxEl.innerHTML = `<table class="blkT"><tr>${head}</tr>${rows}</table>` +
     `<div class="hint">${blkNote}</div>`;
   boxEl.style.display = "block";
@@ -676,14 +697,18 @@ function toggleBlocks(key, btn){
   const pts = (e.blocks||[]).filter(b => b.lat != null);
   if (pts.length){
     blkLayers[key] = L.layerGroup(pts.map(b => {
-      const full = b.u && b.e >= b.u;
-      return L.circleMarker([b.lat, b.lng], {radius: 6, color: full ? "#0f9d8a" : "#b45309",
+      // 冇單位級數據（居屋／私人）→ 藍色，避免誤用「部分有𨋢」橙色
+      const col = b.u == null ? "#0369a1" : (b.e >= b.u ? "#0f9d8a" : "#b45309");
+      const mk = L.circleMarker([b.lat, b.lng], {radius: 6, color: col, fillColor: col,
         fillOpacity: .85, weight: 2})
         .bindPopup(`<b>${e.name_tc} ${b.n}</b><br>` +
           (b.u ? `${b.u} 個單位｜有𨋢 ${b.e}/${b.u}（${Math.round(b.e / b.u * 100)}%）<br>` : "") +
           (b.f1 != null ? `樓層 ${b.f1}–${b.f2}<br>` : "") +
           (b.s != null ? `樓高 ${b.s} 層${b.h != null ? "／" + b.h + "m" : ""}` : "") +
-          (b.u == null && b.f1 == null && b.s == null ? "暫無座級公開數據" : ""));
+          (b.u == null && b.f1 == null && b.s == null ? "暫無座級公開數據" : "") +
+          `<div class="pkRow"><button class="blkGoPk">🚇 由呢座出發</button></div>`);
+      mk.on("click", () => planRoute(key, "mtr", {lat: b.lat, lng: b.lng, label: b.n}));
+      return mk;
     })).addTo(map);
     map.fitBounds(L.featureGroup(pts.map(b => [b.lat, b.lng])).getBounds().pad(.3), {maxZoom: 17});
   }
@@ -1199,8 +1224,23 @@ document.getElementById("cmpOpen").onclick = () => {
   document.getElementById("cmpPrintProfile").textContent = pr.label;
   document.getElementById("cmpModal").style.display = "flex";
 };
-document.getElementById("cmpClear").onclick = () => { compareSet.length = 0; render(); };
-document.getElementById("cmpClose").onclick = () => document.getElementById("cmpModal").style.display = "none";
+// ---- 地圖 popup 快速動作：🚇/🏫/👵 一撳即規劃；📋 跳去該邨卡片 ----
+document.addEventListener("click", ev => {
+  const t = ev.target;
+  const go = t.closest && t.closest(".pkGo");
+  if (go){ planRoute(go.dataset.k, go.dataset.d); return; }
+  const vw = t.closest && t.closest(".pkView");
+  if (vw){
+    const card = document.getElementById("card-" + vw.dataset.k);
+    if (card){
+      card.scrollIntoView({behavior: "smooth", block: "center"});
+      card.classList.add("hl");
+      setTimeout(() => card.classList.remove("hl"), 1800);
+    }
+    map.closePopup();
+  }
+});
+document.getElementById("cmpClear").onclick = () => { compareSet.length = 0; render(); };document.getElementById("cmpClose").onclick = () => document.getElementById("cmpModal").style.display = "none";
 document.getElementById("cmpModal").addEventListener("click", ev => { if (ev.target.id === "cmpModal") ev.target.style.display = "none"; });
 document.getElementById("cmpPrint").onclick = () => window.print();
 

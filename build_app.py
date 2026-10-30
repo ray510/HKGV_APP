@@ -88,6 +88,171 @@ def smooth_score(d, d0, hl):
     return round(max(5.0, 100.0 * math.exp(-math.log(2) / hl * (d - d0))), 1)
 
 
+BACKFILL_CACHE = os.path.join(BASE, "data", "normalized", "block_backfill.json")
+NON_RESIDENTIAL = ("會所", "商場", "停車場", "車場", "幼稚園", "學校", "中學", "小學", "教堂", "診所",
+                   "辦事處", "管理處", "警署", "警崗", "消防", "變電", "變壓", "泵房", "垃圾", "涼亭",
+                   "通道", "平台", "閘", "泳池", "球場", "街市", "街坊", "公園", "廁", "郵局",
+                   "安老院", "護理", "幼兒", "教會", "禮拜堂", "廟", "酒店", "銀行", "油站", "巴士",
+                   "俱樂部", "車站", "服務中心", "發展中心", "社區中心", "文娛", "耆康", "福利", "新城")
+NON_RESIDENTIAL_EN = ("SCHOOL", "KINDERGARTEN", "COLLEGE", "UNIVERSITY", "CHURCH", "HOTEL",
+                      "MALL", "CLUBHOUSE", "CLUB HOUSE", "CAR PARK", "SUBSTATION", "TEMPLE",
+                      "HOSPITAL", "CLINIC", "LIBRARY", "THEATRE")
+
+
+def _is_residential_name(n):
+    """過濾座別名單內嘅非住宅建築（普查 bbox 會連學校／變電站／商場一齊抓返嚟）。"""
+    if not n:
+        return False
+    s = n.strip()
+    if re.fullmatch(r"[\(（].*[\)）]", s):              # "(BRO)" 呢類佔位名
+        return False
+    if len(s) <= 2 and not re.search(r"[座閣樓苑]", s):  # 單字／「二期」碎片
+        return False
+    u = s.upper()
+    if any(k in s for k in NON_RESIDENTIAL) or any(k in u for k in NON_RESIDENTIAL_EN):
+        return False
+    if s.endswith(("站", "場", "房", "廠", "校")):
+        return False
+    return True
+
+
+FRAGMENT = re.compile(r"^(第?[一二三四五六七八九十0-9]+期?|[A-Za-z]|[0-9]+)$")
+
+
+def _clean_blocks(blocks, estate_name=""):
+    """再過濾：非住宅名＋由長名切出嚟嘅碎片（例：慈愛苑「一」「二期」）。"""
+    out = []
+    for b in blocks:
+        n = (b.get("n") or "").strip()
+        if not _is_residential_name(n):
+            continue
+        rest = n[len(estate_name):].strip() if estate_name and n.startswith(estate_name) else n
+        if FRAGMENT.match(rest):
+            continue
+        out.append(b)
+    return out
+
+
+def sanitize_block_heights(data):
+    """層高不合理（<2.2m 或 >6.5m）＝樓高配對錯（多邊形揀錯附屬體）→ 丟棄高度，只保留層數。"""
+    n = 0
+    for e in data:
+        for b in e.get("blocks", []):
+            s, h = b.get("s"), b.get("h")
+            if s and h and s > 3 and not (2.2 <= h / s <= 6.5):
+                b["h"] = None
+                n += 1
+    if n:
+        print(f"  樓高校正：{n} 座高度與層數唔匹配 → 只顯示層數（唔顯示可疑高度）", flush=True)
+CN_DIGIT = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+PSEUDO_BLOCK = re.compile(r"第\s*[一二三四五六七八九十0-9]+\s*座\s*至\s*第\s*[一二三四五六七八九十0-9]+\s*座")
+
+
+def _cn_num(s):
+    """『第七座』→7、『二十三座』→23；認唔到返 None（用嚟排座序）。"""
+    m = re.search(r"第\s*([一二三四五六七八九十]+)\s*(?:座|期|幢)", s)
+    if not m:
+        return None
+    t = m.group(1)
+    if "十" in t:
+        a, _, b = t.partition("十")
+        return (CN_DIGIT.get(a, 1) if a else 1) * 10 + (CN_DIGIT.get(b, 0) if b else 0)
+    return CN_DIGIT.get(t)
+
+
+def _block_sort_key(n):
+    v = _cn_num(n)
+    return (0, v, n) if v is not None else (1, 0, n)
+
+
+def _landsd_like(name, timeout=25):
+    """LandsD 建築物名稱模糊查（`LIKE '%名%'`），回傳同名樓宇全部多邊形。"""
+    qs = urllib.parse.urlencode({
+        "where": f"BuildingNameTC LIKE '%{name}%'",
+        "outFields": "BuildingNameTC,BuildingBlockType,Storeys,TopHeight",
+        "returnCentroid": "true", "returnGeometry": "false",
+        "outSR": "4326", "f": "json", "resultRecordCount": "80"})
+    req = urllib.request.Request(LANDSD_QUERY + "?" + qs,
+                                 headers={"User-Agent": "HKGV-prototype/1.0 (CSDI Awards 2026)"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        d = json.loads(r.read().decode("utf-8", "replace"))
+    out = []
+    for ft in d.get("features", []):
+        a = ft.get("attributes") or {}
+        c = ft.get("centroid") or {}
+        nm = (a.get("BuildingNameTC") or "").strip()
+        if not nm or c.get("x") is None:
+            continue
+        out.append({"n": nm, "lat": round(c["y"], 5), "lng": round(c["x"], 5),
+                    "t": a.get("BuildingBlockType") or "",
+                    "s": a.get("Storeys"), "h": a.get("TopHeight")})
+    return out
+
+
+def backfill_blocks(data):
+    """補座別（只補座名／座標／層數／樓高，唔會砌單位數）：
+    ① 居屋「第一座至第十座」呢類**範圍字串** → 用地政總署逐座名稱拆返真座名
+    ② 私人屋苑完全冇座別 → 用屋苑名 LIKE 查返附近 Tower
+    結果快取 block_backfill.json；網絡失敗唔記負快取，下次再試。"""
+    cache = {}
+    if os.path.exists(BACKFILL_CACHE):
+        with open(BACKFILL_CACHE, encoding="utf-8") as f:
+            cache = json.load(f)
+    targets = []
+    for e in data:
+        if e.get("lat") is None:
+            continue
+        bs = e.get("blocks") or []
+        if not bs and (e.get("source_type") == "PRV"):
+            targets.append((e, "prv"))
+        elif len(bs) == 1 and PSEUDO_BLOCK.search(bs[0].get("n") or ""):
+            targets.append((e, "pseudo"))
+    if not targets:
+        return
+    print(f"  座別補完：{len(targets)} 個屋苑（私人冇座別＋居屋範圍字串）待查…", flush=True)
+    n_fill, n_query = 0, 0
+    for e, kind in targets:
+        nm = e["name_tc"]
+        if nm not in cache:
+            try:
+                cache[nm] = _landsd_like(nm)
+                n_query += 1
+            except Exception:
+                continue                      # 網絡失敗：唔記負快取
+            time.sleep(0.35)
+        cands = cache.get(nm) or []
+        near = [c for c in cands
+                if c.get("t") == "Tower"
+                and haversine(e["lat"], e["lng"], c["lat"], c["lng"]) <= 700
+                and not any(k in c["n"] for k in NON_RESIDENTIAL)
+                and (kind != "pseudo" or c["n"].startswith(nm))]
+        by_name = {}                          # 同名多邊形（主樓＋附屬）→ 取最高
+        for c in near:
+            k = c["n"]
+            if k not in by_name or (c.get("h") or 0) > (by_name[k].get("h") or 0):
+                by_name[k] = c
+        blocks = []
+        for c in by_name.values():
+            disp = c["n"][len(nm):].strip() if c["n"].startswith(nm) else c["n"]
+            blocks.append({"n": disp or c["n"], "u": None, "e": None, "f1": None, "f2": None, "a": None,
+                           "lat": c["lat"], "lng": c["lng"], "s": c.get("s"), "bf": 1,
+                           "h": round(float(c["h"]), 1) if c.get("h") is not None else None})
+        if kind == "pseudo" and len(blocks) < 2:
+            continue                          # 拆唔到就保留原本（唔好整走已知資訊）
+        blocks = _clean_blocks(blocks, nm)
+        if not blocks:
+            continue
+        blocks.sort(key=lambda b: _block_sort_key(b["n"]))
+        e["blocks"] = blocks
+        e["blocks_count"] = len(blocks)
+        e["blocks_source"] = "LandsD"
+        n_fill += 1
+    if n_query:
+        with open(BACKFILL_CACHE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False)
+    print(f"  座別補完：查 {n_query} 個、成功補 {n_fill} 個屋苑", flush=True)
+
+
 def ensure_csdi_block_coords(data):
     """座級座標第一層：全港 bbox 實測快取（csdi_block_coords.json，1,571/1,713 座＝91.7%，
     key = source|邨名|座名）。含 csuid／storeys。"""
@@ -221,7 +386,7 @@ def ensure_prv_blocks(data):
             a = ft.get("attributes") or {}
             c = ft.get("centroid") or {}
             nm = (a.get("BuildingNameTC") or "").strip()
-            if not nm or c.get("x") is None or nm in seen:
+            if not nm or c.get("x") is None or nm in seen or not _is_residential_name(nm):
                 continue
             if rings:
                 if not _point_in_rings(c["y"], c["x"], rings):
@@ -250,8 +415,11 @@ def ensure_prv_blocks(data):
             continue
         cached = cache.get(e["source"] + "|" + e["name_tc"])
         if cached:
-            e["blocks"] = cached
-            e["blocks_count"] = e.get("blocks_count") or (len(cached) or None)
+            clean = _clean_blocks(cached, e["name_tc"])
+            if not clean:
+                continue
+            e["blocks"] = clean
+            e["blocks_count"] = e.get("blocks_count") or (len(clean) or None)
             n_applied += 1
     n_prv = sum(1 for e in data if e.get("source_type") == "PRV" and e.get("blocks"))
     print(f"  PRV 座別發現：{n_prv} 個私人屋苑有座別明細（新查 {len(todo)}，快取套用 {n_applied}）", flush=True)
@@ -307,6 +475,22 @@ def _landsd_name_query(batch, cache):
         cache.setdefault(n, [])   # 負快取：查詢成功但冇結果先記
 
 
+def _pick_landsd_candidate(cands, lat, lng, max_m=800):
+    """同名樓宇喺 LandsD 有多個多邊形（主樓＋附屬體／平台／商場）。
+    排序：Tower 優先 → **TopHeight 最高** → 最近。
+    高度最高係關鍵：實測「愛寶樓」有 6.9m 附屬體同 74.7m 主樓，
+    只按距離會揀中附屬體，令樓高變 6.9m（層高 0.33m／層，明顯錯）。"""
+    best = None
+    for c in cands:
+        d = haversine(lat, lng, c["lat"], c["lng"])
+        if d > max_m:
+            continue
+        key = (c.get("t") != "Tower", -(c.get("h") or 0), d)
+        if best is None or key < best[0]:
+            best = (key, d, c)
+    return (best[1], best[2]) if best else (None, None)
+
+
 def ensure_landsd_block_coords(data):
     """官方座級定位（主要來源）：地政總署「建築物」數據集（2026-10-22 更新）。
     BuildingNameTC 逐座名＋BuildingBlockType（Tower/Podium）＋Storeys/TopHeight，
@@ -316,13 +500,24 @@ def ensure_landsd_block_coords(data):
     if os.path.exists(LANDSD_CACHE):
         with open(LANDSD_CACHE, encoding="utf-8") as f:
             cache = json.load(f)
+    # 只查「未有座標或未有大廈高度」嘅座——普查分界發現嘅私人座已經有齊，唔需要再查名
     names = sorted({(b.get("n") or "").strip() for e in data for b in e.get("blocks", [])
-                    if (b.get("n") or "").strip() and not GENERIC_BLOCK.match(b.get("n") or "")})
+                    if (b.get("n") or "").strip() and not GENERIC_BLOCK.match(b.get("n") or "")
+                    and not b.get("bf") and (b.get("lat") is None or b.get("h") is None)})
     todo = [n for n in names if n not in cache]
     if todo:
         print(f"  LandsD 座級：{len(todo)} 個新座名待查（分 {len(todo)//25 + 1} 批）…", flush=True)
+        fails = 0
         for i in range(0, len(todo), 25):
+            before = len(cache)
             _landsd_name_query(todo[i:i+25], cache)
+            if len(cache) == before:          # 成功查詢一定會寫入（命中或負快取）
+                fails += 1
+                if fails >= 3:
+                    print("  LandsD 座級：連續 3 批零寫入，判定服務不可達 → 中止本輪（下次 build 再試）", flush=True)
+                    break
+            else:
+                fails = 0
             time.sleep(0.6)
         with open(LANDSD_CACHE, "w", encoding="utf-8") as f:
             json.dump(cache, f, ensure_ascii=False)
@@ -331,14 +526,13 @@ def ensure_landsd_block_coords(data):
         if e.get("lat") is None:
             continue
         for b in e.get("blocks", []):
+            if b.get("bf") or (b.get("lat") is not None and b.get("h") is not None):
+                continue                      # 已有座標＋樓高（普查／補完）→ 唔覆蓋
             cands = cache.get((b.get("n") or "").strip())
             if not cands:
                 continue
-            ranked = sorted(
-                ((haversine(e["lat"], e["lng"], c["lat"], c["lng"]), c) for c in cands),
-                key=lambda x: (x[1].get("t") != "Tower", x[0]))   # Tower 優先，再按距離
-            dist, best = ranked[0]
-            if dist > 800:
+            dist, best = _pick_landsd_candidate(cands, e["lat"], e["lng"])
+            if best is None:
                 continue
             b["lat"], b["lng"] = best["lat"], best["lng"]
             if best.get("s") is not None:
@@ -378,11 +572,8 @@ def ensure_landsd_block_coords(data):
                 cands = cache.get((e["name_tc"] + b["n"]).strip())
                 if not cands:
                     continue
-                ranked = sorted(
-                    ((haversine(e["lat"], e["lng"], c["lat"], c["lng"]), c) for c in cands),
-                    key=lambda x: (x[1].get("t") != "Tower", x[0]))
-                dist, best = ranked[0]
-                if dist > 800:
+                dist, best = _pick_landsd_candidate(cands, e["lat"], e["lng"])
+                if best is None:
                     continue
                 b["lat"], b["lng"] = best["lat"], best["lng"]
                 if best.get("s") is not None:
@@ -534,12 +725,19 @@ schools = load_schools()
 kgs = load_kindergartens()
 ae_hosp = load_ae_hospitals()
 
+# 座別名單清洗（所有類型）：剔除非住宅建築、"(BRO)" 佔位名、由長名切出嘅碎片（例：慈愛苑「一」「二期」）
+for _e in data:
+    if _e.get("blocks"):
+        _e["blocks"] = _clean_blocks(_e["blocks"], _e["name_tc"])
+        _e["blocks_count"] = len(_e["blocks"]) or _e.get("blocks_count")
+
 # 座級定位三層 fallback：CSDI bbox 實測 → LandsD 按名查 → OSM
+ensure_prv_blocks(data)        # 私人屋苑先由普查分界＋建築物做精確發現（point-in-polygon）
+backfill_blocks(data)          # 再補：私人冇座別（普查分界缺失）＋居屋「第一座至第N座」範圍字串
 ensure_csdi_block_coords(data)
 ensure_landsd_block_coords(data)
-# 私人屋苑座別發現（普查冇座名 → LandsD bbox 查）
-ensure_prv_blocks(data)
 ensure_block_coords(data)
+sanitize_block_heights(data)   # 層高唔合理（<2.2m/層）→ 丟棄可疑高度，只保留層數
 
 # 離島錨點：最近渡輪碼頭
 attach_ferry_piers(data)
