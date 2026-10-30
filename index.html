@@ -632,30 +632,40 @@ function toggleBlocks(key, btn){
     btn.textContent = `▼ 座別明細（${(e.blocks||[]).length} 座）`;
     return;
   }
-  const rows = (e.blocks||[]).map(b => {
-    const hasU = b.u != null;
-    const pct = hasU && b.u ? Math.round(b.e / b.u * 100) : null;
-    const cls = pct == null ? "" : (pct >= 100 ? "good" : (pct > 0 ? "" : "bad"));
+  // 欄位條件顯示：單位／有𨋢／EMSD／樓層／均面 只有公屋／簡屋嘅單位級數據源，
+  // 居屋／私人永遠冇（房委會只公佈屋苑級數字，機電署覆核只做公屋）→ 索性唔顯示呢幾欄，唔好留一排「—」
+  const isUnitLevel = e.source_type === "PRH" || e.source_type === "LPH";
+  const COLS = isUnitLevel
+    ? ["座", "單位", "有𨋢", "EMSD 升降機", "樓層", "均面", "樓高", "路線"]
+    : ["座", "樓高", "路線"];
+  const rows = (e.blocks || []).map(b => {
     const coord = b.lat != null;
     const hgt = (b.s != null ? `${b.s} 層` : "—") + (b.h != null ? `／${b.h}m` : "");
-    const emsd = b.emsd_lifts != null ? `<span style="color:#0f9d8a;font-weight:600">${b.emsd_lifts} 部</span>` : "<span style='color:#9ca3af'>—</span>";
-    return `<tr><td>${b.n}</td><td>${hasU ? b.u : "—"}</td><td>${pct == null ? "<span style='color:#9ca3af'>—</span>" : `<span class="pill ${cls}">${pct}%</span>`}</td><td>${emsd}</td>` +
-      `<td>${b.f1 != null ? `${b.f1}–${b.f2}` : "—"}</td><td>${b.a != null ? `${b.a} ㎡` : "—"}</td><td>${hgt}</td>` +
-      (coord ? `<td><button class="blkGo" data-n="${b.n}">🚶 由呢座出發</button></td>` : "<td></td>") + `</tr>`;
+    const tds = [`<td>${b.n}</td>`];
+    if (isUnitLevel){
+      const hasU = b.u != null;
+      const pct = hasU && b.u ? Math.round(b.e / b.u * 100) : null;
+      const cls = pct == null ? "" : (pct >= 100 ? "good" : (pct > 0 ? "" : "bad"));
+      const emsd = b.emsd_lifts != null ? `<span style="color:#0f9d8a;font-weight:600">${b.emsd_lifts} 部</span>` : "<span style='color:#9ca3af'>—</span>";
+      tds.push(`<td>${hasU ? b.u : "—"}</td>`,
+               `<td>${pct == null ? "<span style='color:#9ca3af'>—</span>" : `<span class="pill ${cls}">${pct}%</span>`}</td>`,
+               `<td>${emsd}</td>`,
+               `<td>${b.f1 != null ? `${b.f1}–${b.f2}` : "—"}</td>`,
+               `<td>${b.a != null ? `${b.a} ㎡` : "—"}</td>`);
+    }
+    tds.push(`<td>${hgt}</td>`);
+    tds.push(coord ? `<td><button class="blkGo" data-n="${b.n}">🚶 由呢座出發</button></td>` : "<td></td>");
+    return `<tr>${tds.join("")}</tr>`;
   }).join("");
-  const blkTypeNote = e.source_type === "HOS" ? "居屋座名來自房委會屋苑資料；" :
-    e.source_type === "PRV" ? "私人屋苑座名由地政總署「建築物」多邊形發現（Tower＋有名）；" : "";
-  // 逐欄解釋「點解係 —」：唔好只寫「冇公開數據」，要講清楚邊個源頭冇
-  const allNA = k => (e.blocks || []).every(b => b[k] == null);
-  const naBits = [];
-  if (allNA("u")) naBits.push(e.source_type === "HOS" ? "單位：房委會只公佈屋苑總數，冇逐座數字" : "單位：冇公開逐座數字");
-  if (allNA("e")) naBits.push("有𨋢：只有公屋／簡屋有單位級升降機數據");
-  if (allNA("emsd_lifts")) naBits.push("EMSD：機電署座級覆核只做公屋（居屋／私人地址未匹配）");
-  if (allNA("f1")) naBits.push("樓層：只有公屋單位檔有樓層範圍");
-  if (allNA("a")) naBits.push("均面：居屋／私人只有屋苑級面積");
-  const naNote = naBits.length ? `<br><b>呢個屋苑點解咁多「—」：</b>${naBits.join("；")}。` : "";
-  boxEl.innerHTML = `<table class="blkT"><tr><th>座</th><th>單位</th><th>有𨋢</th><th>EMSD 升降機</th><th>樓層</th><th>均面</th><th>樓高</th><th>路線</th></tr>${rows}</table>` +
-    `<div class="hint">${blkTypeNote}「—」＝冇公開數據（如實 N/A）；有𨋢 %＝該座有升降機服務嘅單位比例（只對公屋／簡屋）；EMSD＝機電署註冊升降機部數；樓高／座級位置來自地政總署「建築物」多邊形。${naNote}</div>`;
+  const head = COLS.map(c => `<th>${c}</th>`).join("");
+  const blkNote = isUnitLevel
+    ? `「—」＝該座冇公開數據（如實 N/A）；有𨋢 %＝該座有升降機服務嘅單位比例；EMSD＝機電署註冊升降機部數；樓高／座級位置來自地政總署「建築物」多邊形。`
+    : (e.source_type === "HOS"
+        ? `居屋：房委會只公佈<b>屋苑級</b>數字（總單位數 ${(e.total_units || 0).toLocaleString()}、實用面積 ${e.hos_area_range || "—"} m²），冇逐座單位／升降機／樓層／面積——所以只列「樓高」同「路線」。`
+        : `私人屋苑：無公開逐座單位／升降機數據；座名同樓高來自地政總署「建築物」多邊形。`) +
+      ` 樓高＝層數／米（地政總署）。`;
+  boxEl.innerHTML = `<table class="blkT"><tr>${head}</tr>${rows}</table>` +
+    `<div class="hint">${blkNote}</div>`;
   boxEl.style.display = "block";
   btn.textContent = "▲ 收起座別明細";
   boxEl.querySelectorAll(".blkGo").forEach(g => g.onclick = () => {
