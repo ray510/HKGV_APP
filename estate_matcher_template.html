@@ -395,7 +395,7 @@ function setProfile(p){
 const ST_NAME = {PRH:"公屋",LPH:"簡約公屋",HOS:"居屋",PRV:"私人",PRVD:"推算私人",VLG:"鄉村"};
 const stCounts = {};
 DATA.forEach(e => { const k = e.source_type || e.source; stCounts[k] = (stCounts[k]||0)+1; });
-const nUnits = DATA.reduce((a,e)=>a+(e.total_units||0),0);
+const nUnits = DATA.reduce((a,e)=>(e.source_type==="PRH"||e.source_type==="LPH")?a+(e.total_units||0):a,0);
 const stSummary = Object.entries(ST_NAME).filter(([k])=>stCounts[k]).map(([k])=>`${ST_NAME[k]} ${stCounts[k]}`).join("＋");
 document.getElementById("statbar").innerHTML =
   `<b>${DATA.length}</b> 個屋邨／項目（${stSummary}）· 公屋簡屋合共 <b>${nUnits.toLocaleString()}</b> 個單位<br>數據：房屋局・房委會・統計處・教育局・社署・地政總署・機電署・路政署`;
@@ -534,7 +534,7 @@ function render(){
     const c = scoreColor(pr.total);
     const brk = pr.parts.filter(p => p.sub != null).map(p =>
       `<div>${p.label} ${p.sub} 分 × ${(p.w*100).toFixed(0)}%</div><div class="bar"><i style="width:${Math.round(p.sub)}%;background:${DIM_COLOR[p.k]}"></i></div>`).join("") +
-      pr.parts.filter(p => p.sub == null).map(p => `<div>${p.label} N/A（${p.k === "elev" ? (e.source_type === "HOS" ? "居屋" : e.source_type === "PRV" ? "私人" : "村屋") + "冇單位級數據" : "冇座標／未計算"}）</div>`).join("");
+      pr.parts.filter(p => p.sub == null).map(p => `<div>${p.label} N/A（${p.k === "elev" ? ({HOS:"居屋",PRV:"私人",PRVD:"推算屋苑",VLG:"村屋"}[e.source_type] || "同類") + "冇單位級數據" : "冇座標／未計算"}）</div>`).join("");
     const addCmpBtn = `<button class="addCmp ${compareSet.includes(e._key)?"on":""}" data-c="${e._key}">${compareSet.includes(e._key)?"✓ 已加入比較":"＋ 加入比較"}</button>`;
     const nBlk = (e.blocks||[]).filter(b => !b.nr).length;
     const realBlks = (e.blocks||[]).filter(b => !b.nr);
@@ -610,6 +610,17 @@ function render(){
       </div>
       ${routeBtns}${chainBtns}${addCmpBtn}${blkBtn}`;
     box.appendChild(el);
+    // 撳卡片標題 → 地圖飛去該屋苑（搜尋後唔使再喺地圖搵）
+    const h3 = el.querySelector("h3");
+    if (h3 && e.lat != null){
+      h3.style.cursor = "pointer";
+      h3.title = "在地圖定位";
+      h3.addEventListener("click", () => {
+        map.setView([e.lat, e.lng], Math.max(map.getZoom(), 15), {animate: true});
+        const mk = markers[e._key];
+        if (mk) mk.openPopup();
+      });
+    }
   });
   box.querySelectorAll(".dchip").forEach(btn => btn.onclick = () => {
     const d = btn.dataset.d;

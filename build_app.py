@@ -790,6 +790,8 @@ for e in data:
     # 800m 內全部幼稚園（供用戶逐間揀；上限 40，冇就退到 2km 內最近 1 間）
     kg_all = top_k(e["lat"], e["lng"], kgs, k=40)
     within = [k for k in kg_all if k["distance_m"] <= 800]
+    if e.get("source_type") == "VLG" and len(within) > 6:
+        within = within[:6]        # 村落錨點唔需要 40 間幼稚園，慳 payload
     if not within and kg_all and kg_all[0]["distance_m"] <= 2000:
         within = kg_all[:1]
     e["nearest_kgs"] = within

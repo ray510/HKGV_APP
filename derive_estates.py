@@ -296,9 +296,12 @@ def main():
     ex_names = [(e["n"], e["lat"], e["lng"]) for e in ex]
 
     def dup(name, lat, lng):
+        """同名／包含關係且夠近＝同一個屋苑（官方名可以係 2 字，例如「天晉」之於「海天晉」）。"""
         for nm, la, lo in ex_names:
-            if n_cjk(nm) >= 3 and n_cjk(name) >= 3 and (nm in name or name in nm) \
-                    and hav(lat, lng, la, lo) < 3000:
+            d = hav(lat, lng, la, lo)
+            if nm == name and d < 1500:
+                return nm
+            if (nm in name or name in nm) and n_cjk(nm) >= 2 and n_cjk(name) >= 3 and d < 600:
                 return nm
         return None
 
