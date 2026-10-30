@@ -433,6 +433,8 @@ const landsAttr = L.DomUtil.create("div", "lands-attr", map.getContainer());
 landsAttr.innerHTML = '<img src="__LAND_SVG__" alt="地政總署 Lands Department 標誌">' +
   '<span>Map from Lands Department © 地政總署｜3D 路線：CSDI 三維行人路線搜尋 API</span>';
 
+const estatePins = L.layerGroup().addTo(map);   // 屋苑級圖釘（z<16）
+const blockPins = L.layerGroup();               // 逐座圖釘（z>=16）
 const markers = {};
 DATA.forEach(e => {
   if (e.lat == null) return;
@@ -440,11 +442,43 @@ DATA.forEach(e => {
   const mk = L.circleMarker([e.lat, e.lng], {
     radius: 5 + Math.min(9, (e.total_units||0)/1800),
     color: c, fillColor: c, fillOpacity: .7, weight: 2
-  }).addTo(map).bindPopup(popupHtml(e, false));
+  }).bindPopup(popupHtml(e, false));
   // 直接喺地圖點屋邨圓點 → 即刻規劃去最近港鐵（唔使落卡片搵掣）
   mk.on("click", () => { if (e.lat != null && e.nearest_mtr) planRoute(e._key, "mtr"); });
+  estatePins.addLayer(mk);
   markers[e._key] = mk;
 });
+
+// 放大到街區級（z>=16）→ 改為顯示逐座圖釘（每座都有一釘；估算座＝虛線空心）
+function refreshBlockPins(){
+  if (map.getZoom() >= 16){
+    map.removeLayer(estatePins);
+    const b = map.getBounds().pad(0.1);
+    blockPins.clearLayers();
+    DATA.forEach(e => {
+      if (e.lat == null || !b.contains([e.lat, e.lng])) return;
+      (e.blocks || []).forEach(bk => {
+        if (bk.lat == null) return;
+        const col = bk.nr ? "#9ca3af"
+          : (bk.u == null ? "#0369a1" : (bk.e >= bk.u ? "#0f9d8a" : "#b45309"));
+        const mk = L.circleMarker([bk.lat, bk.lng], {
+          radius: 5, color: col, fillColor: col, fillOpacity: bk.est ? .35 : .85,
+          weight: 2, dashArray: bk.est ? "3,2" : null
+        }).bindPopup(`<b>${e.name_tc} ${bk.n}</b><br>` +
+          (bk.est ? `<span style="color:#b45309">📍 位置為估算（地政總署無該座名稱／座標）</span><br>` : "") +
+          (bk.s != null ? `樓高 ${bk.s} 層${bk.h != null ? "／" + bk.h + "m" : ""}` : "") +
+          `<br><span style="color:#6b7280">屋苑：${e.name_tc}（${ST_NAME[e.source_type || e.source] || ""}）</span>`);
+        mk.on("click", ev => L.DomEvent.stopPropagation(ev));
+        blockPins.addLayer(mk);
+      });
+    });
+    blockPins.addTo(map);
+  } else {
+    map.removeLayer(blockPins);
+    if (!map.hasLayer(estatePins)) estatePins.addTo(map);
+  }
+}
+map.on("zoomend moveend", refreshBlockPins);
 
 const legend = L.control({position: "bottomright"});
 legend.onAdd = () => {
@@ -453,7 +487,7 @@ legend.onAdd = () => {
                   `<span class="dot" style="background:#0b6e99"></span>60–79 分<br>` +
                   `<span class="dot" style="background:#b45309"></span>&lt; 60 分<br>` +
                   `<span style="color:#6b7280">圓點大小＝單位數</span><br>` +
-                  `<span style="color:#0b6e99">👆 撳圓點＝即時規劃 3D 路線</span>`;
+                  `<span style="color:#0b6e99">👆 撳圓點＝即時規劃 3D 路線</span><br><span style="color:#6b7280">🔍 放大到街區級（z16+）＝逐座圖釘</span>`;
   return div;
 };
 legend.addTo(map);
@@ -636,7 +670,7 @@ function render(){
       h3.style.cursor = "pointer";
       h3.title = "在地圖定位";
       h3.addEventListener("click", () => {
-        map.setView([e.lat, e.lng], Math.max(map.getZoom(), 15), {animate: true});
+        map.setView([e.lat, e.lng], Math.max(map.getZoom(), 16), {animate: true});   // z16 = 逐座圖釘級
         const mk = markers[e._key];
         if (mk) mk.openPopup();
       });

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """一次性 review 檢查（唔入 git）。"""
-import json, re, subprocess, time, math, collections, statistics as st
+import json, re, subprocess, time, math, os, collections, statistics as st
 
 BASE = r"C:/Users/kbl/WorkBuddy AI/2026-10-28-14-48-21"
 CHROME = r"C:/Users/kbl/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe"
@@ -64,14 +64,23 @@ vl = sorted([e for e in D if e["source_type"] == "VLG"], key=lambda e: -(e.get("
 for e in vl:
     print("  ", e["name_tc"], e["district_tc"], e["score"])
 
-print("=== 6. 載入效能 ===")
+print("=== 6. 載入效能＋JS 錯誤 ===")
 t = time.time()
+_pre = '<script>window.__errs=[];window.onerror=function(m,s,l){window.__errs.push(String(m).slice(0,120)+" @"+l);};</script>'
+_h2 = H.replace("<script>", _pre + "<script>", 1) + \
+    '<script>setTimeout(function(){document.title="HEALTH|errs:"+window.__errs.join(" ;; ");},2500);</script>'
+_tmp = os.path.join(BASE, "_health_tmp.html")
+open(_tmp, "w", encoding="utf-8").write(_h2)
 out = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--virtual-time-budget=30000",
-                      "--dump-dom", "file:///" + BASE.replace(" ", "%20") + "/index.html"],
+                      "--dump-dom", "file:///" + _tmp.replace(" ", "%20")],
                      capture_output=True, text=True, encoding="utf-8", errors="replace")
+os.remove(_tmp)
 el = time.time() - t
 cards = out.stdout.count('class="card"')
 print("耗時", round(el, 1), "s | 首屏卡片", cards, "| DOM MB", round(len(out.stdout) / 1048576, 1))
+m = re.search(r"<title>HEALTH\|(.*?)</title>", out.stdout, re.S)
+errs = m.group(1) if m else "?"
+print("JS 錯誤:", errs if errs.strip() and errs != "errs:" else "0（無）")
 m = re.search(r'id="statbar"[^>]*>(.*?)</div>', out.stdout, re.S)
 print("statbar:", re.sub(r"<[^>]+>", "", m.group(1))[:120] if m else "-")
 
