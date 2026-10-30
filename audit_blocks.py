@@ -20,7 +20,9 @@ def add(sev, estate, block, msg):
 
 for e in DATA:
     st = e.get("source_type") or e.get("source")
-    bs = e.get("blocks") or []
+    bs_all = e.get("blocks") or []
+    bs = [b for b in bs_all if not b.get("nr")]      # 非住宅／未命名只列出，唔計座數
+    stat[f"{st}_nonres"] += len(bs_all) - len(bs)
     stat[f"{st}_estates"] += 1
     if not bs:
         stat[f"{st}_no_blocks"] += 1
@@ -30,7 +32,7 @@ for e in DATA:
 
     # 1) blocks_count 對唔對
     if e.get("blocks_count") is not None and e["blocks_count"] != len(bs):
-        add("WARN", e["name_tc"], "-", f"blocks_count={e['blocks_count']} 但實際 {len(bs)} 座")
+        add("WARN", e["name_tc"], "-", f"blocks_count={e['blocks_count']} 但實際住宅座 {len(bs)}")
 
     names = [b.get("n") or "" for b in bs]
     dup = [n for n, c in Counter(names).items() if c > 1]
@@ -115,7 +117,7 @@ print("=== 覆蓋統計 ===")
 for st in ("PRH", "LPH", "HOS", "PRV", "VLG"):
     a, b_, c = stat[f"{st}_estates"], stat[f"{st}_with_blocks"], stat[f"{st}_no_blocks"]
     blk = stat[f"{st}_blocks"]
-    print(f"{st}: 屋苑 {a}｜有座別 {b_}｜冇座別 {c}｜座數 {blk}")
+    print(f"{st}: 屋苑 {a}｜有座別 {b_}｜冇座別 {c}｜住宅座 {blk}｜另標記非住宅 {stat[f'{st}_nonres']}")
 
 sev = Counter(x[0] for x in issues)
 print(f"\n=== 問題：{len(issues)} 條（ERR {sev['ERR']}／WARN {sev['WARN']}）===")

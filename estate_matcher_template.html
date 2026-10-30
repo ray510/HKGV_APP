@@ -99,6 +99,7 @@
   .pkRow button{padding:4px 8px;font-size:11.5px;border-radius:6px;border:1px solid var(--line);background:#f0f7fb;color:var(--accent);cursor:pointer}
   .pkRow button:hover{background:#e2eff8}
   .pkRow .pkView{background:#f9fafb;color:#4b5563}
+  .nrTag{display:inline-block;margin-left:4px;padding:0 4px;font-size:10px;border-radius:4px;background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb}
   .dchip:hover{border-color:var(--accent);color:var(--accent)}
   .dchip:disabled{opacity:.5;cursor:wait}
   .go.chain{background:linear-gradient(90deg,#b45309,#d97706);font-size:12px}
@@ -533,8 +534,9 @@ function render(){
       `<div>${p.label} ${p.sub} 分 × ${(p.w*100).toFixed(0)}%</div><div class="bar"><i style="width:${Math.round(p.sub)}%;background:${DIM_COLOR[p.k]}"></i></div>`).join("") +
       pr.parts.filter(p => p.sub == null).map(p => `<div>${p.label} N/A（${p.k === "elev" ? (e.source_type === "HOS" ? "居屋" : e.source_type === "PRV" ? "私人" : "村屋") + "冇單位級數據" : "冇座標／未計算"}）</div>`).join("");
     const addCmpBtn = `<button class="addCmp ${compareSet.includes(e._key)?"on":""}" data-c="${e._key}">${compareSet.includes(e._key)?"✓ 已加入比較":"＋ 加入比較"}</button>`;
-    const nBlk = (e.blocks||[]).length;
-    const pseudoOnly = nBlk === 1 && /第.+座\s*至\s*第.+座/.test((e.blocks[0].n||""));
+    const nBlk = (e.blocks||[]).filter(b => !b.nr).length;
+    const realBlks = (e.blocks||[]).filter(b => !b.nr);
+    const pseudoOnly = realBlks.length === 1 && /第.+座\s*至\s*第.+座/.test((realBlks[0].n||""));
     const blkBtn = (nBlk && !pseudoOnly) ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
     const el = document.createElement("div"); el.className = "card"; el.id = "card-" + e._key;
     const dests = ["mtr","sch","care","cc","eld","shel","kg","pg","hosp","pier","cold","lib"].filter(d => e.lat != null && DEST[d].pool(e).length);
@@ -649,7 +651,7 @@ function toggleBlocks(key, btn){
   if (open){
     boxEl.style.display = "none";
     if (blkLayers[key]) { map.removeLayer(blkLayers[key]); delete blkLayers[key]; }
-    btn.textContent = `▼ 座別明細（${(e.blocks||[]).length} 座）`;
+    btn.textContent = `▼ 座別明細（${(e.blocks||[]).filter(b=>!b.nr).length} 座）`;
     return;
   }
   // 欄位條件顯示：單位／有𨋢／EMSD／樓層／均面 只有公屋／簡屋嘅單位級數據源，
@@ -658,12 +660,17 @@ function toggleBlocks(key, btn){
   const COLS = isUnitLevel
     ? ["座", "單位", "有𨋢", "EMSD 升降機", "樓層", "均面", "樓高", "路線"]
     : ["座", "樓高", "路線"];
-  const rows = (e.blocks || []).map(b => {
+  const blkSorted = (e.blocks || []).slice().sort((a, b) => (a.nr ? 1 : 0) - (b.nr ? 1 : 0));
+  const rows = blkSorted.map(b => {
     const coord = b.lat != null;
     const hgt = b.s != null
       ? `${b.s} 層${b.h != null ? `／${b.h}m` : ""}`
       : (b.h != null ? `${b.h}m` : "—");
-    const tds = [`<td>${b.n}</td>`];
+    const tag = b.ph ? "未命名" : (b.nr ? "非住宅" : "");
+    const nameCell = tag
+      ? `<td style="color:#9ca3af">${b.n} <span class="nrTag">${tag}</span></td>`
+      : `<td>${b.n}</td>`;
+    const tds = [nameCell];
     if (isUnitLevel){
       const hasU = b.u != null;
       const pct = hasU && b.u ? Math.round(b.e / b.u * 100) : null;
@@ -677,7 +684,7 @@ function toggleBlocks(key, btn){
     }
     tds.push(`<td>${hgt}</td>`);
     tds.push(coord ? `<td><button class="blkGo" data-n="${b.n}">🚶 由呢座出發</button></td>` : "<td></td>");
-    return `<tr>${tds.join("")}</tr>`;
+    return `<tr${b.nr ? ' style="opacity:.55"' : ""}>${tds.join("")}</tr>`;
   }).join("");
   const head = COLS.map(c => `<th>${c}</th>`).join("");
   const srcNote = e.blocks_source === "LandsD"
@@ -687,7 +694,7 @@ function toggleBlocks(key, btn){
     : (e.source_type === "HOS"
         ? `居屋：房委會只公佈<b>屋苑級</b>數字（總單位數 ${(e.total_units || 0).toLocaleString()}、實用面積 ${e.hos_area_range || "—"} m²），冇逐座單位／升降機／樓層／面積——所以只列「樓高」同「路線」。`
         : `私人屋苑：無公開逐座單位／升降機數據；座名同樓高來自地政總署「建築物」多邊形。`) +
-      ` 樓高＝層數／米（地政總署）。`);
+      ` 樓高＝層數／米（地政總署）。<br>「非住宅」＝同一地段嘅學校／商場／變電站等，已列出但唔計入座數。`);
   boxEl.innerHTML = `<table class="blkT"><tr>${head}</tr>${rows}</table>` +
     `<div class="hint">${blkNote}</div>`;
   boxEl.style.display = "block";
@@ -701,7 +708,7 @@ function toggleBlocks(key, btn){
   if (pts.length){
     blkLayers[key] = L.layerGroup(pts.map(b => {
       // 冇單位級數據（居屋／私人）→ 藍色，避免誤用「部分有𨋢」橙色
-      const col = b.u == null ? "#0369a1" : (b.e >= b.u ? "#0f9d8a" : "#b45309");
+      const col = b.nr ? "#9ca3af" : (b.u == null ? "#0369a1" : (b.e >= b.u ? "#0f9d8a" : "#b45309"));
       const mk = L.circleMarker([b.lat, b.lng], {radius: 6, color: col, fillColor: col,
         fillOpacity: .85, weight: 2})
         .bindPopup(`<b>${e.name_tc} ${b.n}</b><br>` +

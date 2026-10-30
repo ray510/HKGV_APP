@@ -100,7 +100,8 @@ NON_RESIDENTIAL_EN = ("SCHOOL", "KINDERGARTEN", "COLLEGE", "UNIVERSITY", "CHURCH
 
 
 def _is_residential_name(n):
-    """過濾座別名單內嘅非住宅建築（普查 bbox 會連學校／變電站／商場一齊抓返嚟）。"""
+    """判斷座名係唔係住宅（**只用作標記，唔用嚟刪**）。
+    普查 bbox 會連學校／變電站／商場一齊抓返嚟，呢啲要標「非住宅」，但唔可以靜靜刪走。"""
     if not n:
         return False
     s = n.strip()
@@ -122,18 +123,17 @@ def _is_residential_name(n):
 FRAGMENT = re.compile(r"^(第?[一二三四五六七八九十0-9]+期?|[A-Za-z]|[0-9]+)$")
 
 
-def _clean_blocks(blocks, estate_name=""):
-    """再過濾：非住宅名＋由長名切出嚟嘅碎片（例：慈愛苑「一」「二期」）。"""
-    out = []
+def _mark_blocks(blocks, estate_name=""):
+    """**唔刪座**：只標記 b["nr"]=1（非住宅）／b["ph"]=1（佔位名／碎片）。
+    之前用白名單刪字，誤殺「晶巒」「珀峰」「愉景新城第X座」等真座名——改用標記，前端灰顯示。"""
     for b in blocks:
         n = (b.get("n") or "").strip()
-        if not _is_residential_name(n):
-            continue
         rest = n[len(estate_name):].strip() if estate_name and n.startswith(estate_name) else n
-        if FRAGMENT.match(rest):
-            continue
-        out.append(b)
-    return out
+        ph = 1 if (FRAGMENT.match(rest) or re.fullmatch(r"[\(（].*[\)）]", n or "")) else 0
+        b["nr"] = 0 if (_is_residential_name(n) and not ph) else 1
+        if ph:
+            b["ph"] = 1
+    return blocks
 
 
 def sanitize_block_heights(data):
@@ -242,12 +242,12 @@ def backfill_blocks(data):
                            "h": round(float(c["h"]), 1) if c.get("h") is not None else None})
         if kind == "pseudo" and len(blocks) < 2:
             continue                          # 拆唔到就保留原本（唔好整走已知資訊）
-        blocks = _clean_blocks(blocks, nm)
+        blocks = _mark_blocks(blocks, nm)
         if not blocks:
             continue
         blocks.sort(key=lambda b: _block_sort_key(b["n"]))
         e["blocks"] = blocks
-        e["blocks_count"] = len(blocks)
+        e["blocks_count"] = sum(1 for b in blocks if not b.get("nr"))
         e["blocks_source"] = "LandsD"
         n_fill += 1
     if n_query:
@@ -418,11 +418,8 @@ def ensure_prv_blocks(data):
             continue
         cached = cache.get(e["source"] + "|" + e["name_tc"])
         if cached:
-            clean = _clean_blocks(cached, e["name_tc"])
-            if not clean:
-                continue
-            e["blocks"] = clean
-            e["blocks_count"] = e.get("blocks_count") or (len(clean) or None)
+            e["blocks"] = _mark_blocks(cached, e["name_tc"])   # 唔刪，只標記
+            e["blocks_count"] = sum(1 for b in e["blocks"] if not b.get("nr")) or e.get("blocks_count")
             n_applied += 1
     n_prv = sum(1 for e in data if e.get("source_type") == "PRV" and e.get("blocks"))
     print(f"  PRV 座別發現：{n_prv} 個私人屋苑有座別明細（新查 {len(todo)}，快取套用 {n_applied}）", flush=True)
@@ -728,11 +725,11 @@ schools = load_schools()
 kgs = load_kindergartens()
 ae_hosp = load_ae_hospitals()
 
-# 座別名單清洗（所有類型）：剔除非住宅建築、"(BRO)" 佔位名、由長名切出嘅碎片（例：慈愛苑「一」「二期」）
+# 座別名單標記（唔刪）：非住宅建築／佔位名只加 nr/ph 旗標，前端灰顯示並排除喺「N 座」計數
 for _e in data:
     if _e.get("blocks"):
-        _e["blocks"] = _clean_blocks(_e["blocks"], _e["name_tc"])
-        _e["blocks_count"] = len(_e["blocks"]) or _e.get("blocks_count")
+        _mark_blocks(_e["blocks"], _e["name_tc"])
+        _e["blocks_count"] = sum(1 for b in _e["blocks"] if not b.get("nr")) or _e.get("blocks_count")
 
 # 座級定位三層 fallback：CSDI bbox 實測 → LandsD 按名查 → OSM
 ensure_prv_blocks(data)        # 私人屋苑先由普查分界＋建築物做精確發現（point-in-polygon）
