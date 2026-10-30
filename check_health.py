@@ -31,6 +31,9 @@ print("無座標", sum(1 for e in D if e.get("lat") is None))
 print("無評分", sum(1 for e in D if e.get("score") is None))
 print("有座別但零座釘", sum(1 for e in D if (e.get("blocks") or []) and not any(b.get("lat") is not None for b in e["blocks"])))
 print("座釘總數", sum(1 for e in D for b in (e.get("blocks") or []) if b.get("lat") is not None))
+_miss = sum(1 for e in D for b in (e.get("blocks") or []) if b.get("lat") is None)
+_est = sum(1 for e in D for b in (e.get("blocks") or []) if b.get("est"))
+print("缺座標座數", _miss, "（必須 0）｜估算位置座數", _est)
 print("同名座（同一屋苑內）", sum(1 for e in D for n, c in collections.Counter(
     b["n"] for b in (e.get("blocks") or []) if not b.get("nr")).items() if c > 1))
 

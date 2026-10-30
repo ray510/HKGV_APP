@@ -25,6 +25,7 @@ HOSPITAL_SRC = os.path.join(BASE, "data", "raw", "osm_hospitals.json")
 OSM_CACHE = os.path.join(BASE, "data", "normalized", "osm_block_coords.json")
 LANDSD_CACHE = os.path.join(BASE, "data", "normalized", "landsd_block_coords.json")
 CSDI_BLOCK_CACHE = os.path.join(BASE, "data", "normalized", "csdi_block_coords.json")
+BLOCK_PIN_CACHE = os.path.join(BASE, "data", "normalized", "block_pin_fill.json")
 FERRY_CACHE = os.path.join(BASE, "data", "normalized", "ferry_piers.json")
 EMSD_BLOCK_LIFTS = os.path.join(BASE, "data", "normalized", "emsd_block_lifts.json")
 PRV_BLOCK_CACHE = os.path.join(BASE, "data", "normalized", "prv_blocks.json")
@@ -595,6 +596,66 @@ def ensure_landsd_block_coords(data):
     return n_hit
 
 
+def _ring_pts(clat, clng, n, fixed):
+    """喺現有座釘之間嘅空隙擺位（半徑＝現有座釘平均距離）。"""
+    import math as _m
+    if fixed:
+        rs = [haversine(clat, clng, p[0], p[1]) for p in fixed]
+        radius = max(35.0, min(160.0, sum(rs) / len(rs)))
+    else:
+        radius = 60.0
+    pts, ref = [], list(fixed)
+    for _ in range(n):
+        best, bd = None, -1.0
+        for a in range(0, 360, 10):
+            ang = _m.radians(a)
+            la = clat + radius * _m.cos(ang) / 111320.0
+            lo = clng + radius * _m.sin(ang) / (111320.0 * _m.cos(_m.radians(clat)))
+            d = min([haversine(la, lo, p[0], p[1]) for p in ref] or [1e9])
+            if d > bd:
+                bd, best = d, (la, lo)
+        pts.append(best)
+        ref.append(best)
+    return pts
+
+
+def ensure_all_block_pins(data):
+    """**每一座都要有圖釘**。
+    先用 fill_block_pins.py 產生嘅快取（名／前綴／層數配對，est=1），
+    仍未有着落嘅即場環形擺位（est=2），確保 0 座缺座標。"""
+    cache = {}
+    if os.path.exists(BLOCK_PIN_CACHE):
+        with open(BLOCK_PIN_CACHE, encoding="utf-8") as f:
+            cache = json.load(f)
+    n_cache = n_ring = 0
+    for e in data:
+        blocks = e.get("blocks") or []
+        if not blocks:
+            continue
+        fixed = [(b["lat"], b["lng"]) for b in blocks if b.get("lat") is not None]
+        miss = [b for b in blocks if b.get("lat") is None]
+        if not miss:
+            continue
+        clat = sum(p[0] for p in fixed) / len(fixed) if fixed else e.get("lat")
+        clng = sum(p[1] for p in fixed) / len(fixed) if fixed else e.get("lng")
+        if clat is None or clng is None:
+            continue
+        for b in miss:
+            v = cache.get(f'{e["source"]}|{e["name_tc"]}|{b["n"]}')
+            if v:
+                b["lat"], b["lng"] = v["lat"], v["lng"]
+                b["est"] = v.get("est", 1)
+                n_cache += 1
+        rest = [b for b in miss if b.get("lat") is None]
+        if rest:
+            for b, (la, lo) in zip(rest, _ring_pts(clat, clng, len(rest), fixed)):
+                b["lat"], b["lng"] = round(la, 6), round(lo, 6)
+                b["est"] = 2
+                n_ring += 1
+    print(f"  📍 座釘補完：快取 {n_cache} 座、環形估算 {n_ring} 座", flush=True)
+    return n_cache + n_ring
+
+
 def ensure_block_coords(data):
     """用 OSM Overpass 為 PRH 專名座（耀康樓等）補座級座標（LandsD 未覆蓋時嘅 fallback）。
     批次模式：每 20 個屋邨併一條查詢（全港約 13 條請求），事後按
@@ -772,6 +833,7 @@ backfill_blocks(data)          # 再補：私人冇座別（普查分界缺失�
 ensure_csdi_block_coords(data)
 ensure_landsd_block_coords(data)
 ensure_block_coords(data)
+ensure_all_block_pins(data)     # 每一座都要有圖釘（快取配對 → 環形估算）
 sanitize_block_heights(data)   # 層高唔合理（<2.2m/層）→ 丟棄可疑高度，只保留層數
 
 # 離島錨點：最近渡輪碼頭
