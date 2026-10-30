@@ -489,8 +489,11 @@ document.getElementById("covToggle").onchange = ev => {
 });
 
 // ---- 篩選 ----
+// 英文名比對忽略空格／標點：「GreenCode」「green code」「Green-Code」都搵到「Green Code」
+const normQ = s => (s || "").toLowerCase().replace(/[\s\-·．._]/g, "");
 function filtered(){
   const q = document.getElementById("q").value.trim().toLowerCase();
+  const qn = normQ(q);
   const etype = document.getElementById("etype").value;
   const dist = document.getElementById("district").value;
   const walk = document.getElementById("walk").value;
@@ -498,7 +501,7 @@ function filtered(){
   const lift = document.getElementById("needLift").checked;
   const sortby = document.getElementById("sortby").value;
   let list = DATA.filter(e =>
-    (!q || (e.name_tc||"").toLowerCase().includes(q) || (e.name_en||"").toLowerCase().includes(q)) &&
+    (!q || (e.name_tc||"").toLowerCase().includes(q) || normQ(e.name_en).includes(qn)) &&
     (!etype || e.source === etype) &&
     (!dist || e.district_tc === dist) &&
     (!walk || (e.mtr_candidates||[]).some(c => c.distance_m <= +walk)) &&

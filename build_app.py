@@ -93,7 +93,7 @@ NON_RESIDENTIAL = ("會所", "商場", "停車場", "車場", "幼稚園", "學�
                    "辦事處", "管理處", "警署", "警崗", "消防", "變電", "變壓", "泵房", "垃圾", "涼亭",
                    "通道", "平台", "閘", "泳池", "球場", "街市", "街坊", "公園", "廁", "郵局",
                    "安老院", "護理", "幼兒", "教會", "禮拜堂", "廟", "酒店", "銀行", "油站", "巴士",
-                   "俱樂部", "車站", "服務中心", "發展中心", "社區中心", "文娛", "耆康", "福利", "新城")
+                   "俱樂部", "車站", "服務中心", "發展中心", "社區中心", "文娛", "耆康", "福利", "書院")
 NON_RESIDENTIAL_EN = ("SCHOOL", "KINDERGARTEN", "COLLEGE", "UNIVERSITY", "CHURCH", "HOTEL",
                       "MALL", "CLUBHOUSE", "CLUB HOUSE", "CAR PARK", "SUBSTATION", "TEMPLE",
                       "HOSPITAL", "CLINIC", "LIBRARY", "THEATRE")
@@ -106,12 +106,15 @@ def _is_residential_name(n):
     s = n.strip()
     if re.fullmatch(r"[\(（].*[\)）]", s):              # "(BRO)" 呢類佔位名
         return False
-    if len(s) <= 2 and not re.search(r"[座閣樓苑]", s):  # 單字／「二期」碎片
+    if len(s) <= 1:                                    # 單字碎片
+        return False
+    if re.fullmatch(r"[A-Za-z0-9\-]{1,3}", s):         # "A"、"B1" 呢類佔位名
         return False
     u = s.upper()
     if any(k in s for k in NON_RESIDENTIAL) or any(k in u for k in NON_RESIDENTIAL_EN):
         return False
-    if s.endswith(("站", "場", "房", "廠", "校")):
+    # 結尾判斷：唔可以一刀切用 substring，否則「愉景新城第X座」會被「新城」誤殺
+    if s.endswith(("站", "場", "房", "廠", "校", "新城")):
         return False
     return True
 
