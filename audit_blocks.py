@@ -114,7 +114,7 @@ for e in DATA:
             add("WARN", e["name_tc"], n, "座名係範圍字串（非單一座）")
 
 print("=== 覆蓋統計 ===")
-for st in ("PRH", "LPH", "HOS", "PRV", "VLG"):
+for st in ("PRH", "LPH", "HOS", "PRV", "PRVD", "VLG"):
     a, b_, c = stat[f"{st}_estates"], stat[f"{st}_with_blocks"], stat[f"{st}_no_blocks"]
     blk = stat[f"{st}_blocks"]
     print(f"{st}: 屋苑 {a}｜有座別 {b_}｜冇座別 {c}｜住宅座 {blk}｜另標記非住宅 {stat[f'{st}_nonres']}")

@@ -105,7 +105,7 @@ def _is_residential_name(n):
     if not n:
         return False
     s = n.strip()
-    if re.fullmatch(r"[\(（].*[\)）]", s):              # "(BRO)" 呢類佔位名
+    if re.fullmatch(r"[\(（][A-Za-z0-9\s\-]{1,8}[\)）]", s):   # 只當 "(BRO)" 呢類拉丁佔位名係非住宅
         return False
     if len(s) <= 1:                                    # 單字碎片
         return False
@@ -129,7 +129,17 @@ def _mark_blocks(blocks, estate_name=""):
     for b in blocks:
         n = (b.get("n") or "").strip()
         rest = n[len(estate_name):].strip() if estate_name and n.startswith(estate_name) else n
-        ph = 1 if (FRAGMENT.match(rest) or re.fullmatch(r"[\(（].*[\)）]", n or "")) else 0
+        # 佔位名只限：空、純字母數字（"A"／"B1"）、純拉丁括號（"(BRO)"）；
+        # 「第一期」「（一座）」係真座名，唔可以當碎片
+        ph = 0
+        if not n:
+            ph = 1
+        elif re.fullmatch(r"[\(（][A-Za-z0-9\s\-]{1,8}[\)）]", n):
+            ph = 1
+        elif re.fullmatch(r"[A-Za-z0-9\-]{1,3}", n):
+            ph = 1
+        elif FRAGMENT.match(rest) and not re.search(r"[座期]", rest):
+            ph = 1
         b["nr"] = 0 if (_is_residential_name(n) and not ph) else 1
         if ph:
             b["ph"] = 1
@@ -725,6 +735,31 @@ schools = load_schools()
 kgs = load_kindergartens()
 ae_hosp = load_ae_hospitals()
 
+# ---- B 方案：地政總署 Tower 聚類推導嘅私人屋苑（估算，est=1）----
+DERIVED = os.path.join(BASE, "derived_estates.json")
+if os.path.exists(DERIVED) and not os.environ.get("HKGV_NO_DERIVED"):
+    with open(DERIVED, encoding="utf-8") as f:
+        _dv = json.load(f)
+    _base = [e for e in data if e.get("lat") is not None]
+    for x in _dv:
+        nb = min(_base, key=lambda e: haversine(x["lat"], x["lng"], e["lat"], e["lng"]))
+        e = {"name_tc": x["name_tc"], "name_en": "", "source_type": "PRVD",
+             "source": "LandsD-cluster", "est": 1,
+             "lat": x["lat"], "lng": x["lng"],
+             "district_tc": nb.get("district_tc"), "region_tc": nb.get("region_tc"),
+             "blocks": x.get("blocks") or [], "blocks_count": x["towers"],
+             "blocks_source": "LandsD",
+             "total_units": x["est_units"], "est_pop": x["est_pop"],
+             "sub_scores": {}}
+        # 借最近屋苑嘅設施點（同一間 facility）重算真實距離
+        for src in ("nearest_care", "nearest_childcare", "nearest_elderly",
+                    "nearest_shelter", "nearest_hospital"):
+            v = nb.get(src)
+            if v and v.get("lat") is not None:
+                e[src] = dict(v, distance_m=int(haversine(x["lat"], x["lng"], v["lat"], v["lng"])))
+        data.append(e)
+    print(f"  推算屋苑（地政總署聚類）：{len(_dv):,} 個", flush=True)
+
 # 座別名單標記（唔刪）：非住宅建築／佔位名只加 nr/ph 旗標，前端灰顯示並排除喺「N 座」計數
 for _e in data:
     if _e.get("blocks"):
@@ -764,6 +799,25 @@ for e in data:
         k.pop("en", None)
         k["lat"] = round(k["lat"], 5)
         k["lng"] = round(k["lng"], 5)
+    if e.get("est"):
+        from stage2_full import compute_living_circle_metrics
+        d_mtr = e["mtr_candidates"][0]["distance_m"] if e["mtr_candidates"] else 1500
+        d_sch = e["school_candidates"][0]["distance_m"] if e["school_candidates"] else 1200
+        n_sch800 = sum(1 for x in e["school_candidates"] if x["distance_m"] <= 800)
+        n_kg800 = sum(1 for k in e["nearest_kgs"] if k["d"] <= 800)
+        nc = e.get("nearest_care") or {}
+        ncc = e.get("nearest_childcare") or {}
+        ne = e.get("nearest_elderly") or {}
+        ns = e.get("nearest_shelter") or {}
+        nh = e.get("nearest_hospital") or {}
+        sc, subs = compute_living_circle_metrics(
+            d_mtr, d_sch, n_sch800, n_kg800,
+            nc.get("distance_m") or 1500, nc.get("count_800m") or 0,
+            ncc.get("distance_m") or 1500, ncc.get("count_800m") or 0,
+            ne.get("distance_m") or 1500, ns.get("distance_m") or 1500,
+            nh.get("distance_m") or 2000, None, None)
+        e["sub_scores"] = subs
+        e["score"] = sc
     # 5km 內全部急症醫院（供逐間揀；上限 12，冇就最近 3 間）
     hosp_ranked = sorted(
         ({"n": h["zh"], "lat": round(h["lat"], 5), "lng": round(h["lng"], 5),

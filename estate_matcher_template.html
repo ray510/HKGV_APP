@@ -203,7 +203,8 @@
             <option value="PRH">🏠 公屋（房委會）</option>
             <option value="LPH">🏘️ 簡約公屋</option>
             <option value="HOS">🔑 居屋／綠置居</option>
-            <option value="PRV">🏢 私人屋苑</option>
+            <option value="PRV">🏢 私人屋苑（官方）</option>
+            <option value="PRVD">📐 私人屋苑（推算）</option>
             <option value="VLG">🌄 鄉村（村屋）</option>
           </select></label>
         <label class="chk"><span class="k">地區</span>
@@ -391,7 +392,7 @@ function setProfile(p){
 }
 
 // ---- 統計列 ----
-const ST_NAME = {PRH:"公屋",LPH:"簡約公屋",HOS:"居屋",PRV:"私人",VLG:"鄉村"};
+const ST_NAME = {PRH:"公屋",LPH:"簡約公屋",HOS:"居屋",PRV:"私人",PRVD:"推算私人",VLG:"鄉村"};
 const stCounts = {};
 DATA.forEach(e => { const k = e.source_type || e.source; stCounts[k] = (stCounts[k]||0)+1; });
 const nUnits = DATA.reduce((a,e)=>a+(e.total_units||0),0);
@@ -402,7 +403,8 @@ document.getElementById("statbar").innerHTML =
 // 地圖 popup 共用：單位數只對有數據類型顯示；居屋顯示落成年份、私人顯示普查人口
 function popupHtml(e, withProfile){
   const stn = ST_NAME[e.source_type || e.source] || "";
-  const units = e.total_units != null ? `｜${e.total_units.toLocaleString()} 個單位${e.source_type === "HOS" && e.hos_year ? `（${e.hos_year} 落成）` : ""}`
+  const units = e.source_type === "PRVD" ? `｜推算 ${e.blocks_count||0} 座・約 ${(e.est_pop||0).toLocaleString()} 人`
+    : e.total_units != null ? `｜${e.total_units.toLocaleString()} 個單位${e.source_type === "HOS" && e.hos_year ? `（${e.hos_year} 落成）` : ""}`
     : e.source_type === "HOS" ? (e.hos_year ? `｜居屋 ${e.hos_year} 落成` : "｜居屋屋苑")
     : e.source_type === "PRV" ? (e.census_pop ? `｜人口 ${e.census_pop.toLocaleString()}（2021 普查）` : "｜私人屋苑")
     : e.source_type === "VLG" ? "｜鄉村（村級錨點）" : "";
@@ -503,7 +505,7 @@ function filtered(){
   const sortby = document.getElementById("sortby").value;
   let list = DATA.filter(e =>
     (!q || (e.name_tc||"").toLowerCase().includes(q) || normQ(e.name_en).includes(qn)) &&
-    (!etype || e.source === etype) &&
+    (!etype || (e.source_type || e.source) === etype) &&
     (!dist || e.district_tc === dist) &&
     (!walk || (e.mtr_candidates||[]).some(c => c.distance_m <= +walk)) &&
     (!minsc || scoreOf(e) >= +minsc) &&
@@ -555,7 +557,7 @@ function render(){
         (canChainElder ? `<button class="go chain alt2" data-p="${e._key}" data-c="elder">🔗 護老返工鏈</button>` : "") +
         `</div>`
       : "";
-    const ST_META = {PRH:["prh","公屋"],LPH:["lph","簡屋"],HOS:["hos","居屋"],PRV:["prv","私人"],VLG:["vlg","村屋"]};
+    const ST_META = {PRH:["prh","公屋"],LPH:["lph","簡屋"],HOS:["hos","居屋"],PRV:["prv","私人"],PRVD:["prv","推算私人"],VLG:["vlg","村屋"]};
     const [stCls, stLbl] = ST_META[e.source_type] || ST_META[e.source] || ["prh","公屋"];
     const hasUnits = e.total_units != null;
     el.innerHTML = `
@@ -567,13 +569,15 @@ function render(){
         <div class="brk">${brk}</div>
       </div>
       <div class="row">
-        ${hasUnits ? `<span class="pill">${(e.total_units||0).toLocaleString()} 個單位</span>
-        <span class="pill">${e.blocks_count||"?"} 座</span>` : ""}
+        ${hasUnits ? (e.source_type === "PRVD"
+          ? `<span class="pill">約 ${(e.total_units||0).toLocaleString()} 伙（估算）</span><span class="pill">${e.blocks_count||"?"} 座</span>`
+          : `<span class="pill">${(e.total_units||0).toLocaleString()} 個單位</span><span class="pill">${e.blocks_count||"?"} 座</span>`) : ""}
         ${e.source_type === "HOS" ? `${e.hos_scheme ? `<span class="pill">🔑 ${e.hos_scheme}</span>` : ""}${e.hos_year ? `<span class="pill">落成 ${e.hos_year}</span>` : ""}${e.hos_area_range ? `<span class="pill">實用約 ${e.hos_area_range} m²</span>` : ""}` : ""}
-        ${e.source_type !== "HOS" && hasUnits ? `<span class="pill">樓層 ${e.min_floor??"?"}–${e.max_floor??"?"}</span>
+        ${e.source_type !== "HOS" && e.source_type !== "PRVD" && hasUnits ? `<span class="pill">樓層 ${e.min_floor??"?"}–${e.max_floor??"?"}</span>
         <span class="pill">平均 ${e.avg_area??"?"} m²</span>` : ""}
         ${e.source_type === "PRV" ? `${e.census_pop ? `<span class="pill">人口 ${e.census_pop.toLocaleString()}（2021 普查）</span>` : ""}${e.census_income_md ? `<span class="pill">中位月入 $${Number(e.census_income_md).toLocaleString()}</span>` : ""}` : ""}
         ${e.source_type === "VLG" ? `<span class="pill">鄉村分界錨點</span>` : ""}
+        ${e.source_type === "PRVD" ? `<span class="pill">📐 推算（非官方界線）</span><span class="pill">約 ${(e.est_pop||0).toLocaleString()} 人</span>` : ""}
       </div>
       ${hasUnits && e.non_elevator_units != null ? `<div class="row">
         ${ok ? '<span class="pill good">✓ 全幢有升降機</span>'
