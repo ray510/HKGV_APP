@@ -89,7 +89,12 @@ def norm(n):
 ADDR = re.compile(r"^.+[街道路里巷徑][0-9０-９]+[號A-Za-z]?$")
 
 
-ROOT_STRIP = re.compile(r"([（(][^）)]*[）)]|第?[0-9０-９一二三四五六七八九十百]+[座棟幢期]|[A-Za-zＡ-Ｚ]$|座$|期$)\s*$")
+ROOT_STRIP = re.compile(
+    r"([（(][^）)]*[）)]"                                       # （高座）
+    r"|第?[0-9０-９一二三四五六七八九十百]+[A-Za-zＡ-Ｚ]?[座棟幢期]"  # 第1座／第２Ａ座／第一期
+    r"|[Ａ-Ｚａ-ｚ]$"                                          # 全形字母座別（海天大廈Ａ）
+    r"|(?<=[\u4e00-\u9fff座）)])\s*[A-Za-z]$"                # 半形字母只喺中文字後先剝（MONTEREY 唔可以剝爛）
+    r"|座$|期$)\s*$")
 
 
 def root_of(n):
@@ -134,8 +139,8 @@ def load_existing():
     D = json.loads(h[i:j])
     out = []
     for e in D:
-        if e.get("lat") is None or e.get("source_type") == "PRVD":
-            continue      # 唔可以用自己上次推導嘅結果做「已覆蓋」，否則會愈跑愈少
+        if e.get("lat") is None or e.get("source_type") in ("PRVD", "VLG"):
+            continue      # 唔可以用推導結果做「已覆蓋」；村落中心點唔係樓，唔計覆蓋
         pts = [(e["lat"], e["lng"])]
         for b in (e.get("blocks") or []):
             if b.get("lat") is not None and not b.get("nr"):
@@ -230,7 +235,9 @@ def main():
         for dy in (-0.01, 0, 0.01):
             for dx in (-0.01, 0, 0.01):
                 for e, py, px in ex_idx.get((round(gy + dy, 2), round(gx + dx, 2)), ()):
-                    if hav(t["y"], t["x"], py, px) <= 200:
+                    # 座釘 120m／屋苑中心 100m：而家座釘係實測，唔需要 200m 咁闊，
+                    # 否則隔籬屋苑（凱帆軒 vs 浪澄灣、揚海 vs 晉環）會被搶走
+                    if hav(t["y"], t["x"], py, px) <= (120 if e.get("blocks") else 100):
                         return e
         return None
 
@@ -248,13 +255,24 @@ def main():
         r = root_of(t["n"])
         if ADDR.match(r):          # 「淺水灣道３７號」呢類係門牌，唔係屋苑名
             continue
-        if n_cjk(r) >= 3 and r not in GENERIC and not r.endswith(("街", "道", "路", "里", "巷", "徑", "村")):
-            by_root[r].append(t)
+        cjk = n_cjk(r)
+        alpha = len(re.sub(r"[^0-9A-Za-z]", "", r))
+        # 收中文名（≥2 字）同英文名（MONTEREY／LP6／SEA TO SKY…）——之前淨係收 3 字中文名，
+        # 令 2013 後新盤（多數英文名）同「峻瀅II」呢類全部走甩
+        if cjk + alpha < 2 or cjk + alpha > 20 or r in GENERIC \
+                or r.endswith(("街", "道", "路", "里", "巷", "徑", "村")):
+            continue
+        if cjk < 2 and alpha < 3:
+            continue
+        by_root[r].append(t)
 
     used, groups = set(), []
     for r, members in by_root.items():
         cand = [t for t in members if t["i"] not in used]
         if len(cand) < MIN_TOWERS:
+            continue
+        # 2 字中文名（南灣、瑜一）撞名風險高 → 要 ≥3 座先收
+        if n_cjk(r) == 2 and len(cand) < 3:
             continue
         for g in compact_cluster(cand, MAX_SPREAD / 2):
             ms = [t for t in g["ms"] if t["i"] not in used]
@@ -264,13 +282,15 @@ def main():
                 used.add(t["i"])
             groups.append({"name": r, "members": ms})
 
-    # 單幢 ≥30 層
+    # 單幢 ≥25 層（原本 ≥30，漏咗大量 25–29 層單幢樓）
     singles = 0
     for t in left:
         if t["i"] in used:
             continue
-        if (t.get("s") or 0) >= 30:
-            groups.append({"name": t["n"].strip(), "members": [t]})
+        if (t.get("s") or 0) >= 25:
+            _r = root_of(t["n"])
+            groups.append({"name": _r if (n_cjk(_r) >= 2 or len(re.sub(r"[^0-9A-Za-z]", "", _r)) >= 3)
+                           else t["n"].strip(), "members": [t], "single": 1})
             used.add(t["i"]); singles += 1
 
     # 同名／前綴合併（<300m）
@@ -308,7 +328,7 @@ def main():
     out, n_low = [], 0
     for g in merged:
         ms = dedupe_members(g["members"])
-        if len(ms) < MIN_TOWERS:
+        if len(ms) < MIN_TOWERS and not g.get("single"):
             continue
         if dup(g["name"], g["lat"], g["lng"]):
             continue
