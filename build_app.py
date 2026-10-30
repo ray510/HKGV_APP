@@ -792,6 +792,8 @@ with open(SRC, encoding="utf-8") as f:
 
 from stage2_full import build_mtr_venues
 venues = build_mtr_venues()
+mtr_all = [{"zh": v["zh"], "en": v.get("en") or "", "lat": round(v["lat"], 5), "lng": round(v["lng"], 5)}
+           for v in venues]
 schools = load_schools()
 kgs = load_kindergartens()
 ae_hosp = load_ae_hospitals()
@@ -931,7 +933,8 @@ cov_payload = json.dumps(
     ensure_ascii=False, separators=(",", ":"))
 assert "</script" not in cov_payload.lower(), "covered payload contains script-breaking sequence"
 
-html = tpl.replace("__DATA__", payload).replace("__COVERED__", cov_payload)
+html = tpl.replace("__DATA__", payload).replace("__COVERED__", cov_payload) \
+          .replace("__MTR__", json.dumps(mtr_all, ensure_ascii=False, separators=(",", ":")))
 with open(OUT, "w", encoding="utf-8") as f:
     f.write(html)
 

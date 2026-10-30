@@ -707,7 +707,9 @@ function render(){
   });
   box.querySelectorAll(".dchip").forEach(btn => btn.onclick = () => {
     const d = btn.dataset.d;
-    if (d === "kg" || d === "hosp") openDestPicker(btn.dataset.p, d);   // 先揀邊間
+    const pe = DATA.find(x => x._key === btn.dataset.p);
+    const nOpt = pe && DEST[d] ? DEST[d].pool(pe).length : 1;
+    if (d === "kg" || d === "hosp" || nOpt > 1) openDestPicker(btn.dataset.p, d);   // 先揀邊個
     else planRoute(btn.dataset.p, d);
   });
   box.querySelectorAll(".go.chain").forEach(btn => btn.onclick = () => planChain(btn.dataset.p, btn.dataset.c));
@@ -966,19 +968,39 @@ function bindElevHover(){
 // ---- 目的地選擇器（幼稚園：800m 全部；急症醫院：5km 全部，逐間揀去規劃 3D 路線）----
 function openDestPicker(key, kind){
   const e = DATA.find(x => x._key === key);
-  const isKg = kind === "kg";
-  const list = (isKg ? (e.nearest_kgs || []) : (e.ae_hospitals || [])).slice().sort((a, b) => a.d - b.d);
-  document.getElementById("kgTitle").textContent = isKg
-    ? `👶 ${e.name_tc}：800m 內幼稚園（${list.length} 間）`
-    : `🏥 ${e.name_tc}：5km 內急症醫院（${list.length} 間）`;
+  let list = [];
+  if (kind === "kg"){
+    list = (e.nearest_kgs || []).slice().sort((a, b) => a.d - b.d)
+      .map(k => ({zh: k.n, lat: k.lat, lng: k.lng, distance_m: k.d}));
+  } else if (kind === "hosp"){
+    list = (e.ae_hospitals || []).slice().sort((a, b) => a.d - b.d)
+      .map(h => ({zh: h.n, lat: h.lat, lng: h.lng, distance_m: h.d}));
+  } else {
+    list = (DEST[kind] ? DEST[kind].pool(e) : []).slice();
+    // 港鐵：畀用戶自選全港任何一個站（唔止最近 3 個）
+    if (kind === "mtr"){
+      const have = new Set(list.map(c => c.zh));
+      MTR_ALL.forEach(s => {
+        if (!have.has(s.zh)){
+          list.push({zh: s.zh, lat: s.lat, lng: s.lng,
+                     distance_m: e.lat != null ? Math.round(havM(e.lat, e.lng, s.lat, s.lng)) : null});
+        }
+      });
+    }
+  }
+  list.sort((a, b) => (a.distance_m ?? 1e9) - (b.distance_m ?? 1e9));
+  document.getElementById("kgTitle").textContent =
+    `${DEST_LABEL[kind] || kind}｜${e.name_tc}（${list.length} 個選擇，按距離排）`;
   const box = document.getElementById("kgList");
+  const near = new Set((DEST[kind] ? DEST[kind].pool(e) : []).map(c => c.zh));
   box.innerHTML = list.length
-    ? list.map((k, i) => `<button class="kgRow" data-i="${i}"><b>${k.n}</b><span>${k.d} 米</span></button>`).join("")
+    ? list.map(k => `<button class="kgRow" data-zh="${k.zh.replace(/"/g, "&quot;")}"><b>${k.zh}</b>` +
+        `<span>${k.distance_m != null ? k.distance_m + " 米" : ""}${near.has(k.zh) ? "・⭐建議錨點" : ""}</span></button>`).join("")
     : `<div class="hint">附近冇記錄。</div>`;
   box.querySelectorAll(".kgRow").forEach(b => b.onclick = () => {
-    const k = list[+b.dataset.i];
+    const k = list.find(x => x.zh === b.dataset.zh);
     document.getElementById("kgModal").style.display = "none";
-    planRoute(key, kind, null, {zh: k.n, lat: k.lat, lng: k.lng, distance_m: k.d});
+    planRoute(key, kind, null, k);
   });
   document.getElementById("kgModal").style.display = "flex";
 }
@@ -988,6 +1010,14 @@ document.getElementById("kgModal").addEventListener("click", ev => {
 });
 
 // 目的地配置：mtr 有 3 站雙錨點 fallback，其餘單點
+function havM(a, b, c, d){   // 米
+  const R = 6371000, p1 = a * Math.PI / 180, p2 = c * Math.PI / 180;
+  const dp = p2 - p1, dl = (d - b) * Math.PI / 180;
+  const x = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+const MTR_ALL = __MTR__;   // 全港港鐵站（自選目的地用）
+
 const DEST = {
   mtr:  {label:"🚇 港鐵",    kind:"港鐵站",   pool:e => (e.mtr_candidates?.length ? e.mtr_candidates : [e.nearest_mtr].filter(Boolean))},
   sch:  {label:"🏫 小學",    kind:"小學",     pool:e => (e.school_candidates?.length ? e.school_candidates : [e.nearest_school].filter(Boolean))},
