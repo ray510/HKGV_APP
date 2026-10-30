@@ -357,16 +357,18 @@ def ensure_landsd_block_coords(data):
             combo = (e["name_tc"] + b["n"]).strip()
             if combo not in cache and combo not in todo2:
                 todo2[combo] = True
-    if todo2 and os.environ.get("HKGV_SKIP_LANDSD"):
-        print(f"  LandsD 座級（串接名 fallback）：{len(todo2)} 個待查，HKGV_SKIP_LANDSD=1 → 跳過", flush=True)
-    elif todo2:
+    if todo2:
         combos = sorted(todo2)
-        print(f"  LandsD 座級（串接名 fallback）：{len(combos)} 個待查…", flush=True)
-        for i in range(0, len(combos), 25):
-            _landsd_name_query(combos[i:i+25], cache)
-            time.sleep(0.6)
-        with open(LANDSD_CACHE, "w", encoding="utf-8") as f:
-            json.dump(cache, f, ensure_ascii=False)
+        if os.environ.get("HKGV_SKIP_LANDSD"):
+            # 只跳過「上網查」，唔可以跳過下面套快取——否則快取已有座標嘅座（如山麗苑 6 座）會白白變返 N/A
+            print(f"  LandsD 座級（串接名 fallback）：{len(combos)} 個待查，HKGV_SKIP_LANDSD=1 → 唔查網，只套快取", flush=True)
+        else:
+            print(f"  LandsD 座級（串接名 fallback）：{len(combos)} 個待查…", flush=True)
+            for i in range(0, len(combos), 25):
+                _landsd_name_query(combos[i:i+25], cache)
+                time.sleep(0.6)
+            with open(LANDSD_CACHE, "w", encoding="utf-8") as f:
+                json.dump(cache, f, ensure_ascii=False)
         for e in data:
             if e.get("lat") is None:
                 continue

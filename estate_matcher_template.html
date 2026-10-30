@@ -645,8 +645,17 @@ function toggleBlocks(key, btn){
   }).join("");
   const blkTypeNote = e.source_type === "HOS" ? "居屋座名來自房委會屋苑資料；" :
     e.source_type === "PRV" ? "私人屋苑座名由地政總署「建築物」多邊形發現（Tower＋有名）；" : "";
+  // 逐欄解釋「點解係 —」：唔好只寫「冇公開數據」，要講清楚邊個源頭冇
+  const allNA = k => (e.blocks || []).every(b => b[k] == null);
+  const naBits = [];
+  if (allNA("u")) naBits.push(e.source_type === "HOS" ? "單位：房委會只公佈屋苑總數，冇逐座數字" : "單位：冇公開逐座數字");
+  if (allNA("e")) naBits.push("有𨋢：只有公屋／簡屋有單位級升降機數據");
+  if (allNA("emsd_lifts")) naBits.push("EMSD：機電署座級覆核只做公屋（居屋／私人地址未匹配）");
+  if (allNA("f1")) naBits.push("樓層：只有公屋單位檔有樓層範圍");
+  if (allNA("a")) naBits.push("均面：居屋／私人只有屋苑級面積");
+  const naNote = naBits.length ? `<br><b>呢個屋苑點解咁多「—」：</b>${naBits.join("；")}。` : "";
   boxEl.innerHTML = `<table class="blkT"><tr><th>座</th><th>單位</th><th>有𨋢</th><th>EMSD 升降機</th><th>樓層</th><th>均面</th><th>樓高</th><th>路線</th></tr>${rows}</table>` +
-    `<div class="hint">${blkTypeNote}「—」＝冇公開數據（如實 N/A）；有𨋢 %＝該座有升降機服務嘅單位比例（只對公屋／簡屋）；EMSD＝機電署註冊升降機部數；樓高／座級位置來自地政總署「建築物」多邊形。</div>`;
+    `<div class="hint">${blkTypeNote}「—」＝冇公開數據（如實 N/A）；有𨋢 %＝該座有升降機服務嘅單位比例（只對公屋／簡屋）；EMSD＝機電署註冊升降機部數；樓高／座級位置來自地政總署「建築物」多邊形。${naNote}</div>`;
   boxEl.style.display = "block";
   btn.textContent = "▲ 收起座別明細";
   boxEl.querySelectorAll(".blkGo").forEach(g => g.onclick = () => {
@@ -660,7 +669,11 @@ function toggleBlocks(key, btn){
       const full = b.u && b.e >= b.u;
       return L.circleMarker([b.lat, b.lng], {radius: 6, color: full ? "#0f9d8a" : "#b45309",
         fillOpacity: .85, weight: 2})
-        .bindPopup(`<b>${e.name_tc} ${b.n}</b><br>${b.u} 個單位｜有𨋢 ${b.e}/${b.u}（${Math.round(b.e/b.u*100)}%）<br>樓層 ${b.f1 ?? "?"}–${b.f2 ?? "?"}${b.s != null ? `｜樓高 ${b.s} 層${b.h != null ? "／" + b.h + "m" : ""}` : ""}`);
+        .bindPopup(`<b>${e.name_tc} ${b.n}</b><br>` +
+          (b.u ? `${b.u} 個單位｜有𨋢 ${b.e}/${b.u}（${Math.round(b.e / b.u * 100)}%）<br>` : "") +
+          (b.f1 != null ? `樓層 ${b.f1}–${b.f2}<br>` : "") +
+          (b.s != null ? `樓高 ${b.s} 層${b.h != null ? "／" + b.h + "m" : ""}` : "") +
+          (b.u == null && b.f1 == null && b.s == null ? "暫無座級公開數據" : ""));
     })).addTo(map);
     map.fitBounds(L.featureGroup(pts.map(b => [b.lat, b.lng])).getBounds().pad(.3), {maxZoom: 17});
   }
