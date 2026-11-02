@@ -524,6 +524,19 @@ function addEstateMarker(e){
 }
 DATA.forEach(addEstateMarker);
 
+// 飛去屋苑：有座釘就 fitBounds 到「全部座」，唔止中心點——
+// 否則大屋苑（海怡半島 42 座、葵涌邨 16 座）喺 z16 只有畫面內幾粒釘，睇落好似「有座冇圖標」
+function flyToEstate(e){
+  if (e == null || e.lat == null) return;
+  const pts = [[e.lat, e.lng]].concat(
+    (e.blocks || []).filter(b => b.lat != null).map(b => [b.lat, b.lng]));
+  if (pts.length > 1){
+    map.fitBounds(L.latLngBounds(pts).pad(0.25), {maxZoom: 17, animate: true});
+  } else {
+    map.setView([e.lat, e.lng], Math.max(map.getZoom(), 16), {animate: true});
+  }
+}
+
 // 撳地圖釘 → 結果清單直接跳返去所屬屋苑卡片（閃一下提示）
 function focusCard(key){
   const e = DATA.find(x => x._key === key);
@@ -556,14 +569,25 @@ function refreshBlockPins(){
     blockPins.clearLayers();
     DATA.forEach(e => {
       if (e.lat == null || !b.contains([e.lat, e.lng])) return;
-      (e.blocks || []).forEach(bk => {
-        if (bk.lat == null) return;
+      const _pts = (e.blocks || []).filter(bk => bk.lat != null);
+      if (!_pts.length){
+        // 冇任何座釘（717 個鄉村／舊屋苑）→ 用屋苑圓點代替，否則放大到 z16 會憑空消失
+        const _c = scoreColor(e.score);
+        const _mk = L.circleMarker([e.lat, e.lng], {
+          radius: 6, color: _c, fillColor: _c, fillOpacity: .8, weight: 2
+        }).bindPopup(popupHtml(e, false));
+        _mk.on("click", () => { if (e.nearest_mtr) planRoute(e._key, "mtr"); focusCard(e._key); });
+        blockPins.addLayer(_mk);
+        return;
+      }
+      _pts.forEach(bk => {
         const col = bk.nr ? "#9ca3af"
           : (bk.u == null ? "#0369a1" : (bk.e >= bk.u ? "#0f9d8a" : "#b45309"));
         const mk = L.circleMarker([bk.lat, bk.lng], {
           radius: 5, color: col, fillColor: col, fillOpacity: bk.est ? .35 : .85,
           weight: 2, dashArray: bk.est ? "3,2" : null
-        }).bindPopup(`<b>${e.name_tc} ${bk.n}</b><br>` +
+        }).bindTooltip(`${e.name_tc} ${bk.n}`, {direction: "top", offset: [0, -6]})
+          .bindPopup(`<b>${e.name_tc} ${bk.n}</b><br>` +
           (bk.est ? `<span style="color:#b45309">📍 位置為估算（地政總署無該座名稱／座標）</span><br>` : "") +
           (bk.s != null ? `樓高 ${bk.s} 層${bk.h != null ? "／" + bk.h + "m" : ""}` : "") +
           `<br><span style="color:#6b7280">屋苑：${e.name_tc}（${ST_NAME[e.source_type || e.source] || ""}）</span>`);
@@ -788,7 +812,7 @@ function render(){
       h3.style.cursor = "pointer";
       h3.title = "在地圖定位";
       h3.addEventListener("click", () => {
-        map.setView([e.lat, e.lng], Math.max(map.getZoom(), 16), {animate: true});   // z16 = 逐座圖釘級
+        flyToEstate(e);
         const mk = markers[e._key];
         if (mk) mk.openPopup();
       });
