@@ -429,11 +429,32 @@ async function loadDerived(){
   if (derivedLoaded || derivedLoading) return;
   derivedLoading = true;
   const b = document.getElementById("loadDerived");
-  if (b) b.textContent = "📐 載入中…（約 7 MB，一次過快取）";
+  const label = t => { if (b) b.textContent = t; };
+  label("📐 載入中 0%…");
   try {
     const res = await fetch("derived.json", {cache: "force-cache"});
     if (!res.ok) throw new Error("HTTP " + res.status);
-    const arr = await res.json();
+    // 完整欄位版本有 50 MB＋，用串流讀住顯示百分比（唔係個個都知要等幾耐）
+    let text = null;
+    const total = +(res.headers.get("content-length") || 0);
+    if (res.body && res.body.getReader && total > 0){
+      const rd = res.body.getReader(), chunks = [];
+      let got = 0;
+      for (;;){
+        const {done, value} = await rd.read();
+        if (done) break;
+        chunks.push(value); got += value.length;
+        label("📐 載入中 " + Math.min(99, Math.round(got / total * 100)) + "%");
+      }
+      const all = new Uint8Array(got);
+      let o = 0;
+      for (const c of chunks){ all.set(c, o); o += c.length; }
+      text = new TextDecoder("utf-8").decode(all);
+    }
+    if (text == null) text = await res.text();
+    label("📐 解析中…");
+    await new Promise(r => setTimeout(r, 30));      // 讓「解析中」畫得出嚟
+    const arr = JSON.parse(text);
     arr.forEach(e => { e._key = keyOf(e); DATA.push(e); addEstateMarker(e); });
     derivedLoaded = true;
     updateStatbar();
@@ -1708,7 +1729,10 @@ render();
 // 首屏畫完之後，背景預取推算屋苑（4,293 個，含 3,411 幢單幢）——
 // 用戶一打關鍵字就有結果，唔會再「搜唔到就以為冇」
 (function prefetchDerived(){
-  const go = () => { if (!derivedLoaded && !derivedLoading) loadDerived(); };
+  const c = navigator.connection || {};
+  const cheap = !c.saveData && !/^(slow-)?2g$/.test(c.effectiveType || "");
+  const go = () => { if (!derivedLoaded && !derivedLoading && cheap) loadDerived(); };
+  if (!cheap) return;      // 慳數據／2G：唔自動下載 50 MB，等用戶自己撳
   if ("requestIdleCallback" in window) requestIdleCallback(go, {timeout: 5000});
   else setTimeout(go, 3000);
 })();

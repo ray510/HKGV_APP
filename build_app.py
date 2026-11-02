@@ -966,7 +966,8 @@ _DROP_SINGLE = _DROP_HEAVY_FAC + (
 )
 _DROP_ULTRA = _DROP_SINGLE + _KEEP_FAC + ("nearest_school", "nearest_covered")
 _tier = {"A": 0, "B": 0, "C": 0, "D": 0}
-for _e in _derived_records:
+_SLIM = os.environ.get("HKGV_SLIM") == "1"      # 預設唔精簡：保留全部欄位（payload 會大好多）
+for _e in _derived_records if _SLIM else ():
     _bc = _e.get("blocks_count") or 0
     _st = _e.get("storeys_med") or 0
     if _bc > 1 and _st >= 8:
@@ -1000,7 +1001,8 @@ for _e in _derived_records:
 _n_slim = _tier["C"] + _tier["D"]
 
 print(f"  拆檔：index.html {len(data):,} 個錨點｜derived.json {len(_derived_records):,} 個推算屋苑"
-      f"（分級 A{_tier['A']:,}/B{_tier['B']:,}/C{_tier['C']:,}/D{_tier['D']:,}）", flush=True)
+      + (f"（分級 A{_tier['A']:,}/B{_tier['B']:,}/C{_tier['C']:,}/D{_tier['D']:,}）" if _SLIM else "（完整欄位，未精簡）"),
+      flush=True)
 
 # 預設排序：評分 ↓、單位數 ↓（與管線一致）
 data.sort(key=lambda x: (-x.get("score", 0), -(x.get("total_units") or 0)))
