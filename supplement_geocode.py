@@ -124,7 +124,7 @@ def main():
     i = h.find("const DATA = ") + 13
     j = h.find(";\nconst COVERED", i)
     D = json.loads(h[i:j])
-    have |= {x["name_tc"].upper() for x in D}
+    have |= {x["name_tc"].upper() for x in D if x.get("source_type") != "PRVD"}   # 推算屋苑會重建，唔可以當已有
 
     added = 0
     for name, q in LIST:

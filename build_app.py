@@ -804,6 +804,21 @@ if os.path.exists(DERIVED) and not os.environ.get("HKGV_NO_DERIVED"):
     with open(DERIVED, encoding="utf-8") as f:
         _dv = json.load(f)
     _base = [e for e in data if e.get("lat") is not None]
+    # 由官方屋苑收集設施點，去重成池（推算屋苑用同一批點計最近距離）
+    _FAC_FIELDS = ("nearest_care", "nearest_childcare", "nearest_elderly", "nearest_shelter",
+                   "nearest_hospital", "nearest_cold_shelter", "nearest_market", "nearest_library",
+                   "nearest_clinic", "nearest_maternal", "nearest_postoffice", "nearest_firestation",
+                   "nearest_livingroom", "nearest_pier")
+    _pools = {}
+    for _f in _FAC_FIELDS:
+        _seen = {}
+        for _e in _base:
+            _v = _e.get(_f)
+            if isinstance(_v, dict) and _v.get("lat") is not None:
+                _k = (_v.get("zh") or _v.get("name") or "", round(_v["lat"], 4), round(_v["lng"], 4))
+                _seen[_k] = {"zh": _v.get("zh") or _v.get("name") or "", "en": _v.get("en") or "",
+                             "lat": _v["lat"], "lng": _v["lng"]}
+        _pools[_f] = list(_seen.values())
     for x in _dv:
         nb = min(_base, key=lambda e: haversine(x["lat"], x["lng"], e["lat"], e["lng"]))
         e = {"name_tc": x["name_tc"], "name_en": "", "source_type": "PRVD",
@@ -814,12 +829,31 @@ if os.path.exists(DERIVED) and not os.environ.get("HKGV_NO_DERIVED"):
              "blocks_source": "LandsD",
              "total_units": x["est_units"], "est_pop": x["est_pop"],
              "sub_scores": {}}
-        # 借最近屋苑嘅設施點（同一間 facility）重算真實距離
-        for src in ("nearest_care", "nearest_childcare", "nearest_elderly",
-                    "nearest_shelter", "nearest_hospital"):
-            v = nb.get(src)
-            if v and v.get("lat") is not None:
-                e[src] = dict(v, distance_m=int(haversine(x["lat"], x["lng"], v["lat"], v["lng"])))
+        # 設施點：由全港官方屋苑嘅設施池計最近（唔止借隔籬嗰個，距離全部重算）
+        for src in _FAC_FIELDS:
+            best, bd = None, 1e18
+            for v in _pools.get(src, ()):
+                d = haversine(x["lat"], x["lng"], v["lat"], v["lng"])
+                if d < bd:
+                    best, bd = v, d
+            if best:
+                e[src] = dict(best, distance_m=int(bd),
+                              count_800m=sum(1 for v in _pools[src]
+                                             if haversine(x["lat"], x["lng"], v["lat"], v["lng"]) <= 800))
+        # 小學／幼稚園／遊樂場：用官方池直接計
+        if schools:
+            sc = top_k(x["lat"], x["lng"], schools, k=6)
+            if sc:
+                e["nearest_school"] = dict(sc[0], count_800m=sum(1 for c in sc if c["distance_m"] <= 800))
+                e["school_candidates"] = sc
+        if kgs:
+            kk = top_k(x["lat"], x["lng"], kgs, k=40)
+            within = [k for k in kk if k["distance_m"] <= 800] or kk[:1]
+            e["kindergartens_800m"] = sum(1 for k in kk if k["distance_m"] <= 800)
+            if within:
+                e["nearest_kg_dist_m"] = within[0]["distance_m"]
+                e["nearest_kg_name_tc"] = within[0]["zh"]
+                e["nearest_kg_lat"], e["nearest_kg_lng"] = within[0]["lat"], within[0]["lng"]
         data.append(e)
     print(f"  推算屋苑（地政總署聚類）：{len(_dv):,} 個", flush=True)
 

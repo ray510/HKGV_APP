@@ -316,6 +316,7 @@ const COVERED = __COVERED__;   // 路政署有蓋構築物（t=類型 n=編號 l
 const API = "https://mapapi.hkmapservice.gov.hk/PedRoute/NAServer/route/solve";
 let mode = 2;
 const MAX_CARDS = 60;
+let pageSize = MAX_CARDS;   // 「顯示更多」逐頁加 60
 let aiAreaMin = 0;            // AI 顧問設定嘅平均面積門檻（㎡）
 const SHOW_AI_ADVISOR = false; // AI 選樓顧問開關（規則引擎原型；LLM 函數調用版做好後設 true 重啟）
 
@@ -596,9 +597,9 @@ function render(){
   const list = filtered();
   document.getElementById("count").textContent = `符合條件：${list.length} / ${DATA.length} 個屋邨／項目` +
     (aiAreaMin ? `｜AI 面積門檻：平均 ≥ ${aiAreaMin}㎡` : "") +
-    (list.length > MAX_CARDS ? `（只顯示評分／排序前 ${MAX_CARDS} 個，請縮小範圍看其餘）` : "");
+    (list.length > pageSize ? `（顯示前 ${pageSize} 個，下面可「顯示更多」或縮小範圍）` : "");
   const box = document.getElementById("results"); box.innerHTML = "";
-  list.slice(0, MAX_CARDS).forEach(e => {
+  list.slice(0, pageSize).forEach(e => {
     const m = e.nearest_mtr, ok = e.non_elevator_units === 0;
     const pr = calcScore(e);
     const c = scoreColor(pr.total);
@@ -640,14 +641,14 @@ function render(){
       </div>
       <div class="row">
         ${hasUnits ? (e.source_type === "PRVD"
-          ? `<span class="pill">約 ${(e.total_units||0).toLocaleString()} 伙（估算）</span><span class="pill">${e.blocks_count||"?"} 座</span>`
+          ? `${e.total_units ? `<span class="pill">約 ${e.total_units.toLocaleString()} 伙（估算）</span>` : ""}<span class="pill">${e.blocks_count||"?"} 座</span>`
           : `<span class="pill">${(e.total_units||0).toLocaleString()} 個單位</span><span class="pill">${e.blocks_count||"?"} 座</span>`) : ""}
         ${e.source_type === "HOS" ? `${e.hos_scheme ? `<span class="pill">🔑 ${e.hos_scheme}</span>` : ""}${e.hos_year ? `<span class="pill">落成 ${e.hos_year}</span>` : ""}${e.hos_area_range ? `<span class="pill">實用約 ${e.hos_area_range} m²</span>` : ""}` : ""}
         ${e.source_type !== "HOS" && e.source_type !== "PRVD" && hasUnits ? `<span class="pill">樓層 ${e.min_floor??"?"}–${e.max_floor??"?"}</span>
         <span class="pill">平均 ${e.avg_area??"?"} m²</span>` : ""}
         ${e.source_type === "PRV" ? `${e.census_pop ? `<span class="pill">人口 ${e.census_pop.toLocaleString()}（2021 普查）</span>` : ""}${e.census_income_md ? `<span class="pill">中位月入 $${Number(e.census_income_md).toLocaleString()}</span>` : ""}` : ""}
         ${e.source_type === "VLG" ? `<span class="pill">鄉村分界錨點</span>` : ""}
-        ${e.source_type === "PRVD" ? `<span class="pill">📐 推算（非官方界線）</span><span class="pill">約 ${(e.est_pop||0).toLocaleString()} 人</span>` : ""}
+        ${e.source_type === "PRVD" ? `<span class="pill">📐 推算（非官方界線）</span>${e.est_pop ? `<span class="pill">約 ${e.est_pop.toLocaleString()} 人</span>` : ""}` : ""}
       </div>
       ${hasUnits && e.non_elevator_units != null ? `<div class="row">
         ${ok ? '<span class="pill good">✓ 全幢有升降機</span>'
@@ -740,6 +741,16 @@ function render(){
 
   // 篩選變更後：當前路線嘅屋邨若已被篩走，自動清除路線
   if (currentRoute && !matched.has(currentRoute.key)) clearRoute();
+  if (list.length > pageSize){
+    const more = document.createElement("button");
+    more.className = "moreBtn loadMore";
+    more.style.margin = "10px auto";
+    more.style.display = "block";
+    more.textContent = `▾ 顯示更多（還有 ${list.length - pageSize} 個）`;
+    more.onclick = () => { pageSize += MAX_CARDS; render(); };
+    box.appendChild(more);
+  }
+
 }
 
 // ---- 座別明細：逐座樓數據＋座級定位（OSM 匹配）＋「由呢座出發」3D 路線 ----
@@ -828,7 +839,7 @@ function toggleBlocks(key, btn){
 }
 
 ["q","etype","district","walk","minscore","sortby"].forEach(id =>
-  document.getElementById(id).addEventListener(id==="q"?"input":"change", render));
+  document.getElementById(id).addEventListener(id==="q"?"input":"change", () => { pageSize = MAX_CARDS; render(); }));
 document.getElementById("needLift").onchange = render;
 
 // ---- 重設篩選（含 AI 顧問套用嘅隱形條件）----
