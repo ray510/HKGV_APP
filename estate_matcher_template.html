@@ -213,6 +213,12 @@
           </select></label>
         <label class="chk"><span class="k">地區</span>
           <select id="district"><option value="">全部</option></select></label>
+        <label class="chk"><span class="k">規模</span>
+          <select id="scale">
+            <option value="">全部</option>
+            <option value="3">≥ 3 座</option>
+            <option value="10">≥ 10 座</option>
+          </select></label>
       </div>
       <label class="chk"><span class="k">去港鐵站</span>
         <select id="walk">
@@ -398,12 +404,45 @@ function setProfile(p){
 
 // ---- 統計列 ----
 const ST_NAME = {PRH:"公屋",LPH:"簡約公屋",HOS:"居屋",PRV:"私人",PRVD:"推算私人",VLG:"鄉村"};
-const stCounts = {};
-DATA.forEach(e => { const k = e.source_type || e.source; stCounts[k] = (stCounts[k]||0)+1; });
-const nUnits = DATA.reduce((a,e)=>(e.source_type==="PRH"||e.source_type==="LPH")?a+(e.total_units||0):a,0);
-const stSummary = Object.entries(ST_NAME).filter(([k])=>stCounts[k]).map(([k])=>`${ST_NAME[k]} ${stCounts[k]}`).join("＋");
-document.getElementById("statbar").innerHTML =
-  `<b>${DATA.length}</b> 個屋邨／項目（${stSummary}）· 公屋簡屋合共 <b>${nUnits.toLocaleString()}</b> 個單位<br>數據：房屋局・房委會・統計處・教育局・社署・地政總署・機電署・路政署`;
+const DERIVED_TOTAL = __DERIVED_N__;   // 推算屋苑總數（另存 derived.json，按需載入）
+let derivedLoaded = false, derivedLoading = false;
+
+function updateStatbar(){
+  const c = {};
+  DATA.forEach(e => { const k = e.source_type || e.source; c[k] = (c[k]||0)+1; });
+  const nUnits = DATA.reduce((a,e)=>(e.source_type==="PRH"||e.source_type==="LPH")?a+(e.total_units||0):a,0);
+  const stSummary = Object.entries(ST_NAME).filter(([k])=>c[k]).map(([k])=>`${ST_NAME[k]} ${c[k]}`).join("＋");
+  const derivedBtn = derivedLoaded ? ""
+    : `<button id="loadDerived" class="moreBtn" style="margin-left:6px">📐 載入 ${DERIVED_TOTAL.toLocaleString()} 個推算私人屋苑</button>`;
+  document.getElementById("statbar").innerHTML =
+    `<b>${DATA.length}</b> 個屋邨／項目（${stSummary}）· 公屋簡屋合共 <b>${nUnits.toLocaleString()}</b> 個單位${derivedBtn}` +
+    `<br><span class="mini">數據：房屋局・房委會・統計處・教育局・社署・地政總署・機電署・路政署｜` +
+    `普查 2021・地政 2026-10・EDB 2026-09・EMSD 2026-08</span>`;
+  const b = document.getElementById("loadDerived");
+  if (b) b.onclick = loadDerived;
+}
+
+async function loadDerived(){
+  if (derivedLoaded || derivedLoading) return;
+  derivedLoading = true;
+  const b = document.getElementById("loadDerived");
+  if (b) b.textContent = "📐 載入中…（約 7 MB，一次過快取）";
+  try {
+    const res = await fetch("derived.json", {cache: "force-cache"});
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const arr = await res.json();
+    arr.forEach(e => { e._key = keyOf(e); DATA.push(e); addEstateMarker(e); });
+    derivedLoaded = true;
+    updateStatbar();
+    render();
+  } catch (err) {
+    console.warn("derived load failed:", err);
+    if (b) b.textContent = "⚠️ 推算屋苑載入失敗（需 http(s) 環境）— 撳一下重試";
+  }
+  derivedLoading = false;
+}
+
+updateStatbar();
 
 // 地圖 popup 共用：單位數只對有數據類型顯示；居屋顯示落成年份、私人顯示普查人口
 function popupHtml(e, withProfile){
@@ -439,8 +478,8 @@ landsAttr.innerHTML = '<img src="__LAND_SVG__" alt="地政總署 Lands Departmen
 const estatePins = L.layerGroup().addTo(map);   // 屋苑級圖釘（z<16）
 const blockPins = L.layerGroup();               // 逐座圖釘（z>=16）
 const markers = {};
-DATA.forEach(e => {
-  if (e.lat == null) return;
+function addEstateMarker(e){
+  if (e.lat == null || markers[e._key]) return;
   const c = scoreColor(e.score);
   const mk = L.circleMarker([e.lat, e.lng], {
     radius: 5 + Math.min(9, (e.total_units||0)/1800),
@@ -453,7 +492,8 @@ DATA.forEach(e => {
   });
   estatePins.addLayer(mk);
   markers[e._key] = mk;
-});
+}
+DATA.forEach(addEstateMarker);
 
 // 撳地圖釘 → 結果清單直接跳返去所屬屋苑卡片（閃一下提示）
 function focusCard(key){
@@ -569,6 +609,8 @@ function filtered(){
   const minsc = document.getElementById("minscore").value;
   const lift = document.getElementById("needLift").checked;
   const sortby = document.getElementById("sortby").value;
+  const scaleEl = document.getElementById("scale");
+  const scale = scaleEl ? scaleEl.value : "";
   let list = DATA.filter(e =>
     (!q || (e.name_tc||"").toLowerCase().includes(q) || normQ(e.name_en).includes(qn)) &&
     (!etype || (e.source_type || e.source) === etype) &&
@@ -576,7 +618,8 @@ function filtered(){
     (!walk || (e.mtr_candidates||[]).some(c => c.distance_m <= +walk)) &&
     (!minsc || scoreOf(e) >= +minsc) &&
     (!aiAreaMin || (e.avg_area || 0) >= aiAreaMin) &&
-    (!lift || e.non_elevator_units === 0));
+    (!lift || e.non_elevator_units === 0) &&
+    (!scale || (e.blocks_count || 0) >= +scale));
   if (sortby === "units") list.sort((a,b)=>(b.total_units||0)-(a.total_units||0));
   else if (sortby === "mtr") list.sort((a,b)=>(a.nearest_mtr?.distance_m??1e9)-(b.nearest_mtr?.distance_m??1e9));
   else if (sortby === "sch") list.sort((a,b)=>(a.school_candidates?.[0]?.distance_m ?? a.nearest_school?.distance_m ?? 1e9)
@@ -612,6 +655,8 @@ function render(){
     const pseudoOnly = realBlks.length === 1 && /第.+座\s*至\s*第.+座/.test((realBlks[0].n||""));
     const blkBtn = (nBlk && !pseudoOnly) ? `<button class="blkBtn" data-b="${e._key}">▼ 座別明細（${nBlk} 座）</button><div class="blkBox" id="blk-${e._key}"></div>` : "";
     const el = document.createElement("div"); el.className = "card"; el.id = "card-" + e._key;
+    el.tabIndex = 0;
+    el.setAttribute("role", "group");
     const dests = ["mtr","sch","care","cc","eld","shel","kg","pg","hosp","pier","cold","lib"].filter(d => e.lat != null && DEST[d].pool(e).length);
     const routeBtns = dests.length
       ? `<div class="dchips">` + dests.map(d => {
@@ -838,14 +883,19 @@ function toggleBlocks(key, btn){
   boxEl.scrollIntoView({behavior: "smooth", block: "nearest"});
 }
 
-["q","etype","district","walk","minscore","sortby"].forEach(id =>
-  document.getElementById(id).addEventListener(id==="q"?"input":"change", () => { pageSize = MAX_CARDS; render(); }));
+["q","etype","district","walk","minscore","sortby","scale"].forEach(id =>
+  document.getElementById(id).addEventListener(id==="q"?"input":"change", () => {
+    pageSize = MAX_CARDS;
+    if (document.getElementById("etype").value === "PRVD" && !derivedLoaded) loadDerived();
+    render();
+  }));
 document.getElementById("needLift").onchange = render;
 
 // ---- 重設篩選（含 AI 顧問套用嘅隱形條件）----
 function resetFilters(){
   document.getElementById("q").value = "";
   document.getElementById("etype").value = "";
+  const sc = document.getElementById("scale"); if (sc) sc.value = "";
   document.getElementById("district").value = "";
   document.getElementById("walk").value = "";
   document.getElementById("minscore").value = "";
@@ -1014,8 +1064,16 @@ function openDestPicker(key, kind){
     planRoute(key, kind, null, k);
   });
   document.getElementById("kgModal").style.display = "flex";
+  const first = box.querySelector(".kgRow");
+  if (first) first.focus();
 }
 document.getElementById("kgClose").onclick = () => document.getElementById("kgModal").style.display = "none";
+document.addEventListener("keydown", ev => {
+  const m = document.getElementById("kgModal");
+  if (ev.key === "Escape" && m && m.style.display === "flex"){
+    m.style.display = "none";
+  }
+});
 document.getElementById("kgModal").addEventListener("click", ev => {
   if (ev.target.id === "kgModal") ev.target.style.display = "none";
 });

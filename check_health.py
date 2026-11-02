@@ -8,6 +8,10 @@ H = open(BASE + "/index.html", encoding="utf-8").read()
 i = H.find("const DATA = ") + 13
 j = H.find(";\nconst COVERED", i)
 D = json.loads(H[i:j])
+_dp = os.path.join(BASE, "derived.json")
+if os.path.exists(_dp):
+    with open(_dp, encoding="utf-8") as f:
+        D = D + json.load(f)
 
 
 def hav(a, b, c, d):

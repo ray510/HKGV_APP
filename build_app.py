@@ -948,6 +948,11 @@ for e in data:
                                 + 0.10 * s.get("care", 50.0) + 0.05 * s.get("childcare", 50.0)
                                 + 0.10 * s.get("elderly_shelter", 50.0)) / 0.85, 1)
 
+# ---- 拆檔：推算屋苑另存 derived.json（首屏減 7 MB，前端按需載入）----
+_derived_records = [e for e in data if e.get("source_type") == "PRVD"]
+data = [e for e in data if e.get("source_type") != "PRVD"]
+print(f"  拆檔：index.html {len(data):,} 個錨點｜derived.json {len(_derived_records):,} 個推算屋苑", flush=True)
+
 # 預設排序：評分 ↓、單位數 ↓（與管線一致）
 data.sort(key=lambda x: (-x.get("score", 0), -(x.get("total_units") or 0)))
 
@@ -967,10 +972,16 @@ cov_payload = json.dumps(
     ensure_ascii=False, separators=(",", ":"))
 assert "</script" not in cov_payload.lower(), "covered payload contains script-breaking sequence"
 
+derived_payload = json.dumps(_derived_records, ensure_ascii=False, separators=(",", ":"))
+with open(os.path.join(BASE, "derived.json"), "w", encoding="utf-8") as f:
+    f.write(derived_payload)
+
 html = tpl.replace("__DATA__", payload).replace("__COVERED__", cov_payload) \
-          .replace("__MTR__", json.dumps(mtr_all, ensure_ascii=False, separators=(",", ":")))
+          .replace("__MTR__", json.dumps(mtr_all, ensure_ascii=False, separators=(",", ":"))) \
+          .replace("__DERIVED_N__", str(len(_derived_records)))
 with open(OUT, "w", encoding="utf-8") as f:
     f.write(html)
 
+print(f"OK  derived.json ({len(derived_payload)/1048576:.1f} MB, {len(_derived_records)} 個推算屋苑)")
 print(f"OK  {os.path.relpath(OUT, BASE)}  ({len(html)/1024:.0f} KB, {len(data)} estates, "
       f"mtr_candidates: {n_mtr}, school_candidates: {n_sch})")
