@@ -976,12 +976,16 @@ derived_payload = json.dumps(_derived_records, ensure_ascii=False, separators=("
 with open(os.path.join(BASE, "derived.json"), "w", encoding="utf-8") as f:
     f.write(derived_payload)
 
+# 單幢屋苑數（推算層）：前端未載入 derived.json 前都要講得出「有幾多單幢可搜」
+single_n = sum(1 for e in _derived_records if (e.get("blocks_count") or 0) <= 1)
+
 html = tpl.replace("__DATA__", payload).replace("__COVERED__", cov_payload) \
           .replace("__MTR__", json.dumps(mtr_all, ensure_ascii=False, separators=(",", ":"))) \
-          .replace("__DERIVED_N__", str(len(_derived_records)))
+          .replace("__DERIVED_N__", str(len(_derived_records))) \
+          .replace("__SINGLE_N__", str(single_n))
 with open(OUT, "w", encoding="utf-8") as f:
     f.write(html)
 
-print(f"OK  derived.json ({len(derived_payload)/1048576:.1f} MB, {len(_derived_records)} 個推算屋苑)")
+print(f"OK  derived.json ({len(derived_payload)/1048576:.1f} MB, {len(_derived_records)} 個推算屋苑, 單幢 {single_n})")
 print(f"OK  {os.path.relpath(OUT, BASE)}  ({len(html)/1024:.0f} KB, {len(data)} estates, "
       f"mtr_candidates: {n_mtr}, school_candidates: {n_sch})")

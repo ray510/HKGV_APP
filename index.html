@@ -214,8 +214,10 @@
         <label class="chk"><span class="k">地區</span>
           <select id="district"><option value="">全部</option></select></label>
         <label class="chk"><span class="k">規模</span>
-          <select id="scale">
-            <option value="">全部</option>
+          <select id="scale" title="按座數篩選；預設「全部」＝單幢屋苑一樣搜得到">
+            <option value="">全部（含單幢）</option>
+            <option value="single">🏢 單幢（1 座）</option>
+            <option value="2">≥ 2 座</option>
             <option value="3">≥ 3 座</option>
             <option value="10">≥ 10 座</option>
           </select></label>
@@ -405,6 +407,7 @@ function setProfile(p){
 // ---- 統計列 ----
 const ST_NAME = {PRH:"公屋",LPH:"簡約公屋",HOS:"居屋",PRV:"私人",PRVD:"推算私人",VLG:"鄉村"};
 const DERIVED_TOTAL = 1328;   // 推算屋苑總數（另存 derived.json，按需載入）
+const SINGLE_N = 586;         // 推算層單幢屋苑數（未載入前都顯示得出）
 let derivedLoaded = false, derivedLoading = false;
 
 function updateStatbar(){
@@ -503,7 +506,10 @@ function focusCard(key){
   if (!el){          // 卡片唔喺頭 60 張 → 用搜尋縮窄再 render
     const q = document.getElementById("q");
     const et = document.getElementById("etype");
-    q.value = e.name_tc; if (et) et.value = "";
+    const sc = document.getElementById("scale");
+    q.value = e.name_tc; if (et) et.value = ""; if (sc) sc.value = "";   // 清走規模／類型，單幢都一定跳得到
+    pageSize = MAX_CARDS;
+    if ((e.source_type || e.source) === "PRVD" && !derivedLoaded) loadDerived();
     render();
     el = document.getElementById("card-" + key);
   }
@@ -619,7 +625,7 @@ function filtered(){
     (!minsc || scoreOf(e) >= +minsc) &&
     (!aiAreaMin || (e.avg_area || 0) >= aiAreaMin) &&
     (!lift || e.non_elevator_units === 0) &&
-    (!scale || (e.blocks_count || 0) >= +scale));
+    (!scale || (scale === "single" ? (e.blocks_count != null && e.blocks_count <= 1) : (e.blocks_count || 0) >= +scale)));
   if (sortby === "units") list.sort((a,b)=>(b.total_units||0)-(a.total_units||0));
   else if (sortby === "mtr") list.sort((a,b)=>(a.nearest_mtr?.distance_m??1e9)-(b.nearest_mtr?.distance_m??1e9));
   else if (sortby === "sch") list.sort((a,b)=>(a.school_candidates?.[0]?.distance_m ?? a.nearest_school?.distance_m ?? 1e9)
@@ -638,8 +644,12 @@ function render(){
   Object.values(blkLayers).forEach(l => map.removeLayer(l));
   Object.keys(blkLayers).forEach(k => delete blkLayers[k]);
   const list = filtered();
+  const scaleNow = (document.getElementById("scale") || {}).value || "";
+  const singleN = DATA.filter(e => e.blocks_count != null && e.blocks_count <= 1).length
+                + (derivedLoaded ? 0 : SINGLE_N);
   document.getElementById("count").textContent = `符合條件：${list.length} / ${DATA.length} 個屋邨／項目` +
     (aiAreaMin ? `｜AI 面積門檻：平均 ≥ ${aiAreaMin}㎡` : "") +
+    (scaleNow === "" && singleN ? `｜含 ${singleN} 個單幢屋苑（全部可搜尋）` : "") +
     (list.length > pageSize ? `（顯示前 ${pageSize} 個，下面可「顯示更多」或縮小範圍）` : "");
   const box = document.getElementById("results"); box.innerHTML = "";
   list.slice(0, pageSize).forEach(e => {
@@ -751,6 +761,16 @@ function render(){
       });
     }
   });
+  if (!list.length){
+    const d = document.createElement("div");
+    d.style.cssText = "padding:16px;border:1px dashed #cbd5e1;border-radius:10px;color:#475569;font-size:13px;line-height:1.7;background:#f8fafc";
+    d.innerHTML = derivedLoaded
+      ? `暫時冇屋邨符合。單幢屋苑預設包喺「規模：全部（含單幢）」入面——試下清走規模篩選、縮短關鍵字，或撳「↺ 重設」。`
+      : `暫時搵唔到——<b>${DERIVED_TOTAL.toLocaleString()} 個推算私人屋苑（當中 ${SINGLE_N} 個單幢）</b>仲未載入。<br>` +
+        `<button class="moreBtn" id="emptyLoad" style="margin-top:8px">📐 即刻載入再搵</button>`;
+    box.appendChild(d);
+    const eb = d.querySelector("#emptyLoad"); if (eb) eb.onclick = loadDerived;
+  }
   box.querySelectorAll(".dchip").forEach(btn => btn.onclick = () => {
     const d = btn.dataset.d;
     const pe = DATA.find(x => x._key === btn.dataset.p);
@@ -886,7 +906,11 @@ function toggleBlocks(key, btn){
 ["q","etype","district","walk","minscore","sortby","scale"].forEach(id =>
   document.getElementById(id).addEventListener(id==="q"?"input":"change", () => {
     pageSize = MAX_CARDS;
-    if (document.getElementById("etype").value === "PRVD" && !derivedLoaded) loadDerived();
+    // 推算屋苑（含 586 個單幢）唔喺首屏 payload：一搜尋／揀類型／揀單幢就自動載入，確保單幢都搜得到
+    const qLen = document.getElementById("q").value.trim().length;
+    const etNow = document.getElementById("etype").value;
+    const scNow = (document.getElementById("scale") || {}).value || "";
+    if (!derivedLoaded && (etNow === "PRVD" || qLen >= 2 || scNow === "single")) loadDerived();
     render();
   }));
 document.getElementById("needLift").onchange = render;
