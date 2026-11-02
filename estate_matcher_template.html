@@ -606,6 +606,12 @@ document.getElementById("covToggle").onchange = ev => {
 // ---- 篩選 ----
 // 英文名比對忽略空格／標點：「GreenCode」「green code」「Green-Code」都搵到「Green Code」
 const normQ = s => (s || "").toLowerCase().replace(/[\s\-·．._]/g, "");
+// 座名都搜：好多時用戶只記得「雅翠閣」「第３座」呢類座名，唔知屋苑叫咩
+function hitName(e, q, qn){
+  if (!q) return true;
+  if ((e.name_tc||"").toLowerCase().includes(q) || normQ(e.name_en).includes(qn)) return true;
+  return (e.blocks||[]).some(b => !b.nr && (b.n||"").toLowerCase().includes(q));
+}
 function filtered(){
   const q = document.getElementById("q").value.trim().toLowerCase();
   const qn = normQ(q);
@@ -618,7 +624,7 @@ function filtered(){
   const scaleEl = document.getElementById("scale");
   const scale = scaleEl ? scaleEl.value : "";
   let list = DATA.filter(e =>
-    (!q || (e.name_tc||"").toLowerCase().includes(q) || normQ(e.name_en).includes(qn)) &&
+    hitName(e, q, qn) &&
     (!etype || (e.source_type || e.source) === etype) &&
     (!dist || e.district_tc === dist) &&
     (!walk || (e.mtr_candidates||[]).some(c => c.distance_m <= +walk)) &&
@@ -650,6 +656,7 @@ function render(){
   document.getElementById("count").textContent = `符合條件：${list.length} / ${DATA.length} 個屋邨／項目` +
     (aiAreaMin ? `｜AI 面積門檻：平均 ≥ ${aiAreaMin}㎡` : "") +
     (scaleNow === "" && singleN ? `｜含 ${singleN} 個單幢屋苑（全部可搜尋）` : "") +
+    (derivedLoading ? `｜📐 推算屋苑載入中…` : "") +
     (list.length > pageSize ? `（顯示前 ${pageSize} 個，下面可「顯示更多」或縮小範圍）` : "");
   const box = document.getElementById("results"); box.innerHTML = "";
   list.slice(0, pageSize).forEach(e => {
@@ -1694,6 +1701,14 @@ if (!SHOW_AI_ADVISOR) document.getElementById("aiPanel").style.display = "none";
 })();
 
 render();
+
+// 首屏畫完之後，背景預取推算屋苑（4,293 個，含 3,411 幢單幢）——
+// 用戶一打關鍵字就有結果，唔會再「搜唔到就以為冇」
+(function prefetchDerived(){
+  const go = () => { if (!derivedLoaded && !derivedLoading) loadDerived(); };
+  if ("requestIdleCallback" in window) requestIdleCallback(go, {timeout: 5000});
+  else setTimeout(go, 3000);
+})();
 </script>
 </body>
 </html>

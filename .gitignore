@@ -19,3 +19,8 @@ csdi_building_check*.py
 csdi_block_coverage.py
 rea_analysis/
 csdi_deepdive_inventory.py
+
+# 推導備份／臨時瀏覽器 profile
+derived_estates_v5.json
+_cprof/
+_t.html

@@ -20,6 +20,8 @@ TOWERS = os.path.join(BASE, "cache", "towers.jsonl")
 OUT = os.path.join(BASE, "derived_estates.json")
 MAX_SPREAD = 300          # 一個屋苑嘅最大直徑（米）
 MIN_TOWERS = 2
+MIN_STOREYS = 8           # 多座屋苑：中位層數門檻（低過當低密度／村屋群）
+SINGLE_MIN = 25           # 單幢樓：層數門檻
 
 NONRES = ("學校", "中學", "小學", "幼稚園", "幼兒園", "大學", "書院", "學院", "教育",
           "教會", "教堂", "禮拜堂", "廟", "祠", "寺", "修道院", "靜修",
@@ -40,7 +42,7 @@ NONRES = ("學校", "中學", "小學", "幼稚園", "幼兒園", "大學", "書
           "警局", "消防局", "救護", "醫療中心", "街坊", "合作社",
           "金融", "保險", "寫字樓", "商業大廈", "廣場", "酒店", "服務式", "商場", "百貨",
           "中心", "教區", "教堂", "修院", "神學院", "鐵路", "西鐵", "車廠", "機廠",
-          "人壽", "保險大廈", "電訊", "電視", "廣播")
+          "人壽", "保險大廈", "電訊", "電視", "廣播", "總部", "辦事處", "行政大樓")
 NONRES_EN = ("SCHOOL", "COLLEGE", "UNIVERSITY", "CHURCH", "HOTEL", "MALL", "INDUSTRIAL",
              "FACTORY", "WAREHOUSE", "HOSPITAL", "CLINIC", "POLICE", "FIRE STATION",
              "GOVERNMENT", "LIBRARY", "CINEMA", "THEATRE", "CAR PARK", "SUBSTATION",
@@ -213,9 +215,15 @@ _CN = {1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: 
 
 
 def main():
-    global MIN_TOWERS
+    global MIN_TOWERS, MIN_STOREYS, SINGLE_MIN, OUT
     if "--min-towers" in sys.argv:
         MIN_TOWERS = int(sys.argv[sys.argv.index("--min-towers") + 1])
+    if "--min-storeys" in sys.argv:
+        MIN_STOREYS = int(sys.argv[sys.argv.index("--min-storeys") + 1])
+    if "--single-min" in sys.argv:
+        SINGLE_MIN = int(sys.argv[sys.argv.index("--single-min") + 1])
+    if "--out" in sys.argv:
+        OUT = sys.argv[sys.argv.index("--out") + 1]
 
     ex = load_existing()
     ts = load_towers()
@@ -287,7 +295,7 @@ def main():
     for t in left:
         if t["i"] in used:
             continue
-        if (t.get("s") or 0) >= 25:
+        if (t.get("s") or 0) >= SINGLE_MIN:
             _r = root_of(t["n"])
             groups.append({"name": _r if (n_cjk(_r) >= 2 or len(re.sub(r"[^0-9A-Za-z]", "", _r)) >= 3)
                            else t["n"].strip(), "members": [t], "single": 1})
@@ -332,13 +340,16 @@ def main():
             continue
         if dup(g["name"], g["lat"], g["lng"]):
             continue
+        # 「邨」＝公共屋邨命名，官方數據已有；推算層唔好搶（沙頭角邨 39 幢就係咁混入）
+        if g["name"].endswith("邨"):
+            continue
         st = [t["s"] for t in ms if t.get("s")]
         hh = [t["h"] for t in ms if t.get("h")]
         med = int(sorted(st)[len(st) // 2]) if st else None
         if med is not None and med < 3 and (len(ms) < 5 or g["name"].endswith("邨")):
             continue
         # 低密度（洋房／村屋群）唔算屋苑：匡湖居 454 幢「3 層」就係咁爆出嚟
-        if med is None or med < 8:
+        if med is None or med < MIN_STOREYS:
             n_low += 1
             continue
         units = sum(int(t.get("s") or 0) * 6 for t in ms)

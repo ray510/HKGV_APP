@@ -951,7 +951,26 @@ for e in data:
 # ---- 拆檔：推算屋苑另存 derived.json（首屏減 7 MB，前端按需載入）----
 _derived_records = [e for e in data if e.get("source_type") == "PRVD"]
 data = [e for e in data if e.get("source_type") != "PRVD"]
-print(f"  拆檔：index.html {len(data):,} 個錨點｜derived.json {len(_derived_records):,} 個推算屋苑", flush=True)
+
+# 單幢推算屋苑（3,400+ 個）→ 精簡記錄：只保留卡片／路線真正用得到嘅欄位，
+# 否則 derived.json 會由 6 MB 脹到 24 MB（每幢都帶 14 個設施字典）
+_KEEP_FAC = ("nearest_elderly", "nearest_shelter", "nearest_ae_hospital", "nearest_covered")
+_DROP_SINGLE = tuple(k for k in _FAC_FIELDS if k not in _KEEP_FAC) + (
+    "school_candidates", "nearest_kgs", "kindergartens_800m", "ae_hospitals",
+    "nearest_kg_dist_m", "nearest_kg_name_tc", "nearest_kg_lat", "nearest_kg_lng",
+)
+_n_slim = 0
+for _e in _derived_records:
+    if (_e.get("blocks_count") or 0) > 1:
+        continue
+    for _k in _DROP_SINGLE:
+        _e.pop(_k, None)
+    if _e.get("mtr_candidates"):
+        _e["mtr_candidates"] = _e["mtr_candidates"][:1]
+    _n_slim += 1
+
+print(f"  拆檔：index.html {len(data):,} 個錨點｜derived.json {len(_derived_records):,} 個推算屋苑"
+      f"（單幢精簡 {_n_slim:,}）", flush=True)
 
 # 預設排序：評分 ↓、單位數 ↓（與管線一致）
 data.sort(key=lambda x: (-x.get("score", 0), -(x.get("total_units") or 0)))
