@@ -1,0 +1,54 @@
+name: deploy-cloudflare
+
+# 手動觸發：build → 上傳前端到 Cloudflare Pages（大檔 derived.json 由 R2 提供）
+# 必要 secrets：CLOUDFLARE_API_TOKEN、CLOUDFLARE_ACCOUNT_ID
+on:
+  workflow_dispatch:
+    inputs:
+      derived_url:
+        description: "R2 上 derived.json 嘅公開網址（例：https://data.example.com/derived.json）"
+        required: true
+      project_name:
+        description: "Cloudflare Pages 專案名"
+        required: false
+        default: "hkgv-app"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build（把 R2 網址注入前端）
+        env:
+          HKGV_SKIP_OSM: "1"
+          HKGV_DERIVED_URL: ${{ inputs.derived_url }}
+        run: |
+          python build_app.py
+          python - <<'PY'
+          import re
+          h = open("index.html", encoding="utf-8").read()
+          assert "__DERIVED_URL__" not in h, "R2 網址未注入"
+          assert len(h) > 5_000_000, "輸出太細，可能 build 失敗"
+          print("index.html", round(len(h)/1048576, 2), "MB OK")
+          PY
+
+      - name: Stage site（只放前端，唔放 derived.json）
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          [ -d assets ] && cp -r assets _site/ || true
+          ls -lh _site
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _site --project-name=${{ inputs.project_name }}

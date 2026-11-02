@@ -1032,6 +1032,7 @@ single_n = sum(1 for e in _derived_records if (e.get("blocks_count") or 0) <= 1)
 
 html = tpl.replace("__DATA__", payload).replace("__COVERED__", cov_payload) \
           .replace("__MTR__", json.dumps(mtr_all, ensure_ascii=False, separators=(",", ":"))) \
+          .replace("__DERIVED_URL__", os.environ.get("HKGV_DERIVED_URL", "")) \
           .replace("__DERIVED_N__", str(len(_derived_records))) \
           .replace("__SINGLE_N__", str(single_n))
 with open(OUT, "w", encoding="utf-8") as f:

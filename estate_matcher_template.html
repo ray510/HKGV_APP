@@ -408,6 +408,8 @@ function setProfile(p){
 const ST_NAME = {PRH:"公屋",LPH:"簡約公屋",HOS:"居屋",PRV:"私人",PRVD:"推算私人",VLG:"鄉村"};
 const DERIVED_TOTAL = __DERIVED_N__;   // 推算屋苑總數（另存 derived.json，按需載入）
 const SINGLE_N = __SINGLE_N__;         // 推算層單幢屋苑數（未載入前都顯示得出）
+// 推算層數據來源：預設同目錄 derived.json；放 Cloudflare R2／其他 CDN 時由 build 注入絕對 URL
+const DERIVED_URL = "__DERIVED_URL__" || "derived.json";
 let derivedLoaded = false, derivedLoading = false;
 
 function updateStatbar(){
@@ -432,7 +434,7 @@ async function loadDerived(){
   const label = t => { if (b) b.textContent = t; };
   label("📐 載入中 0%…");
   try {
-    const res = await fetch("derived.json", {cache: "force-cache"});
+    const res = await fetch(DERIVED_URL, {cache: "force-cache"});
     if (!res.ok) throw new Error("HTTP " + res.status);
     // 完整欄位版本有 50 MB＋，用串流讀住顯示百分比（唔係個個都知要等幾耐）
     let text = null;

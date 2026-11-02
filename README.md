@@ -90,6 +90,54 @@ with open_browser() as (browser, page):
 - URL Hash 深連結照常可用，例如 `https://ray510.github.io/HKGV_APP/#estate=葵涌邨&mode=2&dest=mtr`
 - 如需關閉／改設定：Repo → Settings → Pages
 
+---
+
+## 部署到 Cloudflare Pages（大檔放 R2）
+
+**為咩要拆**：Cloudflare Pages 免費版**單檔上限 25 MiB**（`Pages only supports files up to 25 MiB in size`），而 `derived.json` 有 53.4 MB，直接上傳會 deploy 失敗。R2 冇單檔限制、免 egress 費用（免費 10 GB 儲存），所以：**前端放 Pages、大檔放 R2**。
+
+GitHub Pages 行為完全不變（同目錄 `derived.json`）；只有 build 時注入 `HKGV_DERIVED_URL` 才會改去 R2 取數。
+
+### 1. 建 bucket 並上傳
+
+```bash
+npx wrangler r2 bucket create hkgv-data
+npx wrangler r2 object put hkgv-data/derived.json --file derived.json --content-type application/json
+# 註：wrangler v4 若要求指定遠端，加 --remote
+```
+
+### 2. 開公開存取
+
+R2 → bucket → **Settings → Public access**：建議綁 **Custom Domain**（例 `data.yourdomain.com`），
+`r2.dev` 開發網址有速率限制，唔建議做正式來源。
+
+### 3. 設 CORS（唔設就 fetch 唔到）
+
+Dashboard：R2 → bucket → Settings → **CORS Policy** → 貼上 `cloudflare/r2-cors.json` 內容；
+或 `npx wrangler r2 bucket cors put hkgv-data --file cloudflare/r2-cors.json`（版本唔同可能係 `cors set`，dashboard 最穩）。
+`AllowedOrigins` 建議由 `*` 收窄成你嘅 Pages 網域（`https://hkgv-app.pages.dev`）。
+
+### 4. Build 時注入 R2 網址
+
+```bash
+HKGV_DERIVED_URL="https://data.yourdomain.com/derived.json" python build_app.py
+```
+
+未設 `HKGV_DERIVED_URL` 就照舊用同目錄 `derived.json`（即 GitHub Pages 模式）。
+
+### 5. 部署前端
+
+```bash
+npx wrangler pages deploy _site --project-name=hkgv-app
+```
+
+或用現成 workflow：**Actions → deploy-cloudflare → Run workflow**，填 R2 網址即可
+（需先在 repo secrets 設 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）。
+Workflow 只會上傳 `index.html`（＋`assets/`），**唔會**上傳 `derived.json`，所以唔會撞 25 MiB 限制。
+
+> 註：前端用 `ReadableStream` 讀下載進度，`Content-Length` 屬 CORS 安全回應標頭，R2 下照樣讀得到；
+> 若進度條停喺「載入中 0%」，多數係 CORS 未設好（睇 console 嘅 CORS 錯誤）。
+
 ## 功能特點
 
 | 功能 | 說明 |
