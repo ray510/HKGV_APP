@@ -49,6 +49,33 @@ python -m http.server 8642
 
 **環境需求**：Python 3.8+（管線）；現代瀏覽器（原型）；網絡可連 `mapapi.hkmapservice.gov.hk`。
 
+### 瀏覽器測試：headless Chrome 暫存一定要清
+
+Playwright 每次開 chromium 都會喺 `%TEMP%` 開 profile（`playwright_chromiumdev_profile-*`）＋ crashpad（`scoped_dir*`）。
+正常 close 會自己刪，但**一 crash／timeout／被 kill 就留低幾百 MB**——本 project 就係咁被 121 個殘留 profile 食爆 C:（0 bytes，Python 一啟動即 crash）。
+
+三層保險，任揀一層都夠：
+
+```bash
+python chrome_cleanup.py              # ① 手動／CI：掃描＋刪除＋殺 orphan headless chrome
+python chrome_cleanup.py --dry-run    #    只列出邊個資料夾佔幾多 MB
+
+python run_test.py smoke_browser.py   # ② 跑任何測試腳本：開跑前清、跑完再清（exit code 照樣傳回）
+```
+
+```python
+# ③ 測試腳本內部（最穩陣，唔記得用 wrapper 都唔會漏）
+from pwutil import open_browser
+
+with open_browser() as (browser, page):
+    page.goto("http://127.0.0.1:8642/index.html")
+# 離開 with 區塊（包括 exception）自動 close ＋ 掃走所有殘留
+```
+
+- 只認特定前綴（`HeadlessChrome`／`playwright_*_dev_profile`／`scoped_dir`／`hkgv_chrome_`），唔會誤刪其他程式嘅暫存
+- 只殺**帶 `--headless`** 嘅 chrome.exe，你平常用嘅 Chrome 唔受影響
+- `smoke_browser.py`＝離線煙霧測試（開／關 chromium、驗證 0 殘留），唔需要網絡
+
 ---
 
 
@@ -119,6 +146,12 @@ python -m http.server 8642
 ├── fill_block_pins.py               ← 為「有座別但冇座標」嘅座補圖釘（名匹配→異名→環形）
 ├── audit_blocks.py                  ← 座別全量審計（覆蓋統計＋錯誤檢查）
 ├── check_health.py                  ← 一鍵體檢：規模／完整性／重複／評分分佈／載入耗時／JS 錯誤
+│
+│ ── 開發工具（headless Chrome 暫存清理）──
+├── chrome_cleanup.py                ← 清 %TEMP% 殘留 profile／crashpad＋殺 orphan headless chrome（`--dry-run` 可預覽）
+├── pwutil.py                        ← `open_browser()` context manager：開／關都自動 sweep，測試腳本唯一入口
+├── run_test.py                      ← 跑任何測試腳本，開跑前＋跑完各清一次
+├── smoke_browser.py                 ← 離線煙霧測試（開／關 chromium＋驗證 0 殘留）
 ├── derived_estates.json             ← 推算屋苑（472→1,329→4,293 個演進）
 ├── app_template.html                ← v1 舊模板（歷史保留）
 ├── hk_lph_matcher.html              ← v1 舊原型：只有 10 個簡約公屋（歷史保留）
