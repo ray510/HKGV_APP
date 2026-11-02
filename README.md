@@ -125,15 +125,25 @@ HKGV_DERIVED_URL="https://data.yourdomain.com/derived.json" python build_app.py
 
 未設 `HKGV_DERIVED_URL` 就照舊用同目錄 `derived.json`（即 GitHub Pages 模式）。
 
-### 5. 部署前端
+### 5. 部署前端（push 時自動同步兩邊）
 
-```bash
-npx wrangler pages deploy _site --project-name=hkgv-app
-```
+`.github/workflows/deploy.yml` 已經改成**一次 build、兩邊部署**：
 
-或用現成 workflow：**Actions → deploy-cloudflare → Run workflow**，填 R2 網址即可
-（需先在 repo secrets 設 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）。
-Workflow 只會上傳 `index.html`（＋`assets/`），**唔會**上傳 `derived.json`，所以唔會撞 25 MiB 限制。
+| 目標 | 內容 | 觸發 |
+|---|---|---|
+| GitHub Pages | `index.html` ＋ `derived.json`（相對路徑） | 每次 push `main` |
+| Cloudflare Pages | `index.html`（`DERIVED_URL` 改指向 R2）＋ `assets/` | 每次 push `main`（**有設定才啟用**） |
+
+啟用 Cloudflare 只需在 repo 設定兩個值（Settings → Secrets and variables → Actions）：
+
+- **Variables**：`R2_DERIVED_URL`＝`https://data.yourdomain.com/derived.json`（必填）、`CF_PAGES_PROJECT`＝專案名（選填，預設 `hkgv-app`）
+- **Secrets**：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`
+
+兩個值齊全 → 自動同步部署；未設定 → `cloudflare` job 直接跳過（`cf_ready=false`），
+**GitHub Pages 照常發佈，唔會被拖累**。Cloudflare 部署失敗亦唔會影響 Pages（獨立 job）。
+
+想手動重跑 Cloudflare：**Actions → deploy-cloudflare → Run workflow**。
+兩個 workflow 都只會上傳 `index.html`（＋`assets/`），**唔會**上傳 `derived.json`，所以唔會撞 25 MiB 限制。
 
 > 註：前端用 `ReadableStream` 讀下載進度，`Content-Length` 屬 CORS 安全回應標頭，R2 下照樣讀得到；
 > 若進度條停喺「載入中 0%」，多數係 CORS 未設好（睇 console 嘅 CORS 錯誤）。

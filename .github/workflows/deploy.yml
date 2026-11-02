@@ -1,6 +1,8 @@
 name: build-and-deploy
 
-# 每次 push 到 main：重建 index.html → 發佈到 GitHub Pages（唔再需要 commit 成品）
+# 每次 push 到 main：重建 → 同時發佈 GitHub Pages（含大檔）＋ Cloudflare Pages（大檔由 R2 提供）
+# Cloudflare 部分「有設定才啟用」：repo 有 vars.R2_DERIVED_URL ＋ secrets.CLOUDFLARE_API_TOKEN
+# 就會自動同步；未設定就靜靜跳過，唔會影響 GitHub Pages。
 on:
   push:
     branches: [main]
@@ -18,6 +20,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      cf_ready: ${{ steps.cfcheck.outputs.ready }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,15 +41,58 @@ jobs:
           import re, sys
           h = open("index.html", encoding="utf-8").read()
           assert "__DATA__" not in h, "placeholder 未替換"
+          assert "__DERIVED_URL__" not in h, "R2 網址 token 未替換"
           assert len(h) > 5_000_000, "輸出太細，可能 build 失敗"
           print("index.html", round(len(h)/1048576, 2), "MB OK")
           PY
 
-      - name: Stage site（只上傳成品）
+      # 有 R2 網址 ＋ Cloudflare token 就順便部署 Cloudflare
+      - name: Check Cloudflare config
+        id: cfcheck
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          R2URL: ${{ vars.R2_DERIVED_URL }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$R2URL" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare 已設定，會同步部署"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "未設定 vars.R2_DERIVED_URL 或 secrets.CLOUDFLARE_API_TOKEN，跳過 Cloudflare"
+          fi
+
+      - name: Stage site（GitHub Pages：含 derived.json）
         run: |
           mkdir -p _site
           cp index.html _site/
           [ -f derived.json ] && cp derived.json _site/ || true
+
+      - name: Stage site（Cloudflare：唔放 derived.json，改指向 R2）
+        if: steps.cfcheck.outputs.ready == 'true'
+        env:
+          R2URL: ${{ vars.R2_DERIVED_URL }}
+        run: |
+          mkdir -p _site_cf
+          cp index.html _site_cf/
+          [ -d assets ] && cp -r assets _site_cf/ || true
+          python - <<'PY'
+          import os, re
+          url = os.environ["R2URL"]
+          p = "_site_cf/index.html"
+          h = open(p, encoding="utf-8").read()
+          h2, n = re.subn(r'const DERIVED_URL = "[^"]*"', 'const DERIVED_URL = "%s"' % url, h)
+          assert n == 1, f"DERIVED_URL 替換失敗（命中 {n} 次）"
+          open(p, "w", encoding="utf-8").write(h2)
+          print("Cloudflare 版指向：", url)
+          PY
+          ls -lh _site_cf
+
+      - uses: actions/upload-artifact@v4
+        if: steps.cfcheck.outputs.ready == 'true'
+        with:
+          name: cf-site
+          path: _site_cf
+          retention-days: 3
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
@@ -61,3 +108,20 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  cloudflare:
+    needs: build
+    if: needs.build.outputs.cf_ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cf-site
+          path: _site_cf
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _site_cf --project-name=${{ vars.CF_PAGES_PROJECT || 'hkgv-app' }}
