@@ -8,10 +8,11 @@
  4. 前綴（3~7 字）分組 + **貪心緊湊聚類**（每組直徑 ≤300m，超過就切開）
  5. 組名 = 成員最長共同前綴（≥2 中文字且非地名），否則用前綴本身
  6. 同名／前綴關係且 <300m 再合併一次；對現有屋苑做名稱去重
- 7. 單幢 ≥30 層亦收（單幢住宅大廈）
+ 7. 單幢 ≥8 層亦收（單幢住宅大廈）
+ 8. 冇層數（s=null）嘅座用樓高 h÷3.1m 估；純座號（「第二座」）／廟堂宮一律剔除
 
-用法：python derive_estates.py [--min-towers 2]
-輸出：derived_estates.json
+用法：python derive_estates.py [--min-towers 2] [--min-storeys 3] [--single-min 8] [--out derived_estates.json]
+輸出：derived_estates.json（預設參數＝現行 7,076 個版本）
 """
 import json, math, os, re, sys, collections
 
@@ -20,8 +21,8 @@ TOWERS = os.path.join(BASE, "cache", "towers.jsonl")
 OUT = os.path.join(BASE, "derived_estates.json")
 MAX_SPREAD = 300          # 一個屋苑嘅最大直徑（米）
 MIN_TOWERS = 2
-MIN_STOREYS = 8           # 多座屋苑：中位層數門檻（低過當低密度／村屋群）
-SINGLE_MIN = 25           # 單幢樓：層數門檻
+MIN_STOREYS = 3           # 多座屋苑：中位層數門檻（3 層＝連低密度別墅群都收）
+SINGLE_MIN = 8            # 單幢樓：層數門檻（8 層＝中低層單幢樓）
 
 NONRES = ("學校", "中學", "小學", "幼稚園", "幼兒園", "大學", "書院", "學院", "教育",
           "教會", "教堂", "禮拜堂", "廟", "祠", "寺", "修道院", "靜修",
@@ -42,7 +43,8 @@ NONRES = ("學校", "中學", "小學", "幼稚園", "幼兒園", "大學", "書
           "警局", "消防局", "救護", "醫療中心", "街坊", "合作社",
           "金融", "保險", "寫字樓", "商業大廈", "廣場", "酒店", "服務式", "商場", "百貨",
           "中心", "教區", "教堂", "修院", "神學院", "鐵路", "西鐵", "車廠", "機廠",
-          "人壽", "保險大廈", "電訊", "電視", "廣播", "總部", "辦事處", "行政大樓")
+          "人壽", "保險大廈", "電訊", "電視", "廣播", "總部", "辦事處", "行政大樓",
+          "天后宮", "宮", "堂", "祠", "庵", "觀音", "盂蘭")
 NONRES_EN = ("SCHOOL", "COLLEGE", "UNIVERSITY", "CHURCH", "HOTEL", "MALL", "INDUSTRIAL",
              "FACTORY", "WAREHOUSE", "HOSPITAL", "CLINIC", "POLICE", "FIRE STATION",
              "GOVERNMENT", "LIBRARY", "CINEMA", "THEATRE", "CAR PARK", "SUBSTATION",
@@ -75,6 +77,21 @@ def is_res_name(n):
     return True
 
 
+def storeys_of(t):
+    """層數：優先用地政 s；冇 s 就用樓高 h（米）÷3.1 估。
+
+    地政有 21,619 幢「有名但 s=null」（例：江庫花園全部座數都冇層數）。
+    h 只信 6–180m：太矮係車棚／圍牆，太大係山腰高程（清水灣山莊 h=210m 但實際 2 層）。
+    """
+    s = t.get("s")
+    if s:
+        return s
+    h = t.get("h")
+    if h and 6 <= h <= 180:
+        return int(round(h / 3.1))
+    return None
+
+
 def hav(a, b, c, d):
     R = 6371000.0
     p1, p2 = math.radians(a), math.radians(c)
@@ -89,6 +106,14 @@ def norm(n):
 
 
 ADDR = re.compile(r"(^[0-9０-９]+\s*\S*[街道路里巷徑]|^.+[街道路里巷徑]\s*[0-9０-９一二三四五六七八九十百]+\s*[號A-Za-z]?$)")
+
+# 純座號（「第二座」「Ａ座」「３期」）唔係屋苑名——單幢分支會攞到呢啲
+BLOCK_LABEL = re.compile(r"^(第)?[0-9０-９一二三四五六七八九十百]+\s*[A-Za-zＡ-Ｚ]?\s*[座棟幢期]?$")
+
+
+def is_block_label(n):
+    s = (n or "").strip()
+    return bool(s) and bool(BLOCK_LABEL.match(s))
 
 
 ROOT_STRIP = re.compile(
@@ -195,7 +220,9 @@ def compact_cluster(members, radius):
 def _blocks_out(ms, estate_name):
     """座名＝去掉屋苑名後嘅剩餘部分；剩餘為空或同名重複時，加（一）（二）區分，唔可以兩行同名。"""
     rows = []
-    for t in sorted(ms, key=lambda z: ((z.get("s") or 0), (z.get("h") or 0)), reverse=True)[:40]:
+    # 上限 200（原本 40）：低密度屋苑可以過百幢（匡湖居 114、新德園 121），
+    # 截到 40 就會「卡數 114 座但地圖只有 40 粒釘」
+    for t in sorted(ms, key=lambda z: ((z.get("s") or 0), (z.get("h") or 0)), reverse=True)[:200]:
         nm = t["n"].strip()
         rest = nm[len(estate_name):].strip() if nm.startswith(estate_name) else nm
         rows.append({"n": (rest or nm)[:14], "lat": round(t["y"], 6), "lng": round(t["x"], 6),
@@ -261,7 +288,7 @@ def main():
     by_root = collections.defaultdict(list)
     for t in left:
         r = root_of(t["n"])
-        if ADDR.match(r):          # 「淺水灣道３７號」呢類係門牌，唔係屋苑名
+        if ADDR.match(r) or is_block_label(r):   # 門牌／純座號都唔係屋苑名
             continue
         cjk = n_cjk(r)
         alpha = len(re.sub(r"[^0-9A-Za-z]", "", r))
@@ -290,29 +317,40 @@ def main():
                 used.add(t["i"])
             groups.append({"name": r, "members": ms})
 
-    # 單幢 ≥25 層（原本 ≥30，漏咗大量 25–29 層單幢樓）
+    # 單幢 ≥SINGLE_MIN 層（預設 8；原本 25，漏咗大量中低層單幢樓）
     singles = 0
     for t in left:
         if t["i"] in used:
             continue
-        if (t.get("s") or 0) >= SINGLE_MIN:
+        if (storeys_of(t) or 0) >= SINGLE_MIN:
             _r = root_of(t["n"])
-            groups.append({"name": _r if (n_cjk(_r) >= 2 or len(re.sub(r"[^0-9A-Za-z]", "", _r)) >= 3)
-                           else t["n"].strip(), "members": [t], "single": 1})
+            _nm = _r if (n_cjk(_r) >= 2 or len(re.sub(r"[^0-9A-Za-z]", "", _r)) >= 3) else t["n"].strip()
+            if is_block_label(_nm):      # 「第二座」唔係屋苑名
+                continue
+            groups.append({"name": _nm, "members": [t], "single": 1})
             used.add(t["i"]); singles += 1
 
-    # 同名／前綴合併（<300m）
+    # 同名／前綴合併（同名 <800m、前綴 <300m，但合併後直徑唔可以爆到 >700m）
     for g in groups:
         g["lat"] = sum(t["y"] for t in g["members"]) / len(g["members"])
         g["lng"] = sum(t["x"] for t in g["members"]) / len(g["members"])
     groups.sort(key=lambda g: -len(g["members"]))
+
+    def spread_ok(members):
+        la = sum(t["y"] for t in members) / len(members)
+        lo = sum(t["x"] for t in members) / len(members)
+        return max(hav(t["y"], t["x"], la, lo) for t in members) <= 350
+
     merged = []
     for g in groups:
         for m in merged:
             same = g["name"] == m["name"]
             near_prefix = (m["name"].startswith(g["name"]) or g["name"].startswith(m["name"]))
             d = hav(g["lat"], g["lng"], m["lat"], m["lng"])
-            if (same and d < 400) or (near_prefix and d < 300):
+            if (same and d < 800) or (near_prefix and d < 300):
+                # 匡湖居 463 幢就係「同名就合」爆出嚟：合併後直徑 >700m 就唔合
+                if not spread_ok(m["members"] + g["members"]):
+                    continue
                 m["members"].extend(g["members"])
                 m["lat"] = sum(t["y"] for t in m["members"]) / len(m["members"])
                 m["lng"] = sum(t["x"] for t in m["members"]) / len(m["members"])
@@ -343,7 +381,7 @@ def main():
         # 「邨」＝公共屋邨命名，官方數據已有；推算層唔好搶（沙頭角邨 39 幢就係咁混入）
         if g["name"].endswith("邨"):
             continue
-        st = [t["s"] for t in ms if t.get("s")]
+        st = [v for v in (storeys_of(t) for t in ms) if v]
         hh = [t["h"] for t in ms if t.get("h")]
         med = int(sorted(st)[len(st) // 2]) if st else None
         if med is not None and med < 3 and (len(ms) < 5 or g["name"].endswith("邨")):
@@ -352,7 +390,8 @@ def main():
         if med is None or med < MIN_STOREYS:
             n_low += 1
             continue
-        units = sum(int(t.get("s") or 0) * 6 for t in ms)
+        # 單位估算：冇層數嘅座用估出嚟嘅 med，唔好當 0
+        units = sum(int(storeys_of(t) or med or 0) * 6 for t in ms)
         out.append({
             "name_tc": g["name"], "lat": round(g["lat"], 6), "lng": round(g["lng"], 6),
             "towers": len(ms), "storeys_med": med,

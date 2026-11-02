@@ -961,6 +961,11 @@ _DROP_SINGLE = tuple(k for k in _FAC_FIELDS if k not in _KEEP_FAC) + (
 )
 _n_slim = 0
 for _e in _derived_records:
+    # 全體推算屋苑：幼稚園／港鐵候選各留 6／2 個就夠（原本 40／3，佔 payload 1.4 MB）
+    if _e.get("nearest_kgs") and len(_e["nearest_kgs"]) > 6:
+        _e["nearest_kgs"] = _e["nearest_kgs"][:6]
+    if _e.get("mtr_candidates") and len(_e["mtr_candidates"]) > 2:
+        _e["mtr_candidates"] = _e["mtr_candidates"][:2]
     if (_e.get("blocks_count") or 0) > 1:
         continue
     for _k in _DROP_SINGLE:
