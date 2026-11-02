@@ -469,7 +469,9 @@ function popupHtml(e, withProfile){
 }
 
 // ---- 地圖 ----
-const map = L.map("map").setView([22.37, 114.10], 10);
+const map = L.map("map", { preferCanvas: true }).setView([22.37, 114.10], 10);
+// 12,000+ 個屋苑圓點：用單一 canvas 圖層畫，DOM 唔會爆（SVG renderer 會卡死）
+const canvasRenderer = L.canvas({ padding: 0.4 });
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {attribution: "© OpenStreetMap 貢獻者", maxZoom: 19}).addTo(map);
 
@@ -485,6 +487,7 @@ function addEstateMarker(e){
   if (e.lat == null || markers[e._key]) return;
   const c = scoreColor(e.score);
   const mk = L.circleMarker([e.lat, e.lng], {
+    renderer: canvasRenderer,
     radius: 5 + Math.min(9, (e.total_units||0)/1800),
     color: c, fillColor: c, fillOpacity: .7, weight: 2
   }).bindPopup(popupHtml(e, false));

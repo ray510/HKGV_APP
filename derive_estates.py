@@ -8,11 +8,11 @@
  4. 前綴（3~7 字）分組 + **貪心緊湊聚類**（每組直徑 ≤300m，超過就切開）
  5. 組名 = 成員最長共同前綴（≥2 中文字且非地名），否則用前綴本身
  6. 同名／前綴關係且 <300m 再合併一次；對現有屋苑做名稱去重
- 7. 單幢 ≥8 層亦收（單幢住宅大廈）
+ 7. 單幢 ≥1 層亦收（所有有名住宅建築）
  8. 冇層數（s=null）嘅座用樓高 h÷3.1m 估；純座號（「第二座」）／廟堂宮一律剔除
 
-用法：python derive_estates.py [--min-towers 2] [--min-storeys 3] [--single-min 8] [--out derived_estates.json]
-輸出：derived_estates.json（預設參數＝現行 7,076 個版本）
+用法：python derive_estates.py [--min-towers 2] [--min-storeys 1] [--single-min 1] [--out derived_estates.json]
+輸出：derived_estates.json（預設參數＝現行 11,027 個版本）
 """
 import json, math, os, re, sys, collections
 
@@ -21,8 +21,8 @@ TOWERS = os.path.join(BASE, "cache", "towers.jsonl")
 OUT = os.path.join(BASE, "derived_estates.json")
 MAX_SPREAD = 300          # 一個屋苑嘅最大直徑（米）
 MIN_TOWERS = 2
-MIN_STOREYS = 3           # 多座屋苑：中位層數門檻（3 層＝連低密度別墅群都收）
-SINGLE_MIN = 8            # 單幢樓：層數門檻（8 層＝中低層單幢樓）
+MIN_STOREYS = 1           # 多座屋苑：中位層數門檻（1 層＝連單層屋群都收）
+SINGLE_MIN = 1            # 單幢樓：層數門檻（1 層＝所有有名住宅建築都收）
 
 NONRES = ("學校", "中學", "小學", "幼稚園", "幼兒園", "大學", "書院", "學院", "教育",
           "教會", "教堂", "禮拜堂", "廟", "祠", "寺", "修道院", "靜修",
@@ -44,7 +44,9 @@ NONRES = ("學校", "中學", "小學", "幼稚園", "幼兒園", "大學", "書
           "金融", "保險", "寫字樓", "商業大廈", "廣場", "酒店", "服務式", "商場", "百貨",
           "中心", "教區", "教堂", "修院", "神學院", "鐵路", "西鐵", "車廠", "機廠",
           "人壽", "保險大廈", "電訊", "電視", "廣播", "總部", "辦事處", "行政大樓",
-          "天后宮", "宮", "堂", "祠", "庵", "觀音", "盂蘭")
+          "天后宮", "宮", "堂", "祠", "庵", "觀音", "盂蘭",
+          "港鐵", "輕鐵", "車站", "站", "巴士", "隧道", "天橋", "營",
+          "館", "廠", "倉", "局", "署")
 NONRES_EN = ("SCHOOL", "COLLEGE", "UNIVERSITY", "CHURCH", "HOTEL", "MALL", "INDUSTRIAL",
              "FACTORY", "WAREHOUSE", "HOSPITAL", "CLINIC", "POLICE", "FIRE STATION",
              "GOVERNMENT", "LIBRARY", "CINEMA", "THEATRE", "CAR PARK", "SUBSTATION",
@@ -232,7 +234,8 @@ def _blocks_out(ms, estate_name):
     for r in rows:
         if seen[r["n"]] > 1:
             idx[r["n"]] += 1
-            r["n"] = f"{r['n']}（{_CN[idx[r['n']]]}）"
+            # 低密度屋苑可以過百幢同名座（「第５座」重複），超出中文數字表就回落做阿拉伯數字
+            r["n"] = f"{r['n']}（{_CN.get(idx[r['n']], str(idx[r['n']]))}）"
     return rows
 
 
@@ -325,7 +328,9 @@ def main():
         if (storeys_of(t) or 0) >= SINGLE_MIN:
             _r = root_of(t["n"])
             _nm = _r if (n_cjk(_r) >= 2 or len(re.sub(r"[^0-9A-Za-z]", "", _r)) >= 3) else t["n"].strip()
-            if is_block_label(_nm):      # 「第二座」唔係屋苑名
+            if is_block_label(_nm) or ADDR.match(_nm):      # 「第二座」／「清水灣道３２８號」唔係屋苑名
+                continue
+            if _nm.endswith(("街", "道", "路", "里", "巷", "徑", "村")):   # 「庫爾大道」呢類係街道
                 continue
             groups.append({"name": _nm, "members": [t], "single": 1})
             used.add(t["i"]); singles += 1

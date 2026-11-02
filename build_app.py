@@ -827,6 +827,7 @@ if os.path.exists(DERIVED) and not os.environ.get("HKGV_NO_DERIVED"):
              "district_tc": nb.get("district_tc"), "region_tc": nb.get("region_tc"),
              "blocks": x.get("blocks") or [], "blocks_count": x["towers"],
              "blocks_source": "LandsD",
+             "storeys_med": x.get("storeys_med"),
              "total_units": x["est_units"], "est_pop": x["est_pop"],
              "sub_scores": {}}
         # 設施點：由全港官方屋苑嘅設施池計最近（唔止借隔籬嗰個，距離全部重算）
@@ -952,30 +953,54 @@ for e in data:
 _derived_records = [e for e in data if e.get("source_type") == "PRVD"]
 data = [e for e in data if e.get("source_type") != "PRVD"]
 
-# 單幢推算屋苑（3,400+ 個）→ 精簡記錄：只保留卡片／路線真正用得到嘅欄位，
-# 否則 derived.json 會由 6 MB 脹到 24 MB（每幢都帶 14 個設施字典）
+# 推算屋苑分四級精簡，否則 derived.json 會脹到 30 MB＋（每筆都帶 14 個設施字典）
+#   A 高層多座（≥8 層）  ：全量，只截 kgs 6／mtr 2
+#   B 低層多座（<8 層）   ：丟 11 個設施字典＋幼稚園＋小學候選；座釘只留 名／經緯
+#   C 高層單幢（≥8 層）   ：現行精簡（保留 4 個設施＋小學）
+#   D 低層單幢（<8 層）   ：極簡，只留卡片／路線最低要求（座釘用屋苑點代替）
 _KEEP_FAC = ("nearest_elderly", "nearest_shelter", "nearest_ae_hospital", "nearest_covered")
-_DROP_SINGLE = tuple(k for k in _FAC_FIELDS if k not in _KEEP_FAC) + (
+_DROP_HEAVY_FAC = tuple(k for k in _FAC_FIELDS if k not in _KEEP_FAC)
+_DROP_SINGLE = _DROP_HEAVY_FAC + (
     "school_candidates", "nearest_kgs", "kindergartens_800m", "ae_hospitals",
     "nearest_kg_dist_m", "nearest_kg_name_tc", "nearest_kg_lat", "nearest_kg_lng",
 )
-_n_slim = 0
+_DROP_ULTRA = _DROP_SINGLE + _KEEP_FAC + ("nearest_school", "nearest_covered")
+_tier = {"A": 0, "B": 0, "C": 0, "D": 0}
 for _e in _derived_records:
-    # 全體推算屋苑：幼稚園／港鐵候選各留 6／2 個就夠（原本 40／3，佔 payload 1.4 MB）
-    if _e.get("nearest_kgs") and len(_e["nearest_kgs"]) > 6:
-        _e["nearest_kgs"] = _e["nearest_kgs"][:6]
-    if _e.get("mtr_candidates") and len(_e["mtr_candidates"]) > 2:
-        _e["mtr_candidates"] = _e["mtr_candidates"][:2]
-    if (_e.get("blocks_count") or 0) > 1:
-        continue
-    for _k in _DROP_SINGLE:
-        _e.pop(_k, None)
-    if _e.get("mtr_candidates"):
-        _e["mtr_candidates"] = _e["mtr_candidates"][:1]
-    _n_slim += 1
+    _bc = _e.get("blocks_count") or 0
+    _st = _e.get("storeys_med") or 0
+    if _bc > 1 and _st >= 8:
+        _t = "A"
+        if _e.get("nearest_kgs") and len(_e["nearest_kgs"]) > 6:
+            _e["nearest_kgs"] = _e["nearest_kgs"][:6]
+        if _e.get("mtr_candidates") and len(_e["mtr_candidates"]) > 2:
+            _e["mtr_candidates"] = _e["mtr_candidates"][:2]
+    elif _bc > 1:
+        _t = "B"
+        for _k in _DROP_HEAVY_FAC + ("nearest_kgs", "school_candidates", "ae_hospitals"):
+            _e.pop(_k, None)
+        if _e.get("mtr_candidates"):
+            _e["mtr_candidates"] = _e["mtr_candidates"][:1]
+        _e["blocks"] = [{"n": b.get("n"), "lat": b.get("lat"), "lng": b.get("lng")}
+                        for b in (_e.get("blocks") or []) if b.get("lat") is not None]
+    elif _st >= 8:
+        _t = "C"
+        for _k in _DROP_SINGLE:
+            _e.pop(_k, None)
+        if _e.get("mtr_candidates"):
+            _e["mtr_candidates"] = _e["mtr_candidates"][:1]
+    else:
+        _t = "D"
+        for _k in _DROP_ULTRA:
+            _e.pop(_k, None)
+        if _e.get("mtr_candidates"):
+            _e["mtr_candidates"] = _e["mtr_candidates"][:1]
+        _e["blocks"] = []
+    _tier[_t] += 1
+_n_slim = _tier["C"] + _tier["D"]
 
 print(f"  拆檔：index.html {len(data):,} 個錨點｜derived.json {len(_derived_records):,} 個推算屋苑"
-      f"（單幢精簡 {_n_slim:,}）", flush=True)
+      f"（分級 A{_tier['A']:,}/B{_tier['B']:,}/C{_tier['C']:,}/D{_tier['D']:,}）", flush=True)
 
 # 預設排序：評分 ↓、單位數 ↓（與管線一致）
 data.sort(key=lambda x: (-x.get("score", 0), -(x.get("total_units") or 0)))
