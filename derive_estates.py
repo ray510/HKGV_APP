@@ -75,9 +75,14 @@ def n_cjk(s):
     return len(CJK.findall(s or ""))
 
 
+NO_NAME_FILTER = True     # True＝唔用名稱黑名單（學校／商場／中心／廣場…全部照收）
+
+
 def is_res_name(n):
     if not n or n_cjk(n) < 2:
         return False
+    if NO_NAME_FILTER:
+        return True
     s, u = n.strip(), n.strip().upper()
     if any(k in s for k in NONRES) or any(k in u for k in NONRES_EN):
         return False
@@ -388,9 +393,7 @@ def main():
             continue
         if dup(g["name"], g["lat"], g["lng"]):
             continue
-        # 「邨」＝公共屋邨命名，官方數據已有；推算層唔好搶（沙頭角邨 39 幢就係咁混入）
-        if g["name"].endswith("邨"):
-            continue
+        # 「邨」照收（名稱黑名單已關；重複嘅會由 dup() 對官方屋苑去重）
         st = [v for v in (storeys_of(t) for t in ms) if v]
         hh = [t["h"] for t in ms if t.get("h")]
         med = int(sorted(st)[len(st) // 2]) if st else None
@@ -402,10 +405,7 @@ def main():
             continue
         # 「XX 中心／廣場」辦公室／商場都用呢個名。住宅型態：2–8 幢、10–40 層
         # （上水中心 6 幢 24 層、美居中心 7 幢 12 層；中環中心 4 幢 64 層、環球貿易廣場 1 幢 103 層＝寫字樓）
-        if g["name"].endswith(("中心", "廣場")):
-            if not (2 <= len(ms) <= 8 and 10 <= (med or 0) <= 40):
-                n_low += 1
-                continue
+
         # 單位估算：冇層數嘅座用估出嚟嘅 med，唔好當 0
         units = sum(int(storeys_of(t) or med or 0) * 6 for t in ms)
         out.append({
