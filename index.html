@@ -154,6 +154,14 @@
   .covCtl{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:11.5px;box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:pointer;user-select:none}
   .covCtl label{cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
   .covCtl .k{display:inline-block;width:7px;height:7px;border-radius:50%}
+
+/* 巴士站／路線（Phase 1） */
+.ptBox{margin:8px 0 6px;padding:8px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;font-size:12px;line-height:1.55}
+.ptBox b{color:#0369a1}
+.ptLine{margin-top:6px;padding-top:6px;border-top:1px dashed #cfe8f7}
+.ptLine:first-of-type{border-top:none;padding-top:2px}
+.ptName{font-weight:600;margin-right:6px}
+.ptRoutes{color:#0f766e;font-weight:600}
 </style>
 </head>
 <body>
@@ -248,6 +256,7 @@
           </select></label>
       </div>
       <label class="chk"><input type="checkbox" id="needLift"> <span>全幢必須有升降機（長者／輪椅／BB 車）</span></label>
+      <label class="chk"><input type="checkbox" id="hasBus"> <span>🚌 400 米內有巴士站（九巴／城巴）</span></label>
       <label class="chk"><input type="checkbox" id="onlyRes" checked> <span>🏠 只顯示住宅建築（隱藏學校／廟宇／商場／醫院等 <b>6460</b> 個，取消剔選就全部出返）</span></label>
       <div class="hint" id="count"></div>
     </div>
@@ -709,6 +718,7 @@ function filtered(){
     (!aiAreaMin || (e.avg_area || 0) >= aiAreaMin) &&
     (!lift || e.non_elevator_units === 0) &&
     (!onlyRes || e.kind !== "nonres") &&
+    (!document.getElementById("hasBus").checked || hasBusNear(e)) &&
     (!scale || (scale === "single" ? (e.blocks_count != null && e.blocks_count <= 1) : (e.blocks_count || 0) >= +scale)));
   if (sortby === "units") list.sort((a,b)=>(b.total_units||0)-(a.total_units||0));
   else if (sortby === "mtr") list.sort((a,b)=>(a.nearest_mtr?.distance_m??1e9)-(b.nearest_mtr?.distance_m??1e9));
@@ -769,6 +779,7 @@ function render(){
         (canChainElder ? `<button class="go chain alt2" data-p="${e._key}" data-c="elder">🔗 護老返工鏈</button>` : "") +
         `</div>`
       : "";
+    const ptHtml = ptBoxHtml(e);
     const ST_META = {PRH:["prh","公屋"],LPH:["lph","簡屋"],HOS:["hos","居屋"],PRV:["prv","私人"],PRVD:["prv","推算私人"],VLG:["vlg","村屋"]};
     const [stCls, stLbl] = ST_META[e.source_type] || ST_META[e.source] || ["prh","公屋"];
     const hasUnits = e.total_units != null;
@@ -825,7 +836,7 @@ function render(){
           `<div class="row moreRows" id="more-${e._key}" hidden>` +
           more.map(t => `<span class="pill">${t}</span>`).join("") + `</div>`;
       })()}
-      ${routeBtns}${chainBtns}${addCmpBtn}${blkBtn}`;
+      ${ptHtml}${routeBtns}${chainBtns}${addCmpBtn}${blkBtn}`;
     box.appendChild(el);
     const moreBtn = el.querySelector(".moreBtn");
     if (moreBtn) moreBtn.addEventListener("click", () => {
@@ -1196,6 +1207,70 @@ function havM(a, b, c, d){   // 米
   const x = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(x));
 }
+// ---- 公共交通（巴士站＋路線號）Phase 1 ----
+let PT = null, ptGrid = null, ptLoading = false;
+const PT_CELL = 0.005;          // 約 550m 一格
+const PT_RADIUS = 400;          // 卡片顯示 400m 內嘅站
+
+async function loadPT(){
+  if (PT || ptLoading) return;
+  ptLoading = true;
+  try {
+    const res = await fetch("pt_stops.json", {cache: "force-cache"});
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    PT = await res.json();
+    ptGrid = new Map();
+    for (const s of PT){
+      const k = Math.floor(s.lat / PT_CELL) + "," + Math.floor(s.lng / PT_CELL);
+      if (!ptGrid.has(k)) ptGrid.set(k, []);
+      ptGrid.get(k).push(s);
+    }
+    render();                       // 有數據即重畫，卡片即時多一欄「巴士」
+  } catch (err) {
+    console.warn("pt load failed:", err);
+  }
+  ptLoading = false;
+}
+
+function nearStops(e, radius = PT_RADIUS){
+  if (!ptGrid || e.lat == null) return [];
+  const ci = Math.floor(e.lat / PT_CELL), cj = Math.floor(e.lng / PT_CELL);
+  const out = [];
+  for (let i = ci - 1; i <= ci + 1; i++){
+    for (let j = cj - 1; j <= cj + 1; j++){
+      const arr = ptGrid.get(i + "," + j);
+      if (!arr) continue;
+      for (const s of arr){
+        const d = havM(e.lat, e.lng, s.lat, s.lng);
+        if (d <= radius) out.push({s, d});
+      }
+    }
+  }
+  out.sort((a, b) => a.d - b.d);
+  return out;
+}
+
+// 400m 內有冇巴士站（篩選用；PT 未載入時當「有」，唔好誤殺）
+function hasBusNear(e){
+  if (!ptGrid) return true;
+  return nearStops(e, PT_RADIUS).length > 0;
+}
+
+function ptBoxHtml(e){
+  if (!ptGrid || e.lat == null) return "";
+  const near = nearStops(e);
+  if (!near.length) return `<div class="ptBox"><b>🚌 巴士</b> <span class="mini">400m 內冇巴士站（九巴／城巴）</span></div>`;
+  const stops = near.slice(0, 3).map(({s, d}) => {
+    const rs = s.r.slice(0, 8).join("、") + (s.r.length > 8 ? ` +${s.r.length - 8}` : "");
+    return `<div class="ptLine"><span class="ptName">${s.n}</span>` +
+           `<span class="mini">行 ${Math.max(1, Math.round(d / 75))} 分鐘（${Math.round(d)}m）</span><br>` +
+           `<span class="ptRoutes">${rs}</span></div>`;
+  }).join("");
+  const allRoutes = new Set();
+  near.forEach(({s}) => s.r.forEach(r => allRoutes.add(r)));
+  return `<div class="ptBox"><b>🚌 巴士</b> <span class="mini">400m 內 ${near.length} 個站・${allRoutes.size} 條路線</span>${stops}</div>`;
+}
+
 const MTR_ALL = [{"zh":"金鐘鐵路站","en":"Admiralty Station","lat":22.27838,"lng":114.16596},{"zh":"機場鐵路站","en":"Airport Station","lat":22.3159,"lng":113.93647},{"zh":"博覽館鐵路站","en":"AsiaWorld-Expo Station","lat":22.3219,"lng":113.94201},{"zh":"迪士尼鐵路站","en":"Disneyland Resort Station","lat":22.31539,"lng":114.04491},{"zh":"尖東鐵路站","en":"East Tsim Sha Tsui Station","lat":22.29621,"lng":114.17389},{"zh":"會展鐵路站","en":"Exhibition Centre Station","lat":22.28161,"lng":114.17519},{"zh":"粉嶺鐵路站","en":"Fanling Station","lat":22.49213,"lng":114.13865},{"zh":"柯士甸鐵路站","en":"Austin Station","lat":22.30447,"lng":114.16659},{"zh":"銅鑼灣鐵路站","en":"Causeway Bay Station","lat":22.27958,"lng":114.18387},{"zh":"中環鐵路站","en":"Central Station","lat":22.28189,"lng":114.15924},{"zh":"火炭鐵路站","en":"Fo Tan Station","lat":22.39561,"lng":114.19835},{"zh":"炮台山鐵路站","en":"Fortress Hill Station","lat":22.2877,"lng":114.19376},{"zh":"柴灣鐵路站","en":"Chai Wan Station","lat":22.2646,"lng":114.23712},{"zh":"車公廟鐵路站","en":"Che Kung Temple Station","lat":22.37477,"lng":114.18617},{"zh":"長沙灣鐵路站","en":"Cheung Sha Wan Station","lat":22.33539,"lng":114.15637},{"zh":"彩虹鐵路站","en":"Choi Hung Station","lat":22.33491,"lng":114.20892},{"zh":"第一城鐵路站","en":"City One Station","lat":22.38286,"lng":114.20352},{"zh":"鑽石山鐵路站","en":"Diamond Hill Station","lat":22.33987,"lng":114.20141},{"zh":"坑口鐵路站","en":"Hang Hau Station","lat":22.31583,"lng":114.26417},{"zh":"杏花邨鐵路站","en":"Heng Fa Chuen Station","lat":22.27654,"lng":114.23963},{"zh":"恆安鐵路站","en":"Heng On Station","lat":22.4175,"lng":114.22575},{"zh":"顯徑鐵路站","en":"Hin Keng Station","lat":22.36392,"lng":114.17079},{"zh":"香港大學鐵路站","en":"HKU Station","lat":22.28456,"lng":114.13475},{"zh":"九龍灣鐵路站","en":"Kowloon Bay Station","lat":22.32343,"lng":114.21408},{"zh":"何文田鐵路站","en":"Ho Man Tin Station","lat":22.31003,"lng":114.18268},{"zh":"香港鐵路站","en":"Hong Kong Station","lat":22.28469,"lng":114.15815},{"zh":"葵芳鐵路站","en":"Kwai Fong Station","lat":22.35685,"lng":114.12781},{"zh":"紅磡鐵路站","en":"Hung Hom Station","lat":22.30248,"lng":114.18247},{"zh":"觀塘鐵路站","en":"Kwun Tong Station","lat":22.31214,"lng":114.22658},{"zh":"荔枝角鐵路站","en":"Lai Chi Kok Station","lat":22.33656,"lng":114.14808},{"zh":"佐敦鐵路站","en":"Jordan Station","lat":22.30488,"lng":114.17171},{"zh":"荔景鐵路站","en":"Lai King Station","lat":22.34832,"lng":114.12616},{"zh":"啟德鐵路站","en":"Kai Tak Station","lat":22.33053,"lng":114.19948},{"zh":"錦上路鐵路站","en":"Kam Sheung Road Station","lat":22.4348,"lng":114.06342},{"zh":"堅尼地城鐵路站","en":"Kennedy Town Station","lat":22.2814,"lng":114.12853},{"zh":"九龍鐵路站","en":"Kowloon Station","lat":22.30479,"lng":114.16173},{"zh":"葵興鐵路站","en":"Kwai Hing Station","lat":22.36317,"lng":114.13136},{"zh":"九龍塘鐵路站","en":"Kowloon Tong Station","lat":22.33712,"lng":114.17668},{"zh":"大水坑鐵路站","en":"Tai Shui Hang Station","lat":22.40821,"lng":114.22259},{"zh":"藍田鐵路站","en":"Lam Tin Station","lat":22.30693,"lng":114.23306},{"zh":"利東鐵路站","en":"Lei Tung Station","lat":22.2422,"lng":114.15601},{"zh":"羅湖鐵路站","en":"Lo Wu Station","lat":22.52807,"lng":114.11371},{"zh":"康城鐵路站","en":"LOHAS Park Station","lat":22.29549,"lng":114.26865},{"zh":"樂富鐵路站","en":"Lok Fu Station","lat":22.33787,"lng":114.18676},{"zh":"落馬洲鐵路站","en":"Lok Ma Chau Station","lat":22.515,"lng":114.06568},{"zh":"石門鐵路站","en":"Shek Mun Station","lat":22.38767,"lng":114.20827},{"zh":"朗屏鐵路站","en":"Long Ping Station","lat":22.44777,"lng":114.02542},{"zh":"馬鞍山鐵路站","en":"Ma On Shan Station","lat":22.42479,"lng":114.23161},{"zh":"美孚鐵路站","en":"Mei Foo Station","lat":22.33832,"lng":114.13819},{"zh":"馬場鐵路站","en":"Racecourse Station","lat":22.40029,"lng":114.20326},{"zh":"西灣河鐵路站","en":"Sai Wan Ho Station","lat":22.28201,"lng":114.22204},{"zh":"西營盤鐵路站","en":"Sai Ying Pun Station","lat":22.28609,"lng":114.14309},{"zh":"沙田鐵路站","en":"Sha Tin Station","lat":22.38246,"lng":114.18736},{"zh":"海怡半島鐵路站","en":"South Horizons Station","lat":22.24248,"lng":114.14903},{"zh":"旺角東鐵路站","en":"Mong Kok East Station","lat":22.32216,"lng":114.17271},{"zh":"沙田圍鐵路站","en":"Sha Tin Wai Station","lat":22.37703,"lng":114.19499},{"zh":"旺角鐵路站","en":"Mong Kok Station","lat":22.31947,"lng":114.16937},{"zh":"深水埗鐵路站","en":"Sham Shui Po Station","lat":22.33079,"lng":114.16228},{"zh":"南昌鐵路站","en":"Nam Cheong Station","lat":22.32654,"lng":114.15382},{"zh":"牛頭角鐵路站","en":"Ngau Tau Kok Station","lat":22.3155,"lng":114.21892},{"zh":"北角鐵路站","en":"North Point Station","lat":22.29115,"lng":114.20048},{"zh":"筲箕灣鐵路站","en":"Shau Kei Wan Station","lat":22.27955,"lng":114.22907},{"zh":"石硤尾鐵路站","en":"Shek Kip Mei Station","lat":22.33183,"lng":114.16885},{"zh":"海洋公園鐵路站","en":"Ocean Park Station","lat":22.24859,"lng":114.17438},{"zh":"太子鐵路站","en":"Prince Edward Station","lat":22.32466,"lng":114.16834},{"zh":"奧運鐵路站","en":"Olympic Station","lat":22.3178,"lng":114.16018},{"zh":"寶琳鐵路站","en":"Po Lam Station","lat":22.32272,"lng":114.25776},{"zh":"鰂魚涌鐵路站","en":"Quarry Bay Station","lat":22.28877,"lng":114.20895},{"zh":"上水鐵路站","en":"Sheung Shui Station","lat":22.50138,"lng":114.12786},{"zh":"上環鐵路站","en":"Sheung Wan Station","lat":22.28685,"lng":114.1515},{"zh":"兆康鐵路站","en":"Siu Hong Station","lat":22.4121,"lng":113.97873},{"zh":"宋皇臺鐵路站","en":"Sung Wong Toi Station","lat":22.3269,"lng":114.1912},{"zh":"欣澳鐵路站","en":"Sunny Bay Station","lat":22.33189,"lng":114.02895},{"zh":"太古鐵路站","en":"Tai Koo Station","lat":22.28516,"lng":114.21621},{"zh":"大埔墟鐵路站","en":"Tai Po Market Station","lat":22.44448,"lng":114.17056},{"zh":"大圍鐵路站","en":"Tai Wai Station","lat":22.37306,"lng":114.17837},{"zh":"大窩口鐵路站","en":"Tai Wo Hau Station","lat":22.37082,"lng":114.12504},{"zh":"調景嶺鐵路站","en":"Tiu Keng Leng Station","lat":22.30395,"lng":114.25226},{"zh":"太和鐵路站","en":"Tai Wo Station","lat":22.45106,"lng":114.16107},{"zh":"天后鐵路站","en":"Tin Hau Station","lat":22.28225,"lng":114.19181},{"zh":"天水圍鐵路站","en":"Tin Shui Wai Station","lat":22.44803,"lng":114.00462},{"zh":"土瓜灣鐵路站","en":"To Kwa Wan Station","lat":22.31693,"lng":114.18753},{"zh":"將軍澳鐵路站","en":"Tseung Kwan O Station","lat":22.30737,"lng":114.2599},{"zh":"尖沙咀鐵路站","en":"Tsim Sha Tsui Station","lat":22.2973,"lng":114.17237},{"zh":"青衣鐵路站","en":"Tsing Yi Station","lat":22.35832,"lng":114.10703},{"zh":"荃灣鐵路站","en":"Tsuen Wan Station","lat":22.37361,"lng":114.11783},{"zh":"屯門鐵路站","en":"Tuen Mun Station","lat":22.39523,"lng":113.97316},{"zh":"荃灣西鐵路站","en":"Tsuen Wan West Station","lat":22.36807,"lng":114.10997},{"zh":"東涌鐵路站","en":"Tung Chung Station","lat":22.28934,"lng":113.94153},{"zh":"大學鐵路站","en":"University Station","lat":22.41362,"lng":114.21033},{"zh":"灣仔鐵路站","en":"Wan Chai Station","lat":22.27724,"lng":114.17292},{"zh":"黃大仙鐵路站","en":"Wong Tai Sin Station","lat":22.34163,"lng":114.19409},{"zh":"黃埔鐵路站","en":"Whampoa Station","lat":22.3048,"lng":114.19018},{"zh":"黃竹坑鐵路站","en":"Wong Chuk Hang Station","lat":22.24824,"lng":114.16758},{"zh":"油塘鐵路站","en":"Yau Tong Station","lat":22.29781,"lng":114.23717},{"zh":"烏溪沙鐵路站","en":"Wu Kai Sha Station","lat":22.42915,"lng":114.24394},{"zh":"油麻地鐵路站","en":"Yau Ma Tei Station","lat":22.31277,"lng":114.17059},{"zh":"元朗鐵路站","en":"Yuen Long Station","lat":22.44625,"lng":114.03531}];   // 全港港鐵站（自選目的地用）
 
 const DEST = {
@@ -1788,6 +1863,7 @@ render();
   const c = navigator.connection || {};
   const cheap = !c.saveData && !/^(slow-)?2g$/.test(c.effectiveType || "");
   const go = () => { if (!derivedLoaded && !derivedLoading && cheap) loadDerived(); };
+  loadPT();                // 巴士站索引只有 ~1.2 MB，照樣預取
   if (!cheap) return;      // 慳數據／2G：唔自動下載 50 MB，等用戶自己撳
   if ("requestIdleCallback" in window) requestIdleCallback(go, {timeout: 5000});
   else setTimeout(go, 3000);

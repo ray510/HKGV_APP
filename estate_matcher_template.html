@@ -154,6 +154,14 @@
   .covCtl{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:11.5px;box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:pointer;user-select:none}
   .covCtl label{cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
   .covCtl .k{display:inline-block;width:7px;height:7px;border-radius:50%}
+
+/* 巴士站／路線（Phase 1） */
+.ptBox{margin:8px 0 6px;padding:8px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;font-size:12px;line-height:1.55}
+.ptBox b{color:#0369a1}
+.ptLine{margin-top:6px;padding-top:6px;border-top:1px dashed #cfe8f7}
+.ptLine:first-of-type{border-top:none;padding-top:2px}
+.ptName{font-weight:600;margin-right:6px}
+.ptRoutes{color:#0f766e;font-weight:600}
 </style>
 </head>
 <body>
@@ -248,6 +256,7 @@
           </select></label>
       </div>
       <label class="chk"><input type="checkbox" id="needLift"> <span>全幢必須有升降機（長者／輪椅／BB 車）</span></label>
+      <label class="chk"><input type="checkbox" id="hasBus"> <span>🚌 400 米內有巴士站（九巴／城巴）</span></label>
       <label class="chk"><input type="checkbox" id="onlyRes" checked> <span>🏠 只顯示住宅建築（隱藏學校／廟宇／商場／醫院等 <b>__NONRES_N__</b> 個，取消剔選就全部出返）</span></label>
       <div class="hint" id="count"></div>
     </div>
@@ -709,6 +718,7 @@ function filtered(){
     (!aiAreaMin || (e.avg_area || 0) >= aiAreaMin) &&
     (!lift || e.non_elevator_units === 0) &&
     (!onlyRes || e.kind !== "nonres") &&
+    (!document.getElementById("hasBus").checked || hasBusNear(e)) &&
     (!scale || (scale === "single" ? (e.blocks_count != null && e.blocks_count <= 1) : (e.blocks_count || 0) >= +scale)));
   if (sortby === "units") list.sort((a,b)=>(b.total_units||0)-(a.total_units||0));
   else if (sortby === "mtr") list.sort((a,b)=>(a.nearest_mtr?.distance_m??1e9)-(b.nearest_mtr?.distance_m??1e9));
@@ -769,6 +779,7 @@ function render(){
         (canChainElder ? `<button class="go chain alt2" data-p="${e._key}" data-c="elder">🔗 護老返工鏈</button>` : "") +
         `</div>`
       : "";
+    const ptHtml = ptBoxHtml(e);
     const ST_META = {PRH:["prh","公屋"],LPH:["lph","簡屋"],HOS:["hos","居屋"],PRV:["prv","私人"],PRVD:["prv","推算私人"],VLG:["vlg","村屋"]};
     const [stCls, stLbl] = ST_META[e.source_type] || ST_META[e.source] || ["prh","公屋"];
     const hasUnits = e.total_units != null;
@@ -825,7 +836,7 @@ function render(){
           `<div class="row moreRows" id="more-${e._key}" hidden>` +
           more.map(t => `<span class="pill">${t}</span>`).join("") + `</div>`;
       })()}
-      ${routeBtns}${chainBtns}${addCmpBtn}${blkBtn}`;
+      ${ptHtml}${routeBtns}${chainBtns}${addCmpBtn}${blkBtn}`;
     box.appendChild(el);
     const moreBtn = el.querySelector(".moreBtn");
     if (moreBtn) moreBtn.addEventListener("click", () => {
@@ -1196,6 +1207,70 @@ function havM(a, b, c, d){   // 米
   const x = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(x));
 }
+// ---- 公共交通（巴士站＋路線號）Phase 1 ----
+let PT = null, ptGrid = null, ptLoading = false;
+const PT_CELL = 0.005;          // 約 550m 一格
+const PT_RADIUS = 400;          // 卡片顯示 400m 內嘅站
+
+async function loadPT(){
+  if (PT || ptLoading) return;
+  ptLoading = true;
+  try {
+    const res = await fetch("pt_stops.json", {cache: "force-cache"});
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    PT = await res.json();
+    ptGrid = new Map();
+    for (const s of PT){
+      const k = Math.floor(s.lat / PT_CELL) + "," + Math.floor(s.lng / PT_CELL);
+      if (!ptGrid.has(k)) ptGrid.set(k, []);
+      ptGrid.get(k).push(s);
+    }
+    render();                       // 有數據即重畫，卡片即時多一欄「巴士」
+  } catch (err) {
+    console.warn("pt load failed:", err);
+  }
+  ptLoading = false;
+}
+
+function nearStops(e, radius = PT_RADIUS){
+  if (!ptGrid || e.lat == null) return [];
+  const ci = Math.floor(e.lat / PT_CELL), cj = Math.floor(e.lng / PT_CELL);
+  const out = [];
+  for (let i = ci - 1; i <= ci + 1; i++){
+    for (let j = cj - 1; j <= cj + 1; j++){
+      const arr = ptGrid.get(i + "," + j);
+      if (!arr) continue;
+      for (const s of arr){
+        const d = havM(e.lat, e.lng, s.lat, s.lng);
+        if (d <= radius) out.push({s, d});
+      }
+    }
+  }
+  out.sort((a, b) => a.d - b.d);
+  return out;
+}
+
+// 400m 內有冇巴士站（篩選用；PT 未載入時當「有」，唔好誤殺）
+function hasBusNear(e){
+  if (!ptGrid) return true;
+  return nearStops(e, PT_RADIUS).length > 0;
+}
+
+function ptBoxHtml(e){
+  if (!ptGrid || e.lat == null) return "";
+  const near = nearStops(e);
+  if (!near.length) return `<div class="ptBox"><b>🚌 巴士</b> <span class="mini">400m 內冇巴士站（九巴／城巴）</span></div>`;
+  const stops = near.slice(0, 3).map(({s, d}) => {
+    const rs = s.r.slice(0, 8).join("、") + (s.r.length > 8 ? ` +${s.r.length - 8}` : "");
+    return `<div class="ptLine"><span class="ptName">${s.n}</span>` +
+           `<span class="mini">行 ${Math.max(1, Math.round(d / 75))} 分鐘（${Math.round(d)}m）</span><br>` +
+           `<span class="ptRoutes">${rs}</span></div>`;
+  }).join("");
+  const allRoutes = new Set();
+  near.forEach(({s}) => s.r.forEach(r => allRoutes.add(r)));
+  return `<div class="ptBox"><b>🚌 巴士</b> <span class="mini">400m 內 ${near.length} 個站・${allRoutes.size} 條路線</span>${stops}</div>`;
+}
+
 const MTR_ALL = __MTR__;   // 全港港鐵站（自選目的地用）
 
 const DEST = {
@@ -1788,6 +1863,7 @@ render();
   const c = navigator.connection || {};
   const cheap = !c.saveData && !/^(slow-)?2g$/.test(c.effectiveType || "");
   const go = () => { if (!derivedLoaded && !derivedLoading && cheap) loadDerived(); };
+  loadPT();                // 巴士站索引只有 ~1.2 MB，照樣預取
   if (!cheap) return;      // 慳數據／2G：唔自動下載 50 MB，等用戶自己撳
   if ("requestIdleCallback" in window) requestIdleCallback(go, {timeout: 5000});
   else setTimeout(go, 3000);

@@ -44,6 +44,7 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html _site/
+          [ -f pt_stops.json ] && cp pt_stops.json _site/ || true
           [ -d assets ] && cp -r assets _site/ || true
           ls -lh _site
 

@@ -66,6 +66,7 @@ jobs:
           mkdir -p _site
           cp index.html _site/
           [ -f derived.json ] && cp derived.json _site/ || true
+          [ -f pt_stops.json ] && cp pt_stops.json _site/ || true
 
       - name: Stage site（Cloudflare：唔放 derived.json，改指向 R2）
         if: steps.cfcheck.outputs.ready == 'true'
@@ -74,6 +75,7 @@ jobs:
         run: |
           mkdir -p _site_cf
           cp index.html _site_cf/
+          [ -f pt_stops.json ] && cp pt_stops.json _site_cf/ || true
           [ -d assets ] && cp -r assets _site_cf/ || true
           python - <<'PY'
           import os, re
