@@ -248,6 +248,7 @@
           </select></label>
       </div>
       <label class="chk"><input type="checkbox" id="needLift"> <span>全幢必須有升降機（長者／輪椅／BB 車）</span></label>
+      <label class="chk"><input type="checkbox" id="onlyRes" checked> <span>🏠 只顯示住宅建築（隱藏學校／廟宇／商場／醫院等 <b>__NONRES_N__</b> 個，取消剔選就全部出返）</span></label>
       <div class="hint" id="count"></div>
     </div>
 
@@ -407,7 +408,8 @@ function setProfile(p){
 // ---- 統計列 ----
 const ST_NAME = {PRH:"公屋",LPH:"簡約公屋",HOS:"居屋",PRV:"私人",PRVD:"推算私人",VLG:"鄉村"};
 const DERIVED_TOTAL = __DERIVED_N__;   // 推算屋苑總數（另存 derived.json，按需載入）
-const SINGLE_N = __SINGLE_N__;         // 推算層單幢屋苑數（未載入前都顯示得出）
+const SINGLE_N = __SINGLE_N__;
+const NONRES_N = __NONRES_N__;         // 推算層標為「非住宅建築」的數量（只標記，唔刪）         // 推算層單幢屋苑數（未載入前都顯示得出）
 // 推算層數據來源：預設同目錄 derived.json；放 Cloudflare R2／其他 CDN 時由 build 注入絕對 URL
 const DERIVED_URL = "__DERIVED_URL__" || "derived.json";
 let derivedLoaded = false, derivedLoading = false;
@@ -508,6 +510,7 @@ const blockPins = L.layerGroup();               // 逐座圖釘（z>=16）
 const markers = {};
 function addEstateMarker(e){
   if (e.lat == null || markers[e._key]) return;
+  if (e.kind === "nonres" && onlyResNow()) return;      // 只顯示住宅模式：非住宅建築唔落釘
   const c = scoreColor(e.score);
   const mk = L.circleMarker([e.lat, e.lng], {
     renderer: canvasRenderer,
@@ -523,6 +526,23 @@ function addEstateMarker(e){
   markers[e._key] = mk;
 }
 DATA.forEach(addEstateMarker);
+
+// 切換「只顯示住宅建築」：地圖釘同步加／減（唔重畫全部，只處理非住宅嗰批）
+document.addEventListener("change", ev => {
+  if (!ev.target || ev.target.id !== "onlyRes") return;
+  const hide = ev.target.checked;
+  DATA.forEach(e => {
+    if (e.kind !== "nonres") return;
+    const mk = markers[e._key];
+    if (hide){
+      if (mk){ estatePins.removeLayer(mk); delete markers[e._key]; }
+    } else if (!mk){
+      addEstateMarker(e);
+    }
+  });
+  refreshBlockPins();
+  render();
+});
 
 // 飛去屋苑：有座釘就 fitBounds 到「全部座」，唔止中心點——
 // 否則大屋苑（海怡半島 42 座、葵涌邨 16 座）喺 z16 只有畫面內幾粒釘，睇落好似「有座冇圖標」
@@ -569,6 +589,7 @@ function refreshBlockPins(){
     blockPins.clearLayers();
     DATA.forEach(e => {
       if (e.lat == null || !b.contains([e.lat, e.lng])) return;
+      if (e.kind === "nonres" && onlyResNow()) return;
       const _pts = (e.blocks || []).filter(bk => bk.lat != null);
       if (!_pts.length){
         // 冇任何座釘（717 個鄉村／舊屋苑）→ 用屋苑圓點代替，否則放大到 z16 會憑空消失
@@ -662,6 +683,11 @@ function hitName(e, q, qn){
   if ((e.name_tc||"").toLowerCase().includes(q) || normQ(e.name_en).includes(qn)) return true;
   return (e.blocks||[]).some(b => !b.nr && (b.n||"").toLowerCase().includes(q));
 }
+const onlyResNow = () => {
+  const el = document.getElementById("onlyRes");
+  return el ? el.checked : true;
+};
+
 function filtered(){
   const q = document.getElementById("q").value.trim().toLowerCase();
   const qn = normQ(q);
@@ -670,6 +696,7 @@ function filtered(){
   const walk = document.getElementById("walk").value;
   const minsc = document.getElementById("minscore").value;
   const lift = document.getElementById("needLift").checked;
+  const onlyRes = (document.getElementById("onlyRes") || {}).checked !== false;
   const sortby = document.getElementById("sortby").value;
   const scaleEl = document.getElementById("scale");
   const scale = scaleEl ? scaleEl.value : "";
@@ -681,6 +708,7 @@ function filtered(){
     (!minsc || scoreOf(e) >= +minsc) &&
     (!aiAreaMin || (e.avg_area || 0) >= aiAreaMin) &&
     (!lift || e.non_elevator_units === 0) &&
+    (!onlyRes || e.kind !== "nonres") &&
     (!scale || (scale === "single" ? (e.blocks_count != null && e.blocks_count <= 1) : (e.blocks_count || 0) >= +scale)));
   if (sortby === "units") list.sort((a,b)=>(b.total_units||0)-(a.total_units||0));
   else if (sortby === "mtr") list.sort((a,b)=>(a.nearest_mtr?.distance_m??1e9)-(b.nearest_mtr?.distance_m??1e9));
@@ -707,6 +735,7 @@ function render(){
     (aiAreaMin ? `｜AI 面積門檻：平均 ≥ ${aiAreaMin}㎡` : "") +
     (scaleNow === "" && singleN ? `｜含 ${singleN} 個單幢屋苑（全部可搜尋）` : "") +
     (derivedLoading ? `｜📐 推算屋苑載入中…` : "") +
+    (onlyResNow() ? `｜🏠 已隱藏 ${NONRES_N} 個非住宅建築` : "｜🏛 包含非住宅建築") +
     (list.length > pageSize ? `（顯示前 ${pageSize} 個，下面可「顯示更多」或縮小範圍）` : "");
   const box = document.getElementById("results"); box.innerHTML = "";
   list.slice(0, pageSize).forEach(e => {
@@ -760,6 +789,7 @@ function render(){
         <span class="pill">平均 ${e.avg_area??"?"} m²</span>` : ""}
         ${e.source_type === "PRV" ? `${e.census_pop ? `<span class="pill">人口 ${e.census_pop.toLocaleString()}（2021 普查）</span>` : ""}${e.census_income_md ? `<span class="pill">中位月入 $${Number(e.census_income_md).toLocaleString()}</span>` : ""}` : ""}
         ${e.source_type === "VLG" ? `<span class="pill">鄉村分界錨點</span>` : ""}
+        ${e.kind === "nonres" ? `<span class="pill" style="background:#fee2e2;color:#991b1b">🏛 非住宅建築</span>` : ""}
         ${e.source_type === "PRVD" ? `<span class="pill">📐 推算（非官方界線）</span>${e.est_pop ? `<span class="pill">約 ${e.est_pop.toLocaleString()} 人</span>` : ""}` : ""}
       </div>
       ${hasUnits && e.non_elevator_units != null ? `<div class="row">

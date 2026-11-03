@@ -798,6 +798,42 @@ schools = load_schools()
 kgs = load_kindergartens()
 ae_hosp = load_ae_hospitals()
 
+# 名稱分類（只做標記，唔刪任何記錄）：學校／廟宇／商場／醫院…標 nonres，前端可「只顯示住宅」
+_NONRES_KW = ("學校", "中學", "小學", "幼稚園", "幼兒園", "大學", "書院", "學院", "教育",
+    "教會", "教堂", "禮拜堂", "廟", "祠", "寺", "修道院", "靜修", "宮", "堂", "庵",
+    "醫院", "診所", "診療", "醫療", "護養", "護老", "老人院", "安老", "敬老", "復康", "戒毒",
+    "警署", "警崗", "消防", "海關", "入境", "懲教", "監獄", "軍營", "軍部", "解放軍",
+    "政府", "市政", "郵政", "郵局", "法院", "裁判", "圖書館", "體育館", "運動場", "球場",
+    "泳池", "游泳池", "文娛", "社區中心", "社區會堂", "大會堂", "福利", "服務中心",
+    "商場", "商廈", "寫字樓", "商業", "工業", "工廠", "貨倉", "倉庫", "貨櫃", "物流",
+    "酒店", "賓館", "旅舍", "宿舍", "營舍", "度假", "車場", "停車場", "車房", "碼頭",
+    "渡輪", "船廠", "油站", "加油站", "石油", "氣站", "變電", "電站", "電廠", "泵房",
+    "水務", "水庫", "污水", "焚化", "堆填", "屠場", "屠房", "街市", "市集", "批發",
+    "電訊", "機樓", "發射", "雷達", "氣象", "銀行", "會所", "俱樂部", "球會", "鄉事",
+    "宗祠", "村公所", "互助", "農場", "公園", "植物園", "動物園", "水塘", "營地",
+    "墳場", "墓", "骨灰", "火葬", "機場", "跑道", "貨運", "港口", "船塢", "魚市場",
+    "通風", "康樂中心", "浸信", "宣道", "循道", "信義", "有限公司", "公司", "泳灘",
+    "海灘", "沙灘", "寶福", "龕", "紀念", "涼亭", "燒烤", "觀景", "警局", "救護",
+    "街坊", "合作社", "金融", "保險", "教區", "修院", "神學院",   # 注意：唔可以收「中心」「廣場」——上水中心／上水廣場係住宅
+    "鐵路", "西鐵", "車廠", "機廠", "人壽", "電視", "廣播", "總部", "辦事處", "行政大樓",
+    "天后宮", "觀音", "盂蘭", "港鐵", "輕鐵", "車站", "巴士", "隧道", "天橋", "營",
+    "館", "廠", "倉", "局", "署", "工商", "數據中心", "購物中心", "會議中心", "展覽中心",
+    "貨運中心", "客運中心", "訓練中心", "文化中心", "藝術中心", "體育中心", "商貿中心",
+    "貿易中心", "電訊中心", "電話中心", "協會", "紅十字", "片場", "上傳", "生產", "商用",
+    "航空", "住院", "創傷", "檢測", "化驗", "劇院", "演藝", "展銷", "集團", "控股",
+    "廠房", "公廁", "變壓", "主題公園", "污水處理", "垃圾", "回收",
+    "站", "會", "管制站", "轉運站", "抽水站", "騎術", "遊艇", "馬場")
+_NONRES_EN = ("SCHOOL", "COLLEGE", "UNIVERSITY", "CHURCH", "HOTEL", "MALL", "INDUSTRIAL",
+    "FACTORY", "WAREHOUSE", "HOSPITAL", "CLINIC", "POLICE", "FIRE STATION", "GOVERNMENT",
+    "LIBRARY", "CINEMA", "THEATRE", "CAR PARK", "SUBSTATION", "TEMPLE", "MONASTERY",
+    "OFFICE", "COMMERCIAL")
+
+
+def _is_nonres_name(n):
+    s = (n or "").strip()
+    return any(k in s for k in _NONRES_KW) or any(k in s.upper() for k in _NONRES_EN)
+
+
 # ---- B 方案：地政總署 Tower 聚類推導嘅私人屋苑（估算，est=1）----
 DERIVED = os.path.join(BASE, "derived_estates.json")
 if os.path.exists(DERIVED) and not os.environ.get("HKGV_NO_DERIVED"):
@@ -828,6 +864,7 @@ if os.path.exists(DERIVED) and not os.environ.get("HKGV_NO_DERIVED"):
              "blocks": x.get("blocks") or [], "blocks_count": x["towers"],
              "blocks_source": "LandsD",
              "storeys_med": x.get("storeys_med"),
+             "kind": "nonres" if _is_nonres_name(x["name_tc"]) else "res",
              "total_units": x["est_units"], "est_pop": x["est_pop"],
              "sub_scores": {}}
         # 設施點：由全港官方屋苑嘅設施池計最近（唔止借隔籬嗰個，距離全部重算）
@@ -1034,7 +1071,8 @@ html = tpl.replace("__DATA__", payload).replace("__COVERED__", cov_payload) \
           .replace("__MTR__", json.dumps(mtr_all, ensure_ascii=False, separators=(",", ":"))) \
           .replace("__DERIVED_URL__", os.environ.get("HKGV_DERIVED_URL", "")) \
           .replace("__DERIVED_N__", str(len(_derived_records))) \
-          .replace("__SINGLE_N__", str(single_n))
+          .replace("__SINGLE_N__", str(single_n)) \
+          .replace("__NONRES_N__", str(sum(1 for _e in _derived_records if _e.get("kind") == "nonres")))
 with open(OUT, "w", encoding="utf-8") as f:
     f.write(html)
 
