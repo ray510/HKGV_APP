@@ -1,5 +1,0 @@
-[out:json][timeout:120];
-(
-  node["place"~"^(city|town|suburb|quarter|neighbourhood)$"](22.13,113.83,22.58,114.51);
-);
-out tags center;
