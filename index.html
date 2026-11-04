@@ -339,8 +339,14 @@ let aiAreaMin = 0;            // AI 顧問設定嘅平均面積門檻（㎡）
 const SHOW_AI_ADVISOR = false; // AI 選樓顧問開關（規則引擎原型；LLM 函數調用版做好後設 true 重啟）
 
 // 每個屋邨嘅唯一 key（必須喺所有用 _key 嘅邏輯之前賦值）
-const keyOf = e => e.source + "|" + e.name_tc;
+// 唯一 key 必須含座標：全港有 894 組同名屋苑（富貴樓＝北區＋荃灣、松苑 ×8、天后古廟 ×23…），
+// 只用「來源＋名」會撞 key → 一粒釘覆蓋另一粒、撳釘跳錯卡（會見到另一個區嘅巴士路線）
+const keyOf = e => `${e.source}|${e.name_tc}|${e.lat == null ? "-" : e.lat.toFixed(4)},${e.lng == null ? "-" : e.lng.toFixed(4)}`;
 DATA.forEach(e => e._key = keyOf(e));
+// 同名統計：全港有 900+ 組同名（富貴樓 ×2、松苑 ×8…），卡片要標出來，否則用戶會以為係重複收錄
+const nameCount = new Map();
+const bumpName = e => nameCount.set(e.name_tc, (nameCount.get(e.name_tc) || 0) + 1);
+DATA.forEach(bumpName);
 
 const scoreColor = s => s>=80 ? "#0f9d8a" : s>=60 ? "#0b6e99" : "#b45309";
 
@@ -468,7 +474,7 @@ async function loadDerived(){
     label("📐 解析中…");
     await new Promise(r => setTimeout(r, 30));      // 讓「解析中」畫得出嚟
     const arr = JSON.parse(text);
-    arr.forEach(e => { e._key = keyOf(e); DATA.push(e); addEstateMarker(e); });
+    arr.forEach(e => { e._key = keyOf(e); DATA.push(e); bumpName(e); addEstateMarker(e); });
     derivedLoaded = true;
     updateStatbar();
     render();
@@ -785,7 +791,7 @@ function render(){
     const hasUnits = e.total_units != null;
     el.innerHTML = `
       <h3>${e.name_tc}
-        <span class="badge ${stCls}">${stLbl}</span></h3>
+        <span class="badge ${stCls}">${stLbl}</span>${(nameCount.get(e.name_tc) || 1) > 1 ? `<span class="pill" style="background:#fef3c7;color:#92400e;font-weight:600" title="全港有 ${nameCount.get(e.name_tc)} 個同名屋苑，請認住地區">同名 ${nameCount.get(e.name_tc)} 處</span>` : ""}</h3>
       <div class="d">${e.district_tc ? e.district_tc : ""}${e.region_tc ? `（${e.region_tc}）` : ""}${e.name_en?"· "+e.name_en:""}</div>
       <div class="scorewrap">
         <div class="score" style="background:${c}"><b>${pr.total}</b><i>生活圈</i></div>
