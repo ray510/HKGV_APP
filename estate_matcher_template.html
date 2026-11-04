@@ -155,6 +155,11 @@
   .covCtl label{cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
   .covCtl .k{display:inline-block;width:7px;height:7px;border-radius:50%}
 
+/* 已定位橫幅 */
+.pinBar{position:sticky;top:0;z-index:5;margin:0 0 8px;padding:8px 10px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:8px;font-size:12.5px;color:#155e75;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.pinBar .dupGo{font-weight:600}
+.pinClear{margin-left:auto;border:1px solid #bae6fd;background:#fff;color:#0369a1;border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer}
+
 /* 同名屋苑分辨 */
 .distChip{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#e0f2fe;color:#075985;font-size:11px;font-weight:600;vertical-align:middle;letter-spacing:.02em}
 .dupDist{font-size:.62em;color:#b45309;font-weight:600;margin-left:2px}
@@ -346,6 +351,7 @@ const API = "https://mapapi.hkmapservice.gov.hk/PedRoute/NAServer/route/solve";
 let mode = 2;
 const MAX_CARDS = 60;
 let pageSize = MAX_CARDS;   // 「顯示更多」逐頁加 60
+let pinnedKey = null;       // 由地圖釘／同名連結跳過嚟嘅屋苑：強制置頂，唔受篩選影響
 let aiAreaMin = 0;            // AI 顧問設定嘅平均面積門檻（㎡）
 const SHOW_AI_ADVISOR = false; // AI 選樓顧問開關（規則引擎原型；LLM 函數調用版做好後設 true 重啟）
 
@@ -561,6 +567,7 @@ DATA.forEach(addEstateMarker);
 
 // 同名屋苑：撳地區名跳去另一個同名屋苑
 document.addEventListener("click", ev => {
+  if (ev.target && ev.target.id === "pinClear"){ pinnedKey = null; render(); return; }
   const b = ev.target.closest && ev.target.closest(".dupGo");
   if (b) focusCard(b.dataset.k);
 });
@@ -599,25 +606,12 @@ function flyToEstate(e){
 function focusCard(key){
   const e = DATA.find(x => x._key === key);
   if (!e) return;
-  let el = document.getElementById("card-" + key);
-  if (!el){          // 卡片唔喺頭 60 張 → 用搜尋縮窄再 render
-    const q = document.getElementById("q");
-    const et = document.getElementById("etype");
-    const sc = document.getElementById("scale");
-    q.value = e.name_tc; if (et) et.value = ""; if (sc) sc.value = "";   // 清走規模／類型，單幢都一定跳得到
-    // 同名屋苑最易中招：分區／地區／巴士／住宅開關會把目標卡篩走，令畫面停留喺另一張同名卡
-    const dSel = document.getElementById("district"); if (dSel) dSel.value = "";
-    const aSel = document.getElementById("area");
-    if (aSel){ aSel.value = ""; if (typeof fillAreaOptions === "function") fillAreaOptions(); }
-    const hb = document.getElementById("hasBus"); if (hb) hb.checked = false;
-    const orr = document.getElementById("onlyRes"); if (orr) orr.checked = true;
-    const wSel = document.getElementById("walk"); if (wSel) wSel.value = "";
-    const mSel = document.getElementById("minscore"); if (mSel) mSel.value = "";
-    pageSize = MAX_CARDS;
-    if ((e.source_type || e.source) === "PRVD" && !derivedLoaded) loadDerived();
-    render();
-    el = document.getElementById("card-" + key);
-  }
+  // 直接「釘住」呢一筆：唔再用名稱搜尋（同名就會出兩張），亦唔清用戶原有篩選
+  pinnedKey = key;
+  pageSize = MAX_CARDS;
+  if ((e.source_type || e.source) === "PRVD" && !derivedLoaded) loadDerived();
+  render();
+  const el = document.getElementById("card-" + key);
   if (el){
     el.scrollIntoView({behavior: "smooth", block: "center"});
     el.classList.remove("flash");
@@ -802,6 +796,15 @@ function render(){
   Object.values(blkLayers).forEach(l => map.removeLayer(l));
   Object.keys(blkLayers).forEach(k => delete blkLayers[k]);
   const list = filtered();
+  // 由地圖釘／同名連結跳過嚟嘅屋苑：就算被篩選篩走都置頂顯示（唔會再「跳完都係另一張」）
+  if (pinnedKey){
+    const i = list.findIndex(x => x._key === pinnedKey);
+    if (i > 0) list.unshift(list.splice(i, 1)[0]);
+    else if (i < 0){
+      const rec = DATA.find(x => x._key === pinnedKey);
+      if (rec) list.unshift(rec);
+    }
+  }
   const scaleNow = (document.getElementById("scale") || {}).value || "";
   const singleN = DATA.filter(e => e.blocks_count != null && e.blocks_count <= 1).length
                 + (derivedLoaded ? 0 : SINGLE_N);
@@ -812,6 +815,18 @@ function render(){
     (onlyResNow() ? `｜🏠 已隱藏 ${NONRES_N} 個非住宅建築` : "｜🏛 包含非住宅建築") +
     (list.length > pageSize ? `（顯示前 ${pageSize} 個，下面可「顯示更多」或縮小範圍）` : "");
   const box = document.getElementById("results"); box.innerHTML = "";
+  if (pinnedKey){
+    const pe = DATA.find(x => x._key === pinnedKey);
+    if (pe){
+      const sibs = (nameIndex.get(pe.name_tc) || []).filter(x => x._key !== pe._key);
+      const bar = document.createElement("div");
+      bar.className = "pinBar";
+      bar.innerHTML = `📍 已定位：<b>${pe.name_tc}</b>（${pe.district_tc || ""}${pe.area_tc && pe.area_tc !== pe.district_tc ? " · " + pe.area_tc : ""}）` +
+        (sibs.length ? `　同名其他：` + sibs.map(x => `<button class="dupGo" data-k="${x._key}">${x.district_tc || ""}${x.area_tc && x.area_tc !== x.district_tc ? " · " + x.area_tc : ""}</button>`).join("") : "") +
+        `　<button class="pinClear" id="pinClear">✕ 取消定位（睇全部）</button>`;
+      box.appendChild(bar);
+    }
+  }
   list.slice(0, pageSize).forEach(e => {
     const m = e.nearest_mtr, ok = e.non_elevator_units === 0;
     const pr = calcScore(e);
@@ -1073,6 +1088,7 @@ function toggleBlocks(key, btn){
 ["q","etype","district","walk","minscore","sortby","scale"].forEach(id =>
   document.getElementById(id).addEventListener(id==="q"?"input":"change", () => {
     pageSize = MAX_CARDS;
+    pinnedKey = null;          // 用戶自己改條件 → 解除「釘住」
     // 推算屋苑（含 586 個單幢）唔喺首屏 payload：一搜尋／揀類型／揀單幢就自動載入，確保單幢都搜得到
     const qLen = document.getElementById("q").value.trim().length;
     const etNow = document.getElementById("etype").value;
@@ -1084,6 +1100,7 @@ document.getElementById("needLift").onchange = render;
 
 // ---- 重設篩選（含 AI 顧問套用嘅隱形條件）----
 function resetFilters(){
+  pinnedKey = null;
   document.getElementById("q").value = "";
   document.getElementById("etype").value = "";
   const sc = document.getElementById("scale"); if (sc) sc.value = "";
