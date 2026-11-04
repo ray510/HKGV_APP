@@ -155,6 +155,14 @@
   .covCtl label{cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
   .covCtl .k{display:inline-block;width:7px;height:7px;border-radius:50%}
 
+/* 同名屋苑分辨 */
+.dupDist{font-size:.62em;color:#b45309;font-weight:600;margin-left:2px}
+.dupRow{margin:2px 0 6px;font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:4px 8px}
+.dupCur{color:#92400e}
+.dupGo{border:none;background:none;color:#0369a1;text-decoration:underline;cursor:pointer;font:inherit;padding:0 1px}
+.dupGo:hover{color:#0c4a6e}
+.dupSep{color:#d6d3d1;margin:0 2px}
+
 /* 巴士站／路線（Phase 1） */
 .ptBox{margin:8px 0 6px;padding:8px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;font-size:12px;line-height:1.55}
 .ptBox b{color:#0369a1}
@@ -345,7 +353,12 @@ const keyOf = e => `${e.source}|${e.name_tc}|${e.lat == null ? "-" : e.lat.toFix
 DATA.forEach(e => e._key = keyOf(e));
 // 同名統計：全港有 900+ 組同名（富貴樓 ×2、松苑 ×8…），卡片要標出來，否則用戶會以為係重複收錄
 const nameCount = new Map();
-const bumpName = e => nameCount.set(e.name_tc, (nameCount.get(e.name_tc) || 0) + 1);
+const nameIndex = new Map();      // 名 → [記錄]，用嚟列出「同名其他地區」
+const bumpName = e => {
+  nameCount.set(e.name_tc, (nameCount.get(e.name_tc) || 0) + 1);
+  if (!nameIndex.has(e.name_tc)) nameIndex.set(e.name_tc, []);
+  nameIndex.get(e.name_tc).push(e);
+};
 DATA.forEach(bumpName);
 
 const scoreColor = s => s>=80 ? "#0f9d8a" : s>=60 ? "#0b6e99" : "#b45309";
@@ -542,6 +555,12 @@ function addEstateMarker(e){
 }
 DATA.forEach(addEstateMarker);
 
+// 同名屋苑：撳地區名跳去另一個同名屋苑
+document.addEventListener("click", ev => {
+  const b = ev.target.closest && ev.target.closest(".dupGo");
+  if (b) focusCard(b.dataset.k);
+});
+
 // 切換「只顯示住宅建築」：地圖釘同步加／減（唔重畫全部，只處理非住宅嗰批）
 document.addEventListener("change", ev => {
   if (!ev.target || ev.target.id !== "onlyRes") return;
@@ -623,7 +642,7 @@ function refreshBlockPins(){
           radius: 5, color: col, fillColor: col, fillOpacity: bk.est ? .35 : .85,
           weight: 2, dashArray: bk.est ? "3,2" : null
         }).bindTooltip(`${e.name_tc} ${bk.n}`, {direction: "top", offset: [0, -6]})
-          .bindPopup(`<b>${e.name_tc} ${bk.n}</b><br>` +
+          .bindPopup(`<b>${e.name_tc}${(nameCount.get(e.name_tc) || 1) > 1 ? `（${e.district_tc || ""}）` : ""} ${bk.n}</b><br>` +
           (bk.est ? `<span style="color:#b45309">📍 位置為估算（地政總署無該座名稱／座標）</span><br>` : "") +
           (bk.s != null ? `樓高 ${bk.s} 層${bk.h != null ? "／" + bk.h + "m" : ""}` : "") +
           `<br><span style="color:#6b7280">屋苑：${e.name_tc}（${ST_NAME[e.source_type || e.source] || ""}）</span>`);
@@ -790,8 +809,13 @@ function render(){
     const [stCls, stLbl] = ST_META[e.source_type] || ST_META[e.source] || ["prh","公屋"];
     const hasUnits = e.total_units != null;
     el.innerHTML = `
-      <h3>${e.name_tc}
-        <span class="badge ${stCls}">${stLbl}</span>${(nameCount.get(e.name_tc) || 1) > 1 ? `<span class="pill" style="background:#fef3c7;color:#92400e;font-weight:600" title="全港有 ${nameCount.get(e.name_tc)} 個同名屋苑，請認住地區">同名 ${nameCount.get(e.name_tc)} 處</span>` : ""}</h3>
+      <h3>${e.name_tc}${(nameCount.get(e.name_tc) || 1) > 1 ? `<span class="dupDist">（${e.district_tc || "未知地區"}）</span>` : ""}
+        <span class="badge ${stCls}">${stLbl}</span></h3>
+      ${(nameCount.get(e.name_tc) || 1) > 1 ? `<div class="dupRow">同名 ${nameCount.get(e.name_tc)} 處：` +
+        (nameIndex.get(e.name_tc) || []).map(x => x === e
+          ? `<b class="dupCur">${x.district_tc || "未知"}</b>`
+          : `<button class="dupGo" data-k="${x._key}" title="跳去${x.district_tc || ""}嗰個">${x.district_tc || "未知"}</button>`
+        ).join('<span class="dupSep">・</span>') + `</div>` : ""}
       <div class="d">${e.district_tc ? e.district_tc : ""}${e.region_tc ? `（${e.region_tc}）` : ""}${e.name_en?"· "+e.name_en:""}</div>
       <div class="scorewrap">
         <div class="score" style="background:${c}"><b>${pr.total}</b><i>生活圈</i></div>
@@ -1368,7 +1392,7 @@ async function planRoute(key, dest = "mtr", origin = null, destOverride = null){
     map.fitBounds(line.getBounds().pad(.2));
     currentRoute = {key, dest, c: done.c, a: done.a, o: origin};
     // URL Hash 深連結：評審可由 PDF/分享連結一鍵跳入此場景
-    try { history.replaceState(null, "", `#estate=${encodeURIComponent(e.name_tc)}&mode=${usedMode}&dest=${dest}`); } catch(_){}
+    try { history.replaceState(null, "", `#estate=${encodeURIComponent(e.name_tc)}&d=${encodeURIComponent(e.district_tc || "")}&mode=${usedMode}&dest=${dest}`); } catch(_){}
     document.getElementById("elevWrap").style.display = "block";
     document.getElementById("elev").innerHTML = elevationSVG(path);
     bindElevHover();
@@ -1488,7 +1512,7 @@ async function planChain(key, type){
     document.getElementById("elev").innerHTML = elevationSVG(path);
     bindElevHover();
     currentRoute = {key, dest: "chain", chain: type, c: used.c, a: used.a, o: null};
-    try { history.replaceState(null, "", `#estate=${encodeURIComponent(e.name_tc)}&mode=${mode}&chain=${type}`); } catch(_){}
+    try { history.replaceState(null, "", `#estate=${encodeURIComponent(e.name_tc)}&d=${encodeURIComponent(e.district_tc || "")}&mode=${mode}&chain=${type}`); } catch(_){}
     updateWeatherUI();
     panel.scrollIntoView({behavior: "smooth"});
   } catch (err) {
@@ -1846,7 +1870,8 @@ if (!SHOW_AI_ADVISOR) document.getElementById("aiPanel").style.display = "none";
   const h = new URLSearchParams(location.hash.replace(/^#/, ""));
   const est = h.get("estate");
   if (!est) return;
-  const e = DATA.find(x => x.name_tc === est);
+  const dd = h.get("d") || "";
+  const e = (dd && DATA.find(x => x.name_tc === est && x.district_tc === dd)) || DATA.find(x => x.name_tc === est);
   if (!e) return;
   const md = +h.get("mode");
   if (md && MODE_LABELS[md]){
