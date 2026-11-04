@@ -605,6 +605,14 @@ function focusCard(key){
     const et = document.getElementById("etype");
     const sc = document.getElementById("scale");
     q.value = e.name_tc; if (et) et.value = ""; if (sc) sc.value = "";   // 清走規模／類型，單幢都一定跳得到
+    // 同名屋苑最易中招：分區／地區／巴士／住宅開關會把目標卡篩走，令畫面停留喺另一張同名卡
+    const dSel = document.getElementById("district"); if (dSel) dSel.value = "";
+    const aSel = document.getElementById("area");
+    if (aSel){ aSel.value = ""; if (typeof fillAreaOptions === "function") fillAreaOptions(); }
+    const hb = document.getElementById("hasBus"); if (hb) hb.checked = false;
+    const orr = document.getElementById("onlyRes"); if (orr) orr.checked = true;
+    const wSel = document.getElementById("walk"); if (wSel) wSel.value = "";
+    const mSel = document.getElementById("minscore"); if (mSel) mSel.value = "";
     pageSize = MAX_CARDS;
     if ((e.source_type || e.source) === "PRVD" && !derivedLoaded) loadDerived();
     render();
@@ -1688,6 +1696,7 @@ document.addEventListener("click", ev => {
   const vw = t.closest && t.closest(".pkView");
   if (vw){
     const card = document.getElementById("card-" + vw.dataset.k);
+    if (!card){ focusCard(vw.dataset.k); map.closePopup(); return; }
     if (card){
       card.scrollIntoView({behavior: "smooth", block: "center"});
       card.classList.add("hl");
