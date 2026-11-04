@@ -230,6 +230,8 @@
           </select></label>
         <label class="chk"><span class="k">地區</span>
           <select id="district"><option value="">全部</option></select></label>
+        <label class="chk"><span class="k">分區</span>
+          <select id="area" title="18 區之下嘅細分區（上水／大圍／聯和墟…）"><option value="">全部</option></select></label>
         <label class="chk"><span class="k">規模</span>
           <select id="scale" title="按座數篩選；預設「全部」＝單幢屋苑一樣搜得到">
             <option value="">全部（含單幢）</option>
@@ -490,6 +492,7 @@ async function loadDerived(){
     const arr = JSON.parse(text);
     arr.forEach(e => { e._key = keyOf(e); DATA.push(e); bumpName(e); addEstateMarker(e); });
     derivedLoaded = true;
+    fillAreaOptions();
     updateStatbar();
     render();
   } catch (err) {
@@ -709,6 +712,29 @@ document.getElementById("covToggle").onchange = ev => {
   document.getElementById("district").appendChild(o);
 });
 
+// 分區（18 區之下）：跟住「地區」揀選動態填，選項帶數量
+function fillAreaOptions(){
+  const sel = document.getElementById("area");
+  if (!sel) return;
+  const dist = document.getElementById("district").value;
+  const cur = sel.value;
+  const m = new Map();
+  DATA.forEach(e => {
+    if (!e.area_tc) return;
+    if (dist && e.district_tc !== dist) return;
+    m.set(e.area_tc, (m.get(e.area_tc) || 0) + 1);
+  });
+  const names = [...m.keys()].sort((a, b) => a.localeCompare(b, "zh-Hant"));
+  sel.innerHTML = `<option value="">全部</option>` +
+    names.map(n => `<option value="${n}">${n}（${m.get(n)}）</option>`).join("");
+  if (names.includes(cur)) sel.value = cur;
+}
+fillAreaOptions();
+document.getElementById("district").addEventListener("change", () => {
+  document.getElementById("area").value = "";
+  fillAreaOptions();
+});
+
 // ---- 篩選 ----
 // 英文名比對忽略空格／標點：「GreenCode」「green code」「Green-Code」都搵到「Green Code」
 const normQ = s => (s || "").toLowerCase().replace(/[\s\-·．._]/g, "");
@@ -716,6 +742,7 @@ const normQ = s => (s || "").toLowerCase().replace(/[\s\-·．._]/g, "");
 function hitName(e, q, qn){
   if (!q) return true;
   if ((e.name_tc||"").toLowerCase().includes(q) || normQ(e.name_en).includes(qn)) return true;
+  if ((e.area_tc || "").toLowerCase().includes(q)) return true;      // 搜「大圍」都搵到該區屋苑
   return (e.blocks||[]).some(b => !b.nr && (b.n||"").toLowerCase().includes(q));
 }
 const onlyResNow = () => {
@@ -728,6 +755,8 @@ function filtered(){
   const qn = normQ(q);
   const etype = document.getElementById("etype").value;
   const dist = document.getElementById("district").value;
+  const areaSel = document.getElementById("area");
+  const areaNow = areaSel ? areaSel.value : "";
   const walk = document.getElementById("walk").value;
   const minsc = document.getElementById("minscore").value;
   const lift = document.getElementById("needLift").checked;
@@ -739,6 +768,7 @@ function filtered(){
     hitName(e, q, qn) &&
     (!etype || (e.source_type || e.source) === etype) &&
     (!dist || e.district_tc === dist) &&
+    (!areaNow || e.area_tc === areaNow) &&
     (!walk || (e.mtr_candidates||[]).some(c => c.distance_m <= +walk)) &&
     (!minsc || scoreOf(e) >= +minsc) &&
     (!aiAreaMin || (e.avg_area || 0) >= aiAreaMin) &&
@@ -810,7 +840,7 @@ function render(){
     const [stCls, stLbl] = ST_META[e.source_type] || ST_META[e.source] || ["prh","公屋"];
     const hasUnits = e.total_units != null;
     el.innerHTML = `
-      <h3>${e.name_tc}<span class="distChip" title="18 區">${e.district_tc || "未知地區"}</span>
+      <h3>${e.name_tc}<span class="distChip" title="18 區${e.area_tc ? " ｜ 細分區：" + e.area_tc : ""}">${e.district_tc || "未知地區"}${e.area_tc && e.area_tc !== e.district_tc ? ` · ${e.area_tc}` : ""}</span>
         <span class="badge ${stCls}">${stLbl}</span></h3>
       ${(nameCount.get(e.name_tc) || 1) > 1 ? `<div class="dupRow">同名 ${nameCount.get(e.name_tc)} 處：` +
         (nameIndex.get(e.name_tc) || []).map(x => x === e

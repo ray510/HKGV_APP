@@ -986,6 +986,59 @@ for e in data:
                                 + 0.10 * s.get("care", 50.0) + 0.05 * s.get("childcare", 50.0)
                                 + 0.10 * s.get("elderly_shelter", 50.0)) / 0.85, 1)
 
+# ---- 分區：18 區之下再細分（上水／大圍／聯和墟…），用 OSM 地名節點最近匹配 ----
+AREAS = os.path.join(BASE, "data", "areas_osm.json")
+if os.path.exists(AREAS):
+    _ar = [a for a in json.load(open(AREAS, encoding="utf-8"))
+           if a["n"] not in ("香港", "深圳市")]
+    _big = [a for a in _ar if a["p"] in ("town", "suburb")]
+    _small = [a for a in _ar if a["p"] in ("quarter", "neighbourhood")]
+
+    # 大眾熟悉嘅分區名單：同樣距離下優先（否則「綠楊新邨」會被 548m 外嘅「芙蓉山」搶走，
+    # 而唔係 697m 嘅「荃灣」——用戶搵屋苑時認嘅係荃灣，唔係芙蓉山）
+    _MAJOR = {"上水", "粉嶺", "大埔", "太和", "沙田", "大圍", "馬鞍山", "火炭", "荃灣", "葵涌",
+              "青衣", "屯門", "元朗", "天水圍", "將軍澳", "西貢", "觀塘", "九龍灣", "紅磡",
+              "土瓜灣", "深水埗", "長沙灣", "荔枝角", "旺角", "油麻地", "尖沙咀", "佐敦",
+              "中環", "上環", "西營盤", "銅鑼灣", "灣仔", "北角", "鰂魚涌", "太古", "筲箕灣",
+              "柴灣", "香港仔", "鴨脷洲", "赤柱", "東涌", "大澳", "長洲", "坪洲", "梅窩",
+              "石湖墟", "聯和墟", "沙頭角", "錦田", "石崗", "洪水橋", "流浮山", "深井",
+              "馬灣", "愉景灣", "何文田", "黃大仙", "鑽石山", "慈雲山", "藍田", "油塘",
+              "大角咀", "薄扶林", "跑馬地", "半山"}
+
+    def _near(lst, lat, lng, radius):
+        best, bs, bd = None, 1e18, 1e18
+        for a in lst:
+            d = haversine(lat, lng, a["lat"], a["lng"])
+            if d > radius:
+                continue
+            sc = d - (300 if a["n"] in _MAJOR else 0)      # 熟悉名稱有 300m 加成
+            if sc < bs:
+                best, bs, bd = a, sc, d
+        return best
+
+    # 名稱統一：上水市／上水市中心／馬鞍山市中心 → 上水／馬鞍山
+    _SUF = ("市中心", "市", "新市鎮")
+    for _a in _ar:
+        for _s in _SUF:
+            if _a["n"].endswith(_s) and len(_a["n"]) > len(_s) + 1:
+                _a["n"] = _a["n"][: -len(_s)]
+                break
+
+    _n_area = 0
+    for _e in data:
+        if _e.get("lat") is None:
+            _e["area_tc"] = None
+            continue
+        # ① town／suburb（大區：上水、大圍、荃灣…）3km 內最近
+        hit = _near(_big, _e["lat"], _e["lng"], 3000)
+        # ② 冇就 quarter／neighbourhood（小區：聯和墟、石湖墟…）1km 內最近
+        if not hit:
+            hit = _near(_small, _e["lat"], _e["lng"], 1000)
+        _e["area_tc"] = hit["n"] if hit else None
+        if hit:
+            _n_area += 1
+    print(f"  分區（OSM 地名）：{_n_area:,}/{len(data):,} 個錨點有細分區名", flush=True)
+
 # ---- 拆檔：推算屋苑另存 derived.json（首屏減 7 MB，前端按需載入）----
 _derived_records = [e for e in data if e.get("source_type") == "PRVD"]
 data = [e for e in data if e.get("source_type") != "PRVD"]

@@ -1,0 +1,6 @@
+[out:json][timeout:120];
+area["ISO3166-2"="HK"]->.hk;
+(
+  node["place"~"^(city|town|suburb|quarter|neighbourhood)$"](area.hk);
+);
+out tags center;
